@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Документация - Анализатор военных дневников{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1>Документация</h1>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="list-group">
+                    <a href="#analysis" class="list-group-item list-group-item-action">Анализ дневников</a>
+                    <a href="#forum" class="list-group-item list-group-item-action">Работа с форумом</a>
+                    <a href="#api" class="list-group-item list-group-item-action">API системы</a>
+                    <a href="#tech" class="list-group-item list-group-item-action">Технические детали</a>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <section id="analysis" class="mb-5">
+                    <h2>Анализ дневников</h2>
+                    <h3>Эмоциональный анализ</h3>
+                    <p>Система использует передовые алгоритмы обработки естественного языка для определения:</p>
+                    <ul>
+                        <li>Основных эмоций в тексте</li>
+                        <li>Общего эмоционального тона</li>
+                        <li>Скрытых мотивов</li>
+                        <li>Отношения автора к описываемым событиям</li>
+                    </ul>
+
+                    <h3>Художественная интерпретация</h3>
+                    <p>На основе анализа система создает художественное произведение, сохраняя:</p>
+                    <ul>
+                        <li>Исторический контекст</li>
+                        <li>Эмоциональную окраску</li>
+                        <li>Ключевые события</li>
+                        <li>Личностные характеристики автора</li>
+                    </ul>
+                </section>
+
+                <section id="forum" class="mb-5">
+                    <h2>Работа с форумом</h2>
+                    <h3>Основные возможности</h3>
+                    <ul>
+                        <li>Создание тем и сообщений</li>
+                        <li>Система голосования (лайки/дизлайки)</li>
+                        <li>Удаление собственных сообщений</li>
+                        <li>Сортировка тем по дате и рейтингу</li>
+                    </ul>
+
+                    <h3>Правила использования</h3>
+                    <ul>
+                        <li>Уважайте других участников обсуждения</li>
+                        <li>Придерживайтесь темы обсуждения</li>
+                        <li>Не публикуйте конфиденциальную информацию</li>
+                    </ul>
+                </section>
+
+                <section id="api" class="mb-5">
+                    <h2>API системы</h2>
+                    <h3>Основные эндпоинты</h3>
+                    <pre><code>POST /analyze
+- Входные данные: текст дневника
+- Выходные данные: результаты анализа
+
+POST /share_analysis
+- Публикация результатов на форуме
+
+GET /topic/{id}
+- Получение информации о теме</code></pre>
+                </section>
+
+                <section id="tech" class="mb-5">
+                    <h2>Технические детали</h2>
+                    <h3>Используемые технологии</h3>
+                    <ul>
+                        <li>Flask (веб-фреймворк)</li>
+                        <li>SQLAlchemy (работа с базой данных)</li>
+                        <li>GPT-4 (анализ текста)</li>
+                        <li>Bootstrap 5 (фронтенд)</li>
+                    </ul>
+
+                    <h3>Требования к системе</h3>
+                    <ul>
+                        <li>Python 3.8+</li>
+                        <li>SQLite</li>
+                        <li>Современный веб-браузер</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Плавная прокрутка к разделам
+document.querySelectorAll('.list-group-item').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').slice(1);
+        const targetElement = document.getElementById(targetId);
+        targetElement.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+</script>
+{% endblock %} 

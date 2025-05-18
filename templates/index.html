@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Анализатор военных дневников{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Анализатор дневников -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>Анализ военного дневника</h2>
+            </div>
+            <div class="card-body">
+                <form id="diary-form">
+                    <div class="mb-3">
+                        <label for="diary_text" class="form-label">Введите текст дневника:</label>
+                        <textarea class="form-control" id="diary_text" name="diary_text" rows="10" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-victory">Анализировать</button>
+                </form>
+
+                <div id="results" class="mt-4" style="display: none;">
+                    <h3 class="victory-title">Результаты анализа</h3>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h4 class="mb-0">Эмоциональный анализ</h4>
+                        </div>
+                        <div class="card-body" id="emotion-results"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">Художественное произведение</h4>
+                        </div>
+                        <div class="card-body" id="literary-results"></div>
+                    </div>
+                    {% if current_user.is_authenticated %}
+                    <button id="share-results" class="btn btn-victory mt-3" style="display: none;">
+                        <i class="bi bi-share-fill me-2"></i>
+                        Поделиться на форуме
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форум -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h3 class="mb-0 victory-title">Форум</h3>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('new_topic') }}" class="btn btn-victory btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i>
+                        Новая тема
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="btn-group btn-group-sm w-100">
+                    <a href="{{ url_for('index', sort='date') }}" 
+                       class="btn {% if current_sort == 'date' %}btn-victory{% else %}btn-outline-secondary{% endif %}">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        По дате
+                    </a>
+                    <a href="{{ url_for('index', sort='likes') }}" 
+                       class="btn {% if current_sort == 'likes' %}btn-victory{% else %}btn-outline-secondary{% endif %}">
+                        <i class="bi bi-star me-1"></i>
+                        По рейтингу
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if topics %}
+                    <div class="list-group">
+                    {% for topic in topics %}
+                        <a href="{{ url_for('view_topic', topic_id=topic.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ topic.title }}</h5>
+                                <small>{{ topic.created_at.strftime('%d.%m.%Y') }}</small>
+                            </div>
+                            <small>Автор: {{ topic.author.username }}</small>
+                        </a>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">Пока нет тем на форуме.</p>
+                {% endif %}
+
+                {% if not current_user.is_authenticated %}
+                    <div class="alert alert-info mt-3">
+                        <a href="{{ url_for('login') }}">Войдите</a> или 
+                        <a href="{{ url_for('register') }}">зарегистрируйтесь</a> 
+                        чтобы создать тему
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let lastAnalysisResults = null;
+
+document.getElementById('diary-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitButton = this.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = 'Анализируем...';
+    
+    try {
+        const response = await fetch('/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(new FormData(this))
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            lastAnalysisResults = {
+                diary_text: document.getElementById('diary_text').value,
+                emotion_analysis: data.emotion_analysis,
+                generated_literary_work: data.generated_literary_work
+            };
+            
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('share-results').style.display = 'block';
+            
+            // Форматируем эмоциональный анализ
+            const emotions = data.emotion_analysis;
+            let emotionHtml = '<div class="emotion-analysis">';
+            
+            if (emotions.primary_emotions) {
+                emotionHtml += '<p><strong>Основные эмоции:</strong></p><ul>';
+                emotions.primary_emotions.forEach(emotion => {
+                    emotionHtml += `<li>${emotion.emotion}: ${emotion.intensity}/10</li>`;
+                });
+                emotionHtml += '</ul>';
+            }
+            
+            if (emotions.emotional_tone) {
+                emotionHtml += `<p><strong>Общий тон:</strong> ${emotions.emotional_tone}</p>`;
+            }
+            
+            if (emotions.hidden_motives) {
+                emotionHtml += `<p><strong>Скрытые мотивы:</strong> ${emotions.hidden_motives.join(', ')}</p>`;
+            }
+            
+            if (emotions.attitude) {
+                emotionHtml += `<p><strong>Отношение:</strong> ${emotions.attitude}</p>`;
+            }
+            
+            emotionHtml += '</div>';
+            document.getElementById('emotion-results').innerHTML = emotionHtml;
+            
+            // Отображаем художественное произведение
+            document.getElementById('literary-results').innerHTML = data.generated_literary_work;
+        } else {
+            alert(data.error || 'Произошла ошибка при анализе');
+        }
+    } catch (error) {
+        alert('Произошла ошибка при отправке запроса');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Анализировать';
+    }
+});
+
+document.getElementById('share-results')?.addEventListener('click', async function() {
+    if (!lastAnalysisResults) {
+        alert('Нет результатов для публикации');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/share_analysis', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(lastAnalysisResults)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert(data.error || 'Произошла ошибка при публикации');
+        }
+    } catch (error) {
+        alert('Произошла ошибка при отправке запроса');
+    }
+});
+</script>
+{% endblock %} 

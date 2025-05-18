@@ -1,0 +1,311 @@
+/* Light mode (default) */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --card-border: rgba(0,0,0,.125);
+    --link-color: #007bff;
+    --muted-text: #6c757d;
+    --navbar-bg: #f8f9fa;
+    --navbar-text: #212529;
+    --textarea-bg: #ffffff;
+    --textarea-text: #212529;
+    --focus-ring-color: rgba(0, 123, 255, 0.25);
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --text-color: #e4e4e4;
+    --card-bg: #2d2d2d;
+    --card-border: rgba(255,255,255,.125);
+    --link-color: #66b0ff;
+    --muted-text: #a0a0a0;
+    --navbar-bg: #2d2d2d;
+    --navbar-text: #e4e4e4;
+    --textarea-bg: #3d3d3d;
+    --textarea-text: #e4e4e4;
+    --focus-ring-color: rgba(102, 176, 255, 0.25);
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    will-change: background-color, color;
+}
+
+/* Navbar styles */
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.navbar-light .navbar-brand,
+.navbar-light .navbar-nav .nav-link {
+    color: var(--navbar-text);
+}
+
+.navbar-light .navbar-toggler {
+    border-color: var(--card-border);
+}
+
+[data-theme="dark"] .navbar-light .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.75)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Card styles */
+.card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+.card-header {
+    background-color: rgba(0,0,0,.03);
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* List group styles */
+.list-group-item {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--text-color);
+}
+
+.list-group-item:hover {
+    background-color: rgba(128,128,128,.1);
+}
+
+/* Text styles */
+.text-muted {
+    color: var(--muted-text) !important;
+}
+
+a {
+    color: var(--link-color);
+}
+
+/* Theme switch button */
+.theme-switch {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    padding: 10px;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    color: var(--text-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    will-change: transform;
+}
+
+.theme-switch:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
+}
+
+.theme-switch:hover {
+    transform: scale(1.05);
+}
+
+.theme-switch i {
+    font-size: 1.5rem;
+    pointer-events: none;
+}
+
+/* Keyboard navigation improvements */
+:focus-visible {
+    outline: 3px solid var(--focus-ring-color);
+    outline-offset: 2px;
+}
+
+/* High contrast improvements for dark mode */
+[data-theme="dark"] .text-muted {
+    color: #b0b0b0 !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: #c0c0c0;
+    border-color: #c0c0c0;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .theme-switch {
+        transition: none;
+    }
+    
+    body {
+        transition: none;
+    }
+}
+
+/* Form controls in dark mode */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] textarea,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="password"] {
+    background-color: var(--textarea-bg);
+    border-color: rgba(255,255,255,.2);
+    color: var(--textarea-text);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="password"]:focus {
+    background-color: var(--textarea-bg);
+    border-color: rgba(255,255,255,.5);
+    color: var(--textarea-text);
+    box-shadow: 0 0 0 0.25rem rgba(255,255,255,.25);
+}
+
+/* Buttons in dark mode */
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: #454545;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+/* Message styles */
+[data-theme="dark"] .message {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+}
+
+/* Modal styles for dark mode */
+[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom-color: var(--card-border);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-top-color: var(--card-border);
+}
+
+/* Layout styles */
+.content {
+    padding: 20px;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.flash-messages {
+    margin: 20px 0;
+}
+
+/* Forum styles */
+.forum-topic {
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid var(--card-border);
+    border-radius: 5px;
+    background-color: var(--card-bg);
+}
+
+.message {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: var(--card-bg);
+    border-radius: 5px;
+    border: 1px solid var(--card-border);
+}
+
+.message-meta {
+    font-size: 0.9em;
+    color: var(--muted-text);
+}
+
+/* Button styles */
+.btn-danger.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Active states */
+.nav-link.active,
+.navbar-light .navbar-nav .nav-link.active {
+    color: var(--link-color);
+}
+
+/* Hover states */
+.nav-link:hover,
+.navbar-light .navbar-nav .nav-link:hover {
+    color: var(--link-color);
+    opacity: 0.8;
+}
+
+/* Additional dark mode styles */
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link,
+[data-theme="dark"] .navbar-light .navbar-brand {
+    color: var(--navbar-text);
+}
+
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link:hover,
+[data-theme="dark"] .navbar-light .navbar-brand:hover {
+    color: var(--link-color);
+}
+
+[data-theme="dark"] .btn-primary {
+    background-color: #0d6efd;
+    border-color: #0a58ca;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+[data-theme="dark"] .btn-secondary {
+    background-color: #6c757d;
+    border-color: #565e64;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background-color: #5c636a;
+    border-color: #565e64;
+}
+
+[data-theme="dark"] .btn-danger {
+    background-color: #dc3545;
+    border-color: #b02a37;
+}
+
+[data-theme="dark"] .btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+}
+
+/* Fix for textarea placeholder color in dark mode */
+[data-theme="dark"] .form-control::placeholder {
+    color: #a0a0a0;
+} 

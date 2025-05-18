@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Анализатор военных дневников{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/victory.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Георгиевская лента -->
+    <div class="victory-ribbon"></div>
+
+    <!-- Орден Победы в углу -->
+    <div class="victory-order"></div>
+
+    <!-- Вечный огонь -->
+    <div class="eternal-flame">
+        <div class="flame"></div>
+        <div class="base"></div>
+    </div>
+
+    <!-- Анимированные звезды -->
+    <div id="stars-container"></div>
+
+    <!-- Летящие голуби -->
+    <div id="doves-container"></div>
+
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand victory-title" href="{{ url_for('index') }}">
+                <i class="bi bi-star-fill text-warning me-2"></i>
+                Анализатор дневников
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="bi bi-house-fill"></i>
+                            Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('introduction') }}">
+                            <i class="bi bi-book-fill"></i>
+                            Введение
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('documentation') }}">
+                            <i class="bi bi-file-text-fill"></i>
+                            Документация
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <span class="nav-link">
+                                <i class="bi bi-person-fill"></i>
+                                {{ current_user.username }}
+                                <span class="user-medal" title="Участник проекта"></span>
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right"></i>
+                                Выйти
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                Войти
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">
+                                <i class="bi bi-person-plus-fill"></i>
+                                Регистрация
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-info">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <button class="theme-switch" onclick="toggleTheme()" aria-label="Переключить тему">
+        <i class="bi bi-moon-fill"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Функция для переключения темы
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Обновляем иконку
+            const icon = document.querySelector('.theme-switch i');
+            icon.className = newTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        }
+
+        // Создаем звезды
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            const starCount = Math.min(50, Math.floor(window.innerWidth / 20));
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 100}vh`;
+                star.style.animationDelay = `${Math.random() * 2}s`;
+                container.appendChild(star);
+            }
+        }
+
+        // Создаем летящих голубей
+        function createDoves() {
+            const container = document.getElementById('doves-container');
+            const doveCount = Math.min(5, Math.floor(window.innerWidth / 200));
+            
+            for (let i = 0; i < doveCount; i++) {
+                const dove = document.createElement('div');
+                dove.className = 'dove';
+                dove.style.top = `${Math.random() * 100}vh`;
+                dove.style.animationDelay = `${Math.random() * 10}s`;
+                container.appendChild(dove);
+            }
+        }
+
+        // Устанавливаем тему и создаем анимированные элементы при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            const icon = document.querySelector('.theme-switch i');
+            icon.className = savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+
+            // Проверяем настройки снижения движения
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            
+            if (!prefersReducedMotion) {
+                createStars();
+                createDoves();
+            }
+        });
+
+        // Пересоздаем элементы при изменении размера окна
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const starsContainer = document.getElementById('stars-container');
+                const dovesContainer = document.getElementById('doves-container');
+                
+                starsContainer.innerHTML = '';
+                dovesContainer.innerHTML = '';
+                
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                
+                if (!prefersReducedMotion) {
+                    createStars();
+                    createDoves();
+                }
+            }, 250);
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
