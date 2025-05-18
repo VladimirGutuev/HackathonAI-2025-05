@@ -16,26 +16,21 @@
                         <label for="diary_text" class="form-label">Введите текст дневника:</label>
                         <textarea class="form-control" id="diary_text" name="diary_text" rows="10" required></textarea>
                     </div>
-                    <button type="submit" class="btn btn-victory">Анализировать</button>
+                    <button type="submit" class="btn btn-primary">Анализировать</button>
                 </form>
 
                 <div id="results" class="mt-4" style="display: none;">
-                    <h3 class="victory-title">Результаты анализа</h3>
+                    <h3>Результаты анализа</h3>
                     <div class="card mb-3">
-                        <div class="card-header">
-                            <h4 class="mb-0">Эмоциональный анализ</h4>
-                        </div>
+                        <div class="card-header">Эмоциональный анализ</div>
                         <div class="card-body" id="emotion-results"></div>
                     </div>
                     <div class="card">
-                        <div class="card-header">
-                            <h4 class="mb-0">Художественное произведение</h4>
-                        </div>
+                        <div class="card-header">Художественное произведение</div>
                         <div class="card-body" id="literary-results"></div>
                     </div>
                     {% if current_user.is_authenticated %}
-                    <button id="share-results" class="btn btn-victory mt-3" style="display: none;">
-                        <i class="bi bi-share-fill me-2"></i>
+                    <button id="share-results" class="btn btn-success mt-3" style="display: none;">
                         Поделиться на форуме
                     </button>
                     {% endif %}
@@ -49,23 +44,18 @@
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h3 class="mb-0 victory-title">Форум</h3>
+                    <h3 class="mb-0">Форум</h3>
                     {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('new_topic') }}" class="btn btn-victory btn-sm">
-                        <i class="bi bi-plus-lg me-1"></i>
-                        Новая тема
-                    </a>
+                    <a href="{{ url_for('new_topic') }}" class="btn btn-primary btn-sm">Новая тема</a>
                     {% endif %}
                 </div>
                 <div class="btn-group btn-group-sm w-100">
                     <a href="{{ url_for('index', sort='date') }}" 
-                       class="btn {% if current_sort == 'date' %}btn-victory{% else %}btn-outline-secondary{% endif %}">
-                        <i class="bi bi-calendar3 me-1"></i>
+                       class="btn btn-outline-secondary {% if current_sort == 'date' %}active{% endif %}">
                         По дате
                     </a>
                     <a href="{{ url_for('index', sort='likes') }}" 
-                       class="btn {% if current_sort == 'likes' %}btn-victory{% else %}btn-outline-secondary{% endif %}">
-                        <i class="bi bi-star me-1"></i>
+                       class="btn btn-outline-secondary {% if current_sort == 'likes' %}active{% endif %}">
                         По рейтингу
                     </a>
                 </div>
