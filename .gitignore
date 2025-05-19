@@ -1,1 +1,8 @@
+# Переменные окружения
 .env
+
+# Python кэш
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
