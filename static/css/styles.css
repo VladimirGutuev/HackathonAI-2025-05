@@ -10,7 +10,6 @@
     --navbar-text: #212529;
     --textarea-bg: #ffffff;
     --textarea-text: #212529;
-    --focus-ring-color: rgba(0, 123, 255, 0.25);
 }
 
 /* Dark mode */
@@ -25,14 +24,12 @@
     --navbar-text: #e4e4e4;
     --textarea-bg: #3d3d3d;
     --textarea-text: #e4e4e4;
-    --focus-ring-color: rgba(102, 176, 255, 0.25);
 }
 
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
     transition: background-color 0.3s ease, color 0.3s ease;
-    will-change: background-color, color;
 }
 
 /* Navbar styles */
@@ -103,58 +100,10 @@ a {
     border: 1px solid var(--card-border);
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     color: var(--text-color);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    will-change: transform;
-}
-
-.theme-switch:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px var(--focus-ring-color);
-}
-
-.theme-switch:hover {
-    transform: scale(1.05);
 }
 
 .theme-switch i {
     font-size: 1.5rem;
-    pointer-events: none;
-}
-
-/* Keyboard navigation improvements */
-:focus-visible {
-    outline: 3px solid var(--focus-ring-color);
-    outline-offset: 2px;
-}
-
-/* High contrast improvements for dark mode */
-[data-theme="dark"] .text-muted {
-    color: #b0b0b0 !important;
-}
-
-[data-theme="dark"] .btn-outline-secondary {
-    color: #c0c0c0;
-    border-color: #c0c0c0;
-}
-
-/* Reduced motion preferences */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-    
-    .theme-switch {
-        transition: none;
-    }
-    
-    body {
-        transition: none;
-    }
 }
 
 /* Form controls in dark mode */
@@ -178,6 +127,11 @@ a {
 }
 
 /* Buttons in dark mode */
+[data-theme="dark"] .btn-outline-secondary {
+    color: #a0a0a0;
+    border-color: #a0a0a0;
+}
+
 [data-theme="dark"] .btn-outline-secondary:hover {
     background-color: #454545;
     color: #ffffff;

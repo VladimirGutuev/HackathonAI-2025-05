@@ -4,6 +4,11 @@ from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+print("OPENAI_API_KEY:", os.environ.get("OPENAI_API_KEY"))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -32,18 +37,36 @@ def index():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
+        print("=== Начало обработки запроса /analyze ===")
         diary_text = request.form.get('diary_text', '')
         if not diary_text:
+            print("Ошибка: пустой текст дневника")
             return jsonify({'error': 'Текст дневника не может быть пустым'}), 400
 
+        print(f"Получен текст дневника длиной {len(diary_text)} символов")
         analyzer = WarDiaryAnalyzer()
         results = analyzer.process_diary(diary_text)
+        print(f"Обработка дневника завершена, результат: {list(results.keys())}")
         
-        return jsonify({
+        # Проверяем наличие ошибки в результатах
+        if 'error' in results and results['error']:
+            print(f"Ошибка при обработке: {results['error']}")
+            return jsonify({
+                'error': results['error'],
+                'emotion_analysis': results.get('emotion_analysis', {}),
+                'generated_literary_work': results.get('generated_literary_work', 'Не удалось сгенерировать текст из-за ошибки.')
+            }), 500
+        
+        response_data = {
             'emotion_analysis': results['emotion_analysis'],
             'generated_literary_work': results['generated_literary_work']
-        })
+        }
+        print("=== Обработка запроса /analyze успешно завершена ===")
+        return jsonify(response_data)
     except Exception as e:
+        print(f"Критическая ошибка в /analyze: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -345,4 +368,17 @@ def documentation():
     return render_template('documentation.html')
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    print("\n=== Запуск сервера ===")
+    print(f"API ключ OpenAI: {'настроен' if os.environ.get('OPENAI_API_KEY') else 'НЕ НАСТРОЕН'}")
+    print("=== Используйте http://localhost:5000 для доступа к приложению ===\n")
+    
+    # Увеличиваем таймаут для запросов
+    from werkzeug.serving import run_simple
+    # Используем расширенные настройки для поддержки длительных запросов
+    run_simple('localhost', 5000, app, 
+              use_reloader=True, 
+              use_debugger=True, 
+              threaded=True, 
+              use_evalex=True,
+              passthrough_errors=False,
+              ssl_context=None)
