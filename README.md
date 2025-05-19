@@ -81,4 +81,4 @@ python app.py
 
 ## Лицензия
 
-MIT 
+Apache 2.0
