@@ -97,68 +97,181 @@ let lastAnalysisResults = null;
 document.getElementById('diary-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    // Защита от повторной отправки
+    if (this.classList.contains('processing')) {
+        console.log('Форма уже обрабатывается');
+        return;
+    }
+    
+    this.classList.add('processing');
+    
+    // Находим кнопку отправки
     const submitButton = this.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.innerHTML = 'Анализируем...';
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = 'Анализируем...';
+    }
+    
+    // Создаем элемент для отображения статуса
+    let statusElement = null;
+    try {
+        statusElement = document.createElement('div');
+        statusElement.className = 'alert alert-info mt-3';
+        statusElement.innerHTML = 'Запрос отправлен. Ожидайте ответа (это может занять до 30-60 секунд)...';
+        this.appendChild(statusElement);
+    } catch (err) {
+        console.warn('Не удалось создать элемент статуса:', err);
+    }
     
     try {
+        console.log('Отправка запроса на /analyze...');
+        
+        // Устанавливаем таймаут для fetch с использованием AbortController
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 минуты таймаут
+        
         const response = await fetch('/analyze', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: new URLSearchParams(new FormData(this))
+            body: new URLSearchParams(new FormData(this)),
+            signal: controller.signal
         });
         
-        const data = await response.json();
+        clearTimeout(timeoutId); // Отменяем таймаут, если ответ получен
+        
+        console.log('Получен ответ:', response.status, response.statusText);
+        
+        // Обновляем статус если элемент существует
+        if (statusElement && statusElement.parentNode) {
+            statusElement.className = 'alert alert-success mt-3';
+            statusElement.textContent = 'Ответ получен, обрабатываем результаты...';
+        }
+        
+        // Проверяем, что ответ можно преобразовать в JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('Ошибка: Сервер вернул не JSON:', contentType);
+            throw new Error('Сервер вернул не JSON ответ');
+        }
+        
+        const text = await response.text();
+        console.log('Текст ответа:', text.substring(0, 100) + '...'); // Логируем только начало
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+            console.log('Данные получены успешно');
+        } catch (jsonError) {
+            console.error('Ошибка парсинга JSON:', jsonError);
+            throw new Error('Невозможно распарсить JSON');
+        }
         
         if (response.ok) {
+            // Удаляем статусный элемент, если он существует и является дочерним
+            try {
+                if (statusElement && statusElement.parentNode === this) {
+                    this.removeChild(statusElement);
+                }
+            } catch (e) {
+                console.warn('Не удалось удалить статусный элемент:', e);
+            }
+            
+            // Сохраняем результаты для возможной публикации
+            const diaryText = document.getElementById('diary_text');
             lastAnalysisResults = {
-                diary_text: document.getElementById('diary_text').value,
-                emotion_analysis: data.emotion_analysis,
-                generated_literary_work: data.generated_literary_work
+                diary_text: diaryText ? diaryText.value : '',
+                emotion_analysis: data.emotion_analysis || {},
+                generated_literary_work: data.generated_literary_work || ''
             };
             
-            document.getElementById('results').style.display = 'block';
-            document.getElementById('share-results').style.display = 'block';
+            // Безопасно обращаемся к элементам DOM
+            const resultsElement = document.getElementById('results');
+            if (resultsElement) {
+                resultsElement.style.display = 'block';
+            }
+            
+            const shareElement = document.getElementById('share-results');
+            if (shareElement) {
+                shareElement.style.display = 'block';
+            }
             
             // Форматируем эмоциональный анализ
-            const emotions = data.emotion_analysis;
-            let emotionHtml = '<div class="emotion-analysis">';
-            
-            if (emotions.primary_emotions) {
-                emotionHtml += '<p><strong>Основные эмоции:</strong></p><ul>';
-                emotions.primary_emotions.forEach(emotion => {
-                    emotionHtml += `<li>${emotion.emotion}: ${emotion.intensity}/10</li>`;
-                });
-                emotionHtml += '</ul>';
+            const emotionResults = document.getElementById('emotion-results');
+            if (emotionResults) {
+                const emotions = data.emotion_analysis || {};
+                let emotionHtml = '<div class="emotion-analysis">';
+                
+                if (emotions.primary_emotions && Array.isArray(emotions.primary_emotions)) {
+                    emotionHtml += '<p><strong>Основные эмоции:</strong></p><ul>';
+                    emotions.primary_emotions.forEach(emotion => {
+                        if (emotion && emotion.emotion) {
+                            emotionHtml += `<li>${emotion.emotion}: ${emotion.intensity || '?'}/10</li>`;
+                        }
+                    });
+                    emotionHtml += '</ul>';
+                }
+                
+                if (emotions.emotional_tone) {
+                    emotionHtml += `<p><strong>Общий тон:</strong> ${emotions.emotional_tone}</p>`;
+                }
+                
+                if (emotions.hidden_motives && Array.isArray(emotions.hidden_motives)) {
+                    emotionHtml += `<p><strong>Скрытые мотивы:</strong> ${emotions.hidden_motives.join(', ')}</p>`;
+                }
+                
+                if (emotions.attitude) {
+                    emotionHtml += `<p><strong>Отношение:</strong> ${emotions.attitude}</p>`;
+                }
+                
+                emotionHtml += '</div>';
+                emotionResults.innerHTML = emotionHtml;
             }
-            
-            if (emotions.emotional_tone) {
-                emotionHtml += `<p><strong>Общий тон:</strong> ${emotions.emotional_tone}</p>`;
-            }
-            
-            if (emotions.hidden_motives) {
-                emotionHtml += `<p><strong>Скрытые мотивы:</strong> ${emotions.hidden_motives.join(', ')}</p>`;
-            }
-            
-            if (emotions.attitude) {
-                emotionHtml += `<p><strong>Отношение:</strong> ${emotions.attitude}</p>`;
-            }
-            
-            emotionHtml += '</div>';
-            document.getElementById('emotion-results').innerHTML = emotionHtml;
             
             // Отображаем художественное произведение
-            document.getElementById('literary-results').innerHTML = data.generated_literary_work;
+            const literaryResults = document.getElementById('literary-results');
+            if (literaryResults) {
+                literaryResults.innerHTML = data.generated_literary_work || 'Произведение не было сгенерировано';
+            }
         } else {
+            // Обновляем статус при ошибке
+            if (statusElement && statusElement.parentNode) {
+                statusElement.className = 'alert alert-danger mt-3';
+                statusElement.textContent = 'Произошла ошибка при анализе: ' + (data.error || 'Неизвестная ошибка');
+            }
+            
+            console.error('Ошибка от сервера:', data);
             alert(data.error || 'Произошла ошибка при анализе');
         }
     } catch (error) {
-        alert('Произошла ошибка при отправке запроса');
+        // Проверяем, был ли таймаут
+        if (error.name === 'AbortError') {
+            if (statusElement && statusElement.parentNode) {
+                statusElement.className = 'alert alert-danger mt-3';
+                statusElement.textContent = 'Превышено время ожидания ответа. Попробуйте снова с меньшим текстом.';
+            }
+            console.error('Таймаут запроса');
+            alert('Превышено время ожидания ответа. Попробуйте снова с меньшим текстом.');
+        } else {
+            // Обновляем статус при других ошибках
+            if (statusElement && statusElement.parentNode) {
+                statusElement.className = 'alert alert-danger mt-3';
+                statusElement.textContent = 'Ошибка: ' + error.message;
+            }
+            
+            console.error('Ошибка при отправке запроса:', error);
+            alert('Произошла ошибка при отправке запроса: ' + error.message);
+        }
     } finally {
-        submitButton.disabled = false;
-        submitButton.innerHTML = 'Анализировать';
+        // Разблокируем форму
+        this.classList.remove('processing');
+        
+        // Восстанавливаем кнопку
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Анализировать';
+        }
     }
 });
 
