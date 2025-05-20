@@ -39,28 +39,133 @@ def analyze():
     try:
         print("=== Начало обработки запроса /analyze ===")
         diary_text = request.form.get('diary_text', '')
+        
+        # Получаем типы генерации
+        generation_types = request.form.getlist('generation_types[]')
+        
         if not diary_text:
             print("Ошибка: пустой текст дневника")
             return jsonify({'error': 'Текст дневника не может быть пустым'}), 400
+        
+        # Проверяем, что типы генерации указаны
+        if not generation_types:
+            print("Ошибка: не выбраны типы генерации")
+            return jsonify({'error': 'Выберите хотя бы один тип генерации'}), 400
 
         print(f"Получен текст дневника длиной {len(diary_text)} символов")
-        analyzer = WarDiaryAnalyzer()
-        results = analyzer.process_diary(diary_text)
-        print(f"Обработка дневника завершена, результат: {list(results.keys())}")
+        print(f"Выбранные типы генерации: {generation_types}")
         
-        # Проверяем наличие ошибки в результатах
-        if 'error' in results and results['error']:
-            print(f"Ошибка при обработке: {results['error']}")
+        # Создаем анализатор и проводим эмоциональный анализ
+        analyzer = WarDiaryAnalyzer()
+        
+        # Сначала всегда проводим эмоциональный анализ
+        emotions = analyzer.analyze_emotions(diary_text)
+        print(f"Эмоциональный анализ завершен: {list(emotions.keys())}")
+        
+        # Проверяем наличие ошибки в анализе эмоций
+        if 'error' in emotions and emotions['error']:
+            print(f"Ошибка при анализе эмоций: {emotions['error']}")
             return jsonify({
-                'error': results['error'],
-                'emotion_analysis': results.get('emotion_analysis', {}),
-                'generated_literary_work': results.get('generated_literary_work', 'Не удалось сгенерировать текст из-за ошибки.')
+                'error': emotions['error'],
+                'emotion_analysis': emotions,
             }), 500
         
+        # Формируем ответ, всегда включаем анализ эмоций
         response_data = {
-            'emotion_analysis': results['emotion_analysis'],
-            'generated_literary_work': results['generated_literary_work']
+            'emotion_analysis': emotions,
         }
+        
+        # На основе эмоционального анализа генерируем выбранные типы контента
+        if 'text' in generation_types:
+            print("Начало генерации художественного произведения")
+            literary_work = analyzer.generate_literary_work(diary_text, emotions)
+            print(f"Генерация текста завершена, длина: {len(literary_work)}")
+            response_data['generated_literary_work'] = literary_work
+        
+        if 'image' in generation_types:
+            try:
+                print("Начало генерации изображения")
+                # Убедимся, что папка для изображений существует
+                os.makedirs(os.path.join('static', 'generated_images'), exist_ok=True)
+                
+                image_result = analyzer.generate_image_from_diary(diary_text, emotions)
+                print(f"Генерация изображения завершена: {image_result.get('success', False)}")
+                
+                if image_result.get('success', False):
+                    # Преобразуем пути к изображениям в URL-адреса
+                    local_path = image_result.get('local_path', '')
+                    print(f"Локальный путь к изображению: {local_path}")
+                    
+                    if local_path and os.path.exists(local_path):
+                        # Если путь начинается с 'static/', преобразуем его в URL
+                        if local_path.startswith('static/'):
+                            image_url = '/' + local_path
+                        elif local_path.startswith('static\\'):
+                            # Для Windows пути
+                            image_url = '/' + local_path.replace('\\', '/')
+                        else:
+                            # Пытаемся преобразовать любой другой путь
+                            image_url = '/' + local_path.replace('\\', '/')
+                    else:
+                        # Если локальный путь не существует, используем внешний URL
+                        image_url = image_result.get('image_url', '')
+                        print(f"Локальный путь не найден, используем внешний URL")
+                    
+                    print(f"URL изображения: {image_url}")
+                    
+                    response_data['generated_image'] = {
+                        'success': True,
+                        'image_url': image_url,
+                        'external_url': image_result.get('image_url', '')
+                    }
+                else:
+                    error_msg = image_result.get('error', 'Неизвестная ошибка при генерации изображения')
+                    print(f"Ошибка генерации изображения: {error_msg}")
+                    response_data['generated_image'] = {
+                        'success': False,
+                        'error': error_msg
+                    }
+            except Exception as img_error:
+                print(f"Исключение при генерации изображения: {str(img_error)}")
+                import traceback
+                traceback.print_exc()
+                response_data['generated_image'] = {
+                    'success': False,
+                    'error': f"Ошибка: {str(img_error)}"
+                }
+        
+        if 'music' in generation_types:
+            print("Начало генерации музыки")
+            try:
+                # Убедимся, что папка для музыки существует
+                os.makedirs(os.path.join('static', 'generated_music'), exist_ok=True)
+                
+                music_result = analyzer.generate_music(diary_text, emotions)
+                print(f"Генерация музыки завершена: {music_result.get('success', False)}")
+                
+                if music_result.get('success', False):
+                    response_data['generated_music'] = {
+                        'success': True,
+                        'music_description': music_result.get('music_description', ''),
+                        'embed_url': music_result.get('embed_url', ''),
+                        'local_path': music_result.get('local_path', '')
+                    }
+                else:
+                    error_msg = music_result.get('error', 'Неизвестная ошибка при генерации музыки')
+                    print(f"Ошибка генерации музыки: {error_msg}")
+                    response_data['generated_music'] = {
+                        'success': False,
+                        'error': error_msg
+                    }
+            except Exception as music_error:
+                print(f"Исключение при генерации музыки: {str(music_error)}")
+                import traceback
+                traceback.print_exc()
+                response_data['generated_music'] = {
+                    'success': False,
+                    'error': f"Ошибка: {str(music_error)}"
+                }
+        
         print("=== Обработка запроса /analyze успешно завершена ===")
         return jsonify(response_data)
     except Exception as e:
@@ -366,6 +471,95 @@ def introduction():
 @app.route('/documentation')
 def documentation():
     return render_template('documentation.html')
+
+@app.route('/generate_image', methods=['POST'])
+def generate_image():
+    try:
+        print("=== Начало обработки запроса /generate_image ===")
+        data = request.get_json()
+        
+        # Проверяем наличие текста
+        text = data.get('text', '')
+        if not text:
+            return jsonify({'success': False, 'error': 'Текст не может быть пустым'}), 400
+        
+        # Проверяем наличие эмоционального анализа
+        emotion_analysis = data.get('emotion_analysis', None)
+        
+        print(f"Получен текст длиной {len(text)} символов")
+        analyzer = WarDiaryAnalyzer()
+        
+        # Генерация изображения
+        image_result = analyzer.generate_image_from_diary(text, emotion_analysis)
+        print(f"Генерация изображения завершена: {image_result['success']}")
+        
+        if not image_result.get('success', False):
+            return jsonify({
+                'success': False,
+                'error': image_result.get('error', 'Не удалось сгенерировать изображение')
+            }), 500
+        
+        # Преобразуем пути к изображениям в URL-адреса
+        local_path = image_result.get('local_path', '')
+        if local_path.startswith('static/'):
+            image_url = '/' + local_path
+        else:
+            image_url = image_result.get('image_url', '')
+        
+        response_data = {
+            'success': True,
+            'image_url': image_url,
+            'external_url': image_result.get('image_url', '')
+        }
+        
+        print("=== Обработка запроса /generate_image успешно завершена ===")
+        return jsonify(response_data)
+    except Exception as e:
+        print(f"Критическая ошибка в /generate_image: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/generate_music', methods=['POST'])
+def generate_music():
+    try:
+        print("=== Начало обработки запроса /generate_music ===")
+        data = request.get_json()
+        
+        # Проверяем наличие текста
+        text = data.get('text', '')
+        if not text:
+            return jsonify({'success': False, 'error': 'Текст не может быть пустым'}), 400
+        
+        # Проверяем наличие эмоционального анализа
+        emotion_analysis = data.get('emotion_analysis', None)
+        
+        print(f"Получен текст длиной {len(text)} символов")
+        analyzer = WarDiaryAnalyzer()
+        
+        # Генерация музыки
+        music_result = analyzer.generate_music(text, emotion_analysis)
+        print(f"Генерация музыки завершена: {music_result['success']}")
+        
+        if not music_result.get('success', False):
+            return jsonify({
+                'success': False,
+                'error': music_result.get('error', 'Не удалось сгенерировать музыку')
+            }), 500
+        
+        response_data = {
+            'success': True,
+            'music_description': music_result.get('music_description', ''),
+            'embed_url': music_result.get('embed_url', '')
+        }
+        
+        print("=== Обработка запроса /generate_music успешно завершена ===")
+        return jsonify(response_data)
+    except Exception as e:
+        print(f"Критическая ошибка в /generate_music: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")

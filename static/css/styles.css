@@ -262,4 +262,68 @@ a {
 /* Fix for textarea placeholder color in dark mode */
 [data-theme="dark"] .form-control::placeholder {
     color: #a0a0a0;
+}
+
+/* Styles for generated content */
+.emotion-analysis-container {
+    padding: 15px;
+}
+
+.emotion-analysis ul {
+    padding-left: 20px;
+}
+
+.emotion-analysis p, 
+.emotion-analysis li {
+    margin-bottom: 10px;
+}
+
+#generated-content .card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#generated-content .card.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#generated-image {
+    max-height: 500px;
+    object-fit: contain;
+    margin: 0 auto;
+}
+
+.literary-section {
+    animation-delay: 0.2s;
+}
+
+.image-section {
+    animation-delay: 0.4s;
+}
+
+.music-section {
+    animation-delay: 0.6s;
+}
+
+#literary-results {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+/* Animation for content loading */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fadeIn {
+    animation: fadeIn 0.5s ease forwards;
 } 
