@@ -638,16 +638,31 @@ def music_callback():
         
         # Проверяем структуру данных
         if 'data' not in data:
-            return jsonify({'success': False, 'error': 'Отсутствует поле data'}), 400
-            
-        callback_data = data.get('data', {})
+            print("ВНИМАНИЕ: В callback отсутствует поле 'data', используем весь ответ как основные данные")
+            callback_data = data
+        else:
+            callback_data = data.get('data', {})
         
         # Получаем тип обратного вызова и task_id
         callback_type = callback_data.get('callbackType')
-        task_id = callback_data.get('task_id')
+        
+        # Проверяем различные поля, где может быть task_id
+        task_id = (callback_data.get('task_id') or 
+                  callback_data.get('taskId') or 
+                  data.get('task_id') or 
+                  data.get('taskId'))
         
         if not task_id:
-            return jsonify({'success': False, 'error': 'Отсутствует task_id'}), 400
+            print("КРИТИЧЕСКАЯ ОШИБКА: Не найден task_id в callback данных")
+            # Попытка извлечь task_id из других возможных мест
+            if isinstance(callback_data.get('data'), list) and len(callback_data.get('data', [])) > 0:
+                # Иногда task_id может быть внутри первого элемента массива data
+                first_item = callback_data['data'][0]
+                task_id = first_item.get('task_id') or first_item.get('taskId')
+                
+            if not task_id:
+                print(f"Полные данные callback: {json.dumps(data, ensure_ascii=False)}")
+                return jsonify({'success': False, 'error': 'Не удалось определить task_id'}), 400
         
         print(f"Обработка callback для task_id: {task_id}, тип: {callback_type}")
         
@@ -672,49 +687,58 @@ def music_callback():
                 metadata = json.load(f)
         
         # Обновляем метаданные на основе типа callback
-        metadata['status'] = callback_type if callback_type else 'updated'
+        if callback_type:
+            metadata['status'] = callback_type
+        else:
+            # Если нет типа, смотрим на код ответа
+            if data.get('code') == 200:
+                metadata['status'] = 'complete'
+            else:
+                metadata['status'] = 'updated'
+        
         metadata['last_update'] = datetime.now().isoformat()
         metadata['callback_received'] = True
         
-        # Если есть дополнительные данные в callback, сохраняем их
-        if 'callbackData' in callback_data:
-            metadata['callback_data'] = callback_data.get('callbackData')
+        # Тщательно проверяем все возможные структуры данных в callback
         
-        # Если callback_type = 'complete', значит музыка полностью сгенерирована
-        if callback_type == 'complete' and 'data' in callback_data:
+        # Вариант 1: Структура с callbackType и массивом data
+        if callback_type == 'complete' and 'data' in callback_data and isinstance(callback_data['data'], list):
             tracks_data = callback_data.get('data', [])
-            print(f"Получены данные о треках: {json.dumps(tracks_data, ensure_ascii=False)[:500]}...")
+            print(f"Обнаружена структура callback type 1: массив треков в data")
             
             if tracks_data and isinstance(tracks_data, list) and len(tracks_data) > 0:
-                track = tracks_data[0]  # Берем первый трек
-                print(f"Данные первого трека: {json.dumps(track, ensure_ascii=False)}")
-                
-                # Получаем URL-адреса аудио с проверкой разных возможных полей
-                audio_url = track.get('audio_url') or track.get('audioUrl', '')
-                stream_url = track.get('stream_audio_url') or track.get('streamAudioUrl') or track.get('streamUrl', '')
-                image_url = track.get('image_url') or track.get('imageUrl', '')
-                
-                # Проверяем и логируем URL-адреса
-                print(f"Audio URL: {audio_url}")
-                print(f"Stream URL: {stream_url}")
-                print(f"Image URL: {image_url}")
-                
-                # Сохраняем информацию о треке
-                metadata['status'] = 'complete'
-                metadata['completed_at'] = datetime.now().isoformat()
-                metadata['audio_url'] = audio_url
-                metadata['stream_url'] = stream_url
-                metadata['image_url'] = image_url
-                metadata['duration'] = track.get('duration', 0)
-                metadata['tags'] = track.get('tags', '')
-                metadata['track_data'] = track  # Сохраняем все данные трека для отладки
-                
-                print(f"Обновлены метаданные для завершенной задачи: {task_id}")
+                process_track_data(metadata, tracks_data[0], task_id)
         
-        # Если callback_type = 'error', значит произошла ошибка при генерации
-        if callback_type == 'error':
+        # Вариант 2: Структура с tracks массивом напрямую
+        elif 'tracks' in callback_data and isinstance(callback_data['tracks'], list):
+            tracks_data = callback_data.get('tracks', [])
+            print(f"Обнаружена структура callback type 2: массив в tracks")
+            
+            if tracks_data and len(tracks_data) > 0:
+                process_track_data(metadata, tracks_data[0], task_id)
+        
+        # Вариант 3: Структура с data объектом, содержащим информацию о треке
+        elif 'data' in callback_data and isinstance(callback_data['data'], dict):
+            print(f"Обнаружена структура callback type 3: объект в data")
+            process_track_data(metadata, callback_data['data'], task_id)
+        
+        # Вариант 4: Данные о треке находятся непосредственно в callback_data
+        elif any(key in callback_data for key in ['audio_url', 'audioUrl', 'stream_url', 'streamUrl']):
+            print(f"Обнаружена структура callback type 4: данные трека в корне callback_data")
+            process_track_data(metadata, callback_data, task_id)
+            
+        # Вариант 5: Данные находятся в родительском объекте data
+        elif any(key in data for key in ['audio_url', 'audioUrl', 'stream_url', 'streamUrl']):
+            print(f"Обнаружена структура callback type 5: данные трека в корне data")
+            process_track_data(metadata, data, task_id)
+        
+        # Если callback сообщает об ошибке, сохраняем информацию об ошибке
+        if callback_type == 'error' or data.get('code') != 200:
             metadata['status'] = 'error'
-            metadata['error'] = callback_data.get('message') or callback_data.get('msg') or 'Неизвестная ошибка'
+            metadata['error'] = (callback_data.get('message') or 
+                               callback_data.get('msg') or 
+                               data.get('msg') or 
+                               'Неизвестная ошибка')
             print(f"Получена ошибка для задачи {task_id}: {metadata['error']}")
         
         # Сохраняем оригинальные данные callback для отладки
@@ -732,6 +756,144 @@ def music_callback():
         traceback.print_exc()
         
         return jsonify({'success': False, 'error': str(e)}), 500
+
+def process_track_data(metadata, track, task_id):
+    """
+    Обрабатывает данные трека и обновляет метаданные.
+    
+    Args:
+        metadata (dict): Словарь метаданных для обновления
+        track (dict): Данные трека из callback
+        task_id (str): Идентификатор задачи
+    """
+    # Получаем URL-адреса аудио с проверкой разных возможных полей
+    audio_url = (track.get('audio_url') or 
+                track.get('audioUrl') or 
+                track.get('url') or 
+                '')
+    
+    stream_url = (track.get('stream_audio_url') or 
+                 track.get('streamAudioUrl') or 
+                 track.get('streamUrl') or 
+                 track.get('stream_url') or 
+                 '')
+    
+    image_url = (track.get('image_url') or 
+                track.get('imageUrl') or 
+                track.get('coverUrl') or 
+                track.get('cover_url') or 
+                '')
+    
+    embed_url = (track.get('embed_url') or 
+                track.get('embedUrl') or 
+                '')
+    
+    # Проверяем и логируем URL-адреса
+    print(f"Audio URL: {audio_url}")
+    print(f"Stream URL: {stream_url}")
+    print(f"Image URL: {image_url}")
+    print(f"Embed URL: {embed_url}")
+    
+    # Создаем ссылку для проксирования, если аудио URL существует
+    proxy_url = ''
+    if audio_url:
+        proxy_url = f"/proxy_audio?url={audio_url}"
+    
+    # Скачиваем аудиофайл и сохраняем его локально, если URL существует
+    local_audio_path = ''
+    if audio_url or stream_url:
+        try:
+            # Создаем директорию для аудиофайлов, если она не существует
+            audio_dir = os.path.join('static', 'generated_music', 'audio')
+            os.makedirs(audio_dir, exist_ok=True)
+            
+            # Формируем имя файла и путь для сохранения
+            audio_filename = f"music_{task_id}.mp3"
+            local_audio_path = os.path.join(audio_dir, audio_filename)
+            
+            # URL для скачивания (предпочитаем audio_url, если есть)
+            download_url = audio_url if audio_url else stream_url
+            
+            print(f"Начинаем скачивание аудиофайла с URL: {download_url}")
+            
+            # Скачиваем файл
+            response = requests.get(download_url, stream=True, timeout=30)
+            response.raise_for_status()  # Проверка на ошибки HTTP
+            
+            # Сохраняем файл
+            with open(local_audio_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            # Проверяем, что файл был скачан успешно
+            if os.path.exists(local_audio_path) and os.path.getsize(local_audio_path) > 0:
+                print(f"Аудиофайл успешно скачан и сохранен локально: {local_audio_path}")
+                # Преобразуем путь в URL для веб-сервера
+                local_audio_url = '/' + local_audio_path.replace('\\', '/')
+            else:
+                print(f"Ошибка: файл не был скачан или имеет нулевой размер")
+                local_audio_path = ''
+        except Exception as e:
+            print(f"Ошибка при скачивании аудиофайла: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            local_audio_path = ''
+    
+    # Скачиваем изображение обложки, если URL существует
+    local_image_path = ''
+    if image_url:
+        try:
+            # Создаем директорию для изображений, если она не существует
+            image_dir = os.path.join('static', 'generated_music', 'covers')
+            os.makedirs(image_dir, exist_ok=True)
+            
+            # Формируем имя файла и путь для сохранения
+            image_filename = f"cover_{task_id}.jpg"
+            local_image_path = os.path.join(image_dir, image_filename)
+            
+            print(f"Начинаем скачивание изображения обложки с URL: {image_url}")
+            
+            # Скачиваем файл
+            response = requests.get(image_url, stream=True, timeout=30)
+            response.raise_for_status()  # Проверка на ошибки HTTP
+            
+            # Сохраняем файл
+            with open(local_image_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            # Проверяем, что файл был скачан успешно
+            if not os.path.exists(local_image_path) or os.path.getsize(local_image_path) == 0:
+                print(f"Ошибка: изображение не было скачано или имеет нулевой размер")
+                local_image_path = ''
+            else:
+                print(f"Изображение обложки успешно скачано и сохранено локально: {local_image_path}")
+        except Exception as e:
+            print(f"Ошибка при скачивании изображения обложки: {str(e)}")
+            local_image_path = ''
+    
+    # Сохраняем информацию о треке
+    metadata['status'] = 'complete'
+    metadata['completed_at'] = datetime.now().isoformat()
+    metadata['audio_url'] = audio_url
+    metadata['stream_url'] = stream_url
+    metadata['image_url'] = image_url
+    metadata['embed_url'] = embed_url
+    metadata['proxy_url'] = proxy_url
+    metadata['local_audio_path'] = local_audio_path
+    metadata['local_image_path'] = local_image_path
+    metadata['local_audio_url'] = '/' + local_audio_path.replace('\\', '/') if local_audio_path else ''
+    metadata['local_image_url'] = '/' + local_image_path.replace('\\', '/') if local_image_path else ''
+    metadata['duration'] = track.get('duration', 0)
+    metadata['tags'] = track.get('tags', '')
+    metadata['track_data'] = track  # Сохраняем все данные трека для отладки
+    
+    print(f"Обновлены метаданные для завершенной задачи: {task_id}")
+    
+    # Сохраняем информацию о том, что музыка готова
+    metadata['is_music_ready'] = True
 
 @app.route('/proxy_audio')
 def proxy_audio():

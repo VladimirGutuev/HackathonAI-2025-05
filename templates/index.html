@@ -761,18 +761,31 @@ function displayGeneratedMusic(musicData) {
     }
     
     // Проверяем, какой тип ответа мы получили
-    if (musicData.status === 'processing' && musicData.task_id) {
+    if ((musicData.status === 'processing' || musicData.status === 'updated') && musicData.task_id) {
         // Музыка всё еще генерируется, показываем индикатор загрузки
         if (loadingElement) {
             loadingElement.style.display = 'block';
+            
+            // Рассчитываем процент выполнения
+            let progressPercent = 0;
+            if (musicData.progress) {
+                progressPercent = musicData.progress;
+            } else if (musicData.elapsed_seconds) {
+                // Максимальное время ожидания - 15 минут (900 секунд)
+                progressPercent = Math.min(95, Math.round(musicData.elapsed_seconds / 900 * 100));
+            }
             
             // Добавляем информацию о задаче
             loadingElement.innerHTML = `
                 <p class="text-muted">Генерация музыки...</p>
                 <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                         style="width: ${progressPercent}%" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
+                         ${progressPercent}%
+                    </div>
                 </div>
                 <span class="badge bg-info">Идентификатор задачи: ${musicData.task_id}</span>
+                ${musicData.api_status ? `<span class="badge bg-secondary ms-2">API статус: ${musicData.api_status}</span>` : ''}
             `;
             
             // Устанавливаем периодическую проверку статуса
@@ -784,9 +797,28 @@ function displayGeneratedMusic(musicData) {
         }
         
         musicContainer.style.display = 'block';
-    } else if (musicData.audio_url) {
-        // Есть прямая ссылка на аудио-файл
-        console.log("Отображение аудио-плеера, URL:", musicData.audio_url);
+    } else if (musicData.status === 'complete' || musicData.audio_url || musicData.stream_url || musicData.embed_url || musicData.local_audio_url || (musicData.is_music_ready === true)) {
+        // Музыка готова, показываем плеер
+        console.log("Музыка готова к воспроизведению");
+        
+        // Очищаем контейнер от предыдущих элементов
+        while (musicContainer.firstChild) {
+            musicContainer.removeChild(musicContainer.firstChild);
+        }
+        
+        // Заголовок 
+        const musicTitle = document.createElement('h4');
+        musicTitle.className = 'card-title';
+        musicTitle.textContent = 'Музыкальное сопровождение';
+        musicContainer.appendChild(musicTitle);
+        
+        // Описание музыки
+        if (musicData.music_description) {
+            const descriptionElement = document.createElement('p');
+            descriptionElement.className = 'card-text mb-3';
+            descriptionElement.textContent = musicData.music_description;
+            musicContainer.appendChild(descriptionElement);
+        }
         
         // Создаем контейнер для управления аудио
         const audioContainer = document.createElement('div');
@@ -798,410 +830,463 @@ function displayGeneratedMusic(musicData) {
         audioTitle.textContent = 'Прослушать сгенерированную музыку';
         audioContainer.appendChild(audioTitle);
         
-        // Создаем аудио-плеер
-        const audioPlayer = document.createElement('audio');
-        audioPlayer.controls = true;
-        audioPlayer.className = 'w-100 mb-3';
-        audioPlayer.src = musicData.audio_url;
+        // Получаем URL аудио, проверяя разные возможные источники
+        // Приоритет: 1) локальный файл, 2) обычный URL, 3) стрим URL
+        const localAudioUrl = musicData.local_audio_url || '';
+        const audioUrl = musicData.audio_url || '';
+        const streamUrl = musicData.stream_url || '';
+        const embedUrl = musicData.embed_url || '';
+        const proxyUrl = musicData.proxy_url || (audioUrl ? `/proxy_audio?url=${encodeURIComponent(audioUrl)}` : '');
         
-        // Отслеживаем ошибки загрузки аудио
-        let audioLoadAttempt = 0;
-        audioPlayer.onerror = (e) => {
-            console.error(`Ошибка загрузки аудио (попытка ${++audioLoadAttempt}):`, e);
-            
-            if (audioLoadAttempt === 1 && musicData.stream_url) {
-                // При первой ошибке пробуем stream_url, если он доступен
-                console.log('Пробуем использовать stream_url:', musicData.stream_url);
-                audioPlayer.src = musicData.stream_url;
-                
-                // Добавляем уведомление
-                const streamNote = document.createElement('div');
-                streamNote.className = 'alert alert-info small mb-2';
-                streamNote.textContent = 'Используется стриминговый URL для воспроизведения';
-                audioContainer.insertBefore(streamNote, audioPlayer.nextSibling);
-                
-            } else if (audioLoadAttempt === 2) {
-                // При второй ошибке пробуем через прокси
-                console.log('Пробуем использовать прокси');
-                const proxyUrl = `/proxy_audio?url=${encodeURIComponent(musicData.audio_url)}`;
-                audioPlayer.src = proxyUrl;
-                
-                // Добавляем уведомление
-                const proxyNote = document.createElement('div');
-                proxyNote.className = 'alert alert-info small mb-2';
-                proxyNote.textContent = 'Используется прокси-сервер для воспроизведения';
-                audioContainer.insertBefore(proxyNote, audioPlayer.nextSibling);
-                
-            } else if (audioLoadAttempt > 2) {
-                // Показываем сообщение с альтернативными вариантами
-                const errorNote = document.createElement('div');
-                errorNote.className = 'alert alert-warning small mb-3';
-                errorNote.innerHTML = `
-                    <p>Не удалось автоматически воспроизвести аудио. Пожалуйста, используйте один из следующих способов:</p>
-                    <ol>
-                        <li>Скачайте аудио по прямой ссылке и откройте в медиаплеере</li>
-                        <li>Попробуйте открыть аудио в новой вкладке браузера</li>
-                        <li>Используйте прокси-сервер для воспроизведения</li>
-                    </ol>
-                `;
-                audioContainer.insertBefore(errorNote, audioPlayer.nextSibling);
-                
-                // Скрываем проблемный плеер
-                audioPlayer.style.display = 'none';
-            }
-        };
+        // Флаг для отслеживания, был ли хотя бы один успешно загруженный плеер
+        let playerSuccessful = false;
         
-        audioContainer.appendChild(audioPlayer);
-        
-        // Добавляем кнопки для разных способов воспроизведения
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.className = 'btn-group mb-3';
-        
-        // Кнопка для скачивания
-        const downloadButton = document.createElement('a');
-        downloadButton.className = 'btn btn-sm btn-success';
-        downloadButton.href = musicData.audio_url;
-        downloadButton.download = 'generated_music.mp3';
-        downloadButton.innerHTML = '<i class="bi bi-download"></i> Скачать';
-        buttonsContainer.appendChild(downloadButton);
-        
-        // Кнопка для открытия в новой вкладке
-        const openButton = document.createElement('a');
-        openButton.className = 'btn btn-sm btn-primary';
-        openButton.href = musicData.audio_url;
-        openButton.target = '_blank';
-        openButton.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> Открыть в новой вкладке';
-        buttonsContainer.appendChild(openButton);
-        
-        // Кнопка для воспроизведения через прокси
-        const proxyButton = document.createElement('button');
-        proxyButton.className = 'btn btn-sm btn-secondary';
-        proxyButton.innerHTML = '<i class="bi bi-shuffle"></i> Через прокси';
-        proxyButton.onclick = () => {
-            const proxyUrl = `/proxy_audio?url=${encodeURIComponent(musicData.audio_url)}`;
-            audioPlayer.src = proxyUrl;
-            audioPlayer.style.display = 'block';
-            audioPlayer.load();
-            audioPlayer.play().catch(e => console.error("Ошибка при воспроизведении через прокси:", e));
-            
-            // Добавляем уведомление
-            const proxyNote = document.createElement('div');
-            proxyNote.className = 'alert alert-info small mb-2';
-            proxyNote.textContent = 'Используется прокси-сервер для воспроизведения';
-            audioContainer.insertBefore(proxyNote, audioPlayer.nextSibling);
-        };
-        buttonsContainer.appendChild(proxyButton);
-        
-        audioContainer.appendChild(buttonsContainer);
-        
-        // Добавляем ссылки на все доступные URL
-        const urlsContainer = document.createElement('div');
-        urlsContainer.className = 'small text-muted mb-2';
-        
-        // Создаем список доступных URL
-        let urlsHtml = '<strong>Доступные ссылки:</strong><ul class="mb-0 mt-1">';
-        
-        if (musicData.audio_url) {
-            urlsHtml += `<li><strong>Аудио URL:</strong> <a href="${musicData.audio_url}" target="_blank" class="text-break">${musicData.audio_url}</a></li>`;
-        }
-        
-        if (musicData.stream_url) {
-            urlsHtml += `<li><strong>Потоковый URL:</strong> <a href="${musicData.stream_url}" target="_blank" class="text-break">${musicData.stream_url}</a></li>`;
-        }
-        
-        if (musicData.task_id) {
-            urlsHtml += `<li><strong>ID задачи:</strong> ${musicData.task_id}</li>`;
-        }
-        
-        urlsHtml += '</ul>';
-        urlsContainer.innerHTML = urlsHtml;
-        
-        // Добавляем кнопку для показа/скрытия ссылок
-        const toggleLinksButton = document.createElement('button');
-        toggleLinksButton.className = 'btn btn-sm btn-outline-secondary mb-3';
-        toggleLinksButton.innerHTML = '<i class="bi bi-info-circle"></i> Показать технические детали';
-        toggleLinksButton.onclick = () => {
-            if (urlsContainer.style.display === 'none') {
-                urlsContainer.style.display = 'block';
-                toggleLinksButton.innerHTML = '<i class="bi bi-info-circle"></i> Скрыть технические детали';
-            } else {
-                urlsContainer.style.display = 'none';
-                toggleLinksButton.innerHTML = '<i class="bi bi-info-circle"></i> Показать технические детали';
-            }
-        };
-        
-        audioContainer.appendChild(toggleLinksButton);
-        
-        // По умолчанию скрываем ссылки
-        urlsContainer.style.display = 'none';
-        audioContainer.appendChild(urlsContainer);
-        
-        // Заменяем iframe на контейнер с аудио-плеером
-        if (musicIframe && musicIframe.parentNode) {
-            musicIframe.parentNode.replaceChild(audioContainer, musicIframe);
-        } else if (musicContainer) {
-            musicContainer.innerHTML = '';
-            musicContainer.appendChild(audioContainer);
-        }
-        
-        if (musicDescription) {
-            musicDescription.textContent = musicData.music_description || '';
-        }
-        
-        musicContainer.style.display = 'block';
-    } else if (musicData.stream_url) {
-        // Есть ссылка на потоковое аудио
-        console.log("Отображение потокового аудио-плеера, URL:", musicData.stream_url);
-        
-        // Создаем контейнер с информацией и элементами управления
-        const audioContainer = document.createElement('div');
-        audioContainer.className = 'audio-player-container card p-3 mb-3';
-        
-        // Заголовок
-        const audioTitle = document.createElement('h5');
-        audioTitle.className = 'mb-3';
-        audioTitle.textContent = 'Прослушать сгенерированную музыку (поток)';
-        audioContainer.appendChild(audioTitle);
-        
-        // Создаем аудио-плеер
-        const audioPlayer = document.createElement('audio');
-        audioPlayer.controls = true;
-        audioPlayer.className = 'w-100 mb-3';
-        audioPlayer.src = musicData.stream_url;
-        audioPlayer.onerror = (e) => {
-            console.error("Ошибка загрузки потокового аудио:", e);
-            
-            // Пробуем через прокси
-            const proxyUrl = `/proxy_audio?url=${encodeURIComponent(musicData.stream_url)}`;
-            audioPlayer.src = proxyUrl;
-            
-            // Добавляем уведомление
-            const proxyNote = document.createElement('div');
-            proxyNote.className = 'alert alert-info small mb-2';
-            proxyNote.textContent = 'Используется прокси-сервер для воспроизведения';
-            audioContainer.insertBefore(proxyNote, audioPlayer.nextSibling);
-            
-            // Если и прокси не помог, показываем ошибку
-            audioPlayer.onerror = () => {
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'alert alert-warning mt-2';
-                errorMsg.textContent = "Не удалось загрузить потоковое аудио. Попробуйте использовать одну из кнопок ниже.";
-                audioContainer.insertBefore(errorMsg, audioPlayer.nextSibling);
-                audioPlayer.style.display = 'none';
+        // Сначала пробуем встроенный плеер, если он доступен
+        if (embedUrl) {
+            // Создаем iframe для встроенного плеера
+            const embedIframe = document.createElement('iframe');
+            embedIframe.src = embedUrl;
+            embedIframe.frameBorder = "0";
+            embedIframe.allowFullscreen = true;
+            embedIframe.className = 'w-100 mb-3';
+            embedIframe.style.height = '150px';
+            embedIframe.onload = () => {
+                playerSuccessful = true;
+                console.log("Встроенный плеер успешно загружен");
             };
-        };
-        
-        audioContainer.appendChild(audioPlayer);
-        
-        // Добавляем кнопки для разных способов воспроизведения
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.className = 'btn-group mb-3';
-        
-        // Кнопка для открытия в новой вкладке
-        const openButton = document.createElement('a');
-        openButton.className = 'btn btn-sm btn-primary';
-        openButton.href = musicData.stream_url;
-        openButton.target = '_blank';
-        openButton.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> Открыть в новой вкладке';
-        buttonsContainer.appendChild(openButton);
-        
-        // Кнопка для воспроизведения через прокси
-        const proxyButton = document.createElement('button');
-        proxyButton.className = 'btn btn-sm btn-secondary';
-        proxyButton.innerHTML = '<i class="bi bi-shuffle"></i> Через прокси';
-        proxyButton.onclick = () => {
-            const proxyUrl = `/proxy_audio?url=${encodeURIComponent(musicData.stream_url)}`;
-            audioPlayer.src = proxyUrl;
-            audioPlayer.style.display = 'block';
-            audioPlayer.load();
-            audioPlayer.play().catch(e => console.error("Ошибка при воспроизведении через прокси:", e));
-        };
-        buttonsContainer.appendChild(proxyButton);
-        
-        audioContainer.appendChild(buttonsContainer);
-        
-        // Добавляем информацию о задаче, если доступна
-        if (musicData.task_id) {
-            const taskInfo = document.createElement('div');
-            taskInfo.className = 'mt-2 small text-muted';
-            taskInfo.textContent = `ID задачи: ${musicData.task_id}`;
-            audioContainer.appendChild(taskInfo);
+            
+            // Оберточный div для iframe
+            const embedContainer = document.createElement('div');
+            embedContainer.className = 'embed-responsive mb-3';
+            embedContainer.appendChild(embedIframe);
+            audioContainer.appendChild(embedContainer);
         }
         
-        // Заменяем iframe на контейнер с аудио-плеером
-        if (musicIframe && musicIframe.parentNode) {
-            musicIframe.parentNode.replaceChild(audioContainer, musicIframe);
-        } else if (musicContainer) {
-            musicContainer.innerHTML = '';
-            musicContainer.appendChild(audioContainer);
+        // Создаем аудио-плеер
+        if (localAudioUrl || audioUrl || streamUrl) {
+            const audioPlayer = document.createElement('audio');
+            audioPlayer.controls = true;
+            audioPlayer.className = 'w-100 mb-3';
+            
+            // Приоритет источников
+            if (localAudioUrl) {
+                console.log('Используем локальный аудиофайл:', localAudioUrl);
+                audioPlayer.src = localAudioUrl;
+                
+                // Добавляем уведомление о локальном файле
+                const localNote = document.createElement('div');
+                localNote.className = 'alert alert-success small mb-2';
+                localNote.textContent = 'Используется локально сохраненный аудиофайл';
+                audioContainer.appendChild(localNote);
+                
+            } else {
+                // Используем сначала основной URL
+                audioPlayer.src = audioUrl || streamUrl;
+            }
+            
+            // Добавляем плеер в контейнер
+            audioContainer.appendChild(audioPlayer);
+            
+            // Отслеживаем ошибки загрузки аудио
+            let audioLoadAttempt = 0;
+            audioPlayer.onerror = (e) => {
+                console.error(`Ошибка загрузки аудио (попытка ${++audioLoadAttempt}):`, e);
+                
+                if (audioLoadAttempt === 1 && !localAudioUrl && streamUrl && streamUrl !== audioUrl) {
+                    // При первой ошибке пробуем stream_url, если локального файла нет
+                    console.log('Пробуем использовать stream_url:', streamUrl);
+                    audioPlayer.src = streamUrl;
+                    
+                    // Добавляем уведомление
+                    const streamNote = document.createElement('div');
+                    streamNote.className = 'alert alert-info small mb-2';
+                    streamNote.textContent = 'Используется стриминговый URL для воспроизведения';
+                    audioContainer.insertBefore(streamNote, audioPlayer.nextSibling);
+                    
+                } else if (audioLoadAttempt === 2 && proxyUrl) {
+                    // При второй ошибке пробуем через прокси
+                    console.log('Пробуем использовать прокси:', proxyUrl);
+                    audioPlayer.src = proxyUrl;
+                    
+                    // Добавляем уведомление
+                    const proxyNote = document.createElement('div');
+                    proxyNote.className = 'alert alert-info small mb-2';
+                    proxyNote.textContent = 'Используется прокси-сервер для воспроизведения';
+                    audioContainer.insertBefore(proxyNote, audioPlayer.nextSibling);
+                    
+                } else if (audioLoadAttempt > 2) {
+                    // Показываем сообщение с альтернативными вариантами
+                    const errorNote = document.createElement('div');
+                    errorNote.className = 'alert alert-danger small';
+                    errorNote.innerHTML = `
+                        <p>Не удалось загрузить аудио. Попробуйте следующие варианты:</p>
+                        <ol>
+                            <li>Обновите страницу и попробуйте снова</li>
+                            <li>Проверьте подключение к интернету</li>
+                            ${audioUrl ? `<li>Попробуйте <a href="${audioUrl}" target="_blank">скачать аудио напрямую</a></li>` : ''}
+                            ${proxyUrl ? `<li>Попробуйте <a href="${proxyUrl}" target="_blank">прослушать через прокси</a></li>` : ''}
+                        </ol>
+                    `;
+                    audioContainer.appendChild(errorNote);
+                    
+                    // Если не удалось воспроизвести, предлагаем скачать
+                    if (audioUrl || streamUrl) {
+                        const downloadButton = document.createElement('a');
+                        downloadButton.href = audioUrl || streamUrl;
+                        downloadButton.target = '_blank';
+                        downloadButton.className = 'btn btn-primary btn-sm';
+                        downloadButton.textContent = 'Скачать аудиофайл';
+                        downloadButton.download = 'music.mp3';
+                        audioContainer.appendChild(downloadButton);
+                    }
+                }
+            };
+            
+            // Успешная загрузка аудио
+            audioPlayer.onloadeddata = () => {
+                playerSuccessful = true;
+                console.log("Аудио успешно загружено");
+                
+                // Если аудио загружено с внешнего URL и нет локальной копии, предлагаем скачать
+                if (!localAudioUrl && (audioUrl || streamUrl)) {
+                    const downloadContainer = document.createElement('div');
+                    downloadContainer.className = 'text-end mt-2';
+                    
+                    const downloadButton = document.createElement('a');
+                    downloadButton.href = audioUrl || streamUrl;
+                    downloadButton.target = '_blank';
+                    downloadButton.className = 'btn btn-outline-secondary btn-sm';
+                    downloadButton.textContent = 'Скачать MP3';
+                    downloadButton.download = 'music.mp3';
+                    
+                    downloadContainer.appendChild(downloadButton);
+                    audioContainer.appendChild(downloadContainer);
+                }
+            };
         }
         
-        if (musicDescription) {
-            musicDescription.textContent = musicData.music_description || '';
+        // Если есть изображение обложки, добавляем его
+        const coverImageUrl = musicData.local_image_url || musicData.image_url || '';
+        if (coverImageUrl) {
+            const coverImage = document.createElement('img');
+            coverImage.src = coverImageUrl;
+            coverImage.alt = 'Обложка трека';
+            coverImage.className = 'img-fluid mb-3';
+            coverImage.style.maxHeight = '200px';
+            audioContainer.appendChild(coverImage);
         }
         
-        musicContainer.style.display = 'block';
-    } else if (musicData.embed_url) {
-        // Есть ссылка на встраиваемый плеер
-        if (musicIframe) {
-            musicIframe.src = musicData.embed_url;
-            musicIframe.style.display = 'block';
-        }
+        // Добавляем контейнер аудиоплеера в основной контейнер
+        musicContainer.appendChild(audioContainer);
         
-        if (musicDescription) {
-            musicDescription.textContent = musicData.music_description || '';
+        // Добавляем информацию о треке
+        if (musicData.title || musicData.task_id) {
+            const trackInfoContainer = document.createElement('div');
+            trackInfoContainer.className = 'track-info small text-muted mt-2';
+            
+            if (musicData.title) {
+                const titleElement = document.createElement('p');
+                titleElement.className = 'mb-1';
+                titleElement.textContent = `Название: ${musicData.title}`;
+                trackInfoContainer.appendChild(titleElement);
+            }
+            
+            if (musicData.task_id) {
+                const idElement = document.createElement('p');
+                idElement.className = 'mb-1';
+                idElement.textContent = `ID задачи: ${musicData.task_id}`;
+                trackInfoContainer.appendChild(idElement);
+            }
+            
+            musicContainer.appendChild(trackInfoContainer);
         }
         
         musicContainer.style.display = 'block';
     } else {
-        // Музыка в процессе генерации или есть только описание
-        if (musicData.status === 'complete') {
-            // Завершена, но нет ссылок на аудио
-            if (errorElement) {
-                errorElement.textContent = "Музыка сгенерирована, но аудиофайл недоступен";
-                errorElement.style.display = 'block';
+        // Неизвестный статус или ошибка
+        if (errorElement) {
+            errorElement.innerHTML = '<p>Произошла ошибка при генерации музыки или статус неизвестен.</p>';
+            
+            // Отображаем возможные варианты решения
+            const solutions = [
+                'Попробуйте обновить страницу и генерировать музыку снова',
+                'Проверьте ваше подключение к интернету',
+                'Убедитесь, что все API ключи настроены правильно'
+            ];
+            
+            const solutionsList = document.createElement('ul');
+            solutionsList.className = 'mb-2';
+            
+            // Выводим идентификатор задачи
+            if (musicData.task_id) {
+                const taskIdItem = document.createElement('p');
+                taskIdItem.className = 'mb-1';
+                taskIdItem.innerHTML = `Идентификатор задачи: <code>${musicData.task_id}</code>`;
+                errorElement.appendChild(taskIdItem);
             }
-        } else {
-            // В процессе или с ошибкой
-            if (loadingElement && musicData.status && musicData.status !== 'error') {
-            loadingElement.style.display = 'block';
-                
-                // Добавляем более информативное сообщение о статусе
-                loadingElement.innerHTML = `
-                    <p class="text-muted">Генерация музыки (статус: ${musicData.status || 'processing'})...</p>
-                    <div class="progress mb-3">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
-                    </div>
-                    <span class="badge bg-info">Идентификатор задачи: ${musicData.task_id || 'н/д'}</span>
-                `;
-                
-                // Устанавливаем периодическую проверку статуса, если есть task_id
-                if (musicData.task_id) {
-                    checkMusicGenerationStatus(musicData.task_id);
-                }
-            } else if (errorElement && musicData.message) {
-                errorElement.textContent = musicData.message;
-                errorElement.style.display = 'block';
-                
-                // Добавляем детали ошибки
-        if (musicData.task_id) {
-                    const errorDetails = document.createElement('div');
-                    errorDetails.className = 'small text-muted mt-2';
-                    errorDetails.innerHTML = `ID задачи: ${musicData.task_id}<br>Статус: ${musicData.status || 'error'}`;
-                    errorElement.appendChild(errorDetails);
-                }
+            
+            // Добавляем все решения в список
+            solutions.forEach(solution => {
+                const solutionItem = document.createElement('li');
+                solutionItem.textContent = solution;
+                solutionsList.appendChild(solutionItem);
+            });
+            
+            errorElement.appendChild(solutionsList);
+            
+            // Кнопка для повторной проверки статуса
+            if (musicData.task_id) {
+                const recheckButton = document.createElement('button');
+                recheckButton.className = 'btn btn-sm btn-outline-primary mt-3';
+                recheckButton.textContent = 'Проверить статус еще раз';
+                recheckButton.onclick = () => checkMusicGenerationStatus(musicData.task_id);
+                errorElement.appendChild(recheckButton);
             }
+            
+            errorElement.style.display = 'block';
         }
-        
-        if (musicIframe) musicIframe.style.display = 'none';
-        
-    if (musicDescription) {
-            musicDescription.textContent = musicData.music_description || 'Информация о музыке недоступна';
-    }
-    
-    musicContainer.style.display = 'block';
     }
 }
 
 // Функция для проверки статуса генерации музыки
 function checkMusicGenerationStatus(taskId) {
-    // Максимальное количество попыток
-    const maxAttempts = 10;
+    if (!taskId) {
+        console.error("Отсутствует ID задачи для проверки статуса");
+        return;
+    }
+    
+    console.log(`Проверка статуса генерации музыки для задачи: ${taskId}`);
+    
+    // Счетчик попыток и максимальное количество повторений
     let attempts = 0;
+    const maxAttempts = 60; // 60 повторений с интервалом 5 секунд = 5 минут
     
-    // ID для очистки интервала
-    let intervalId;
+    // Устанавливаем индикатор загрузки
+    const loadingElement = document.getElementById('music-loading');
+    const errorElement = document.getElementById('music-error');
+    const musicContainer = document.getElementById('generated-music-container');
     
-    // Функция для проверки статуса
+    if (loadingElement) {
+        loadingElement.style.display = 'block';
+        loadingElement.innerHTML = `
+            <p class="text-muted">Проверка статуса генерации музыки...</p>
+            <div class="progress mb-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+            </div>
+            <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
+        `;
+    }
+    
+    // Скрываем сообщение об ошибке
+    if (errorElement) errorElement.style.display = 'none';
+    
+    // Функция для выполнения одной проверки статуса
     function checkStatus() {
+        // Увеличиваем счетчик попыток
         attempts++;
-        console.log(`Проверка статуса музыки (попытка ${attempts}/${maxAttempts}), task_id: ${taskId}`);
         
         fetch(`/check_music_status?task_id=${taskId}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Ошибка HTTP: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log("Получен ответ о статусе музыки:", data);
+                console.log(`Получен статус для задачи ${taskId} (попытка ${attempts}/${maxAttempts}):`, data);
                 
-                if (!data) {
-                    console.error("Получены пустые данные при проверке статуса");
+                // Проверяем успешность запроса
+                if (!data.success) {
+                    throw new Error(data.message || "Ошибка при проверке статуса");
+                }
+                
+                // Если музыка готова, отображаем ее
+                if (data.status === 'complete' || data.audio_url || data.stream_url || data.local_audio_url || data.is_music_ready) {
+                    console.log("Музыка готова! Отображаем плеер:", data);
+                    
+                    // Отображаем готовую музыку
+                    displayGeneratedMusic(data);
+                    
+                    // Прекращаем дальнейшие проверки
                     return;
                 }
                 
-                if (data.success && data.status === 'complete') {
-                    // Музыка готова, очищаем интервал и отображаем результат
-                    console.log("Музыка готова:", data);
-                    clearInterval(intervalId);
-                    displayGeneratedMusic(data);
-                } else if (!data.success) {
-                    // Произошла ошибка
-                    console.error("Ошибка при генерации музыки:", data.message || "Неизвестная ошибка");
-                    clearInterval(intervalId);
+                // Если статус "timeout" или ошибка, показываем сообщение об ошибке
+                if (data.status === 'timeout' || data.status === 'error') {
+                    console.log("Ошибка при генерации музыки:", data.message);
                     
-                    const loadingElement = document.getElementById('music-loading');
-                    if (loadingElement) loadingElement.style.display = 'none';
-                    
-                    // Используем новую функцию для отображения ошибки с деталями
-                    showMusicError(
-                        data.message || "Ошибка при генерации музыки", 
-                        data, // Передаем весь объект с данными для отладки
-                        taskId
-                    );
-                } else if (attempts >= maxAttempts) {
-                    // Достигнуто максимальное количество попыток
-                    clearInterval(intervalId);
-                    const loadingElement = document.getElementById('music-loading');
-                    if (loadingElement) {
-                        loadingElement.innerHTML = `
-                            <div class="alert alert-info">
-                                <h5>Генерация музыки продолжается</h5>
-                                <p>Генерация музыки занимает больше времени, чем ожидалось. Ваш запрос обрабатывается в фоновом режиме.</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-primary">ID задачи: ${taskId}</span>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="checkMusicGenerationStatus('${taskId}')">
-                                        Проверить статус сейчас
-                                    </button>
+                    if (errorElement) {
+                        let errorMessage = data.message || "Превышено время ожидания или произошла ошибка";
+                        
+                        // Создаем блок с ошибкой и рекомендациями
+                        errorElement.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h5>Ошибка при проверке статуса</h5>
+                                <p>${errorMessage}</p>
+                                <div class="mt-3">
+                                    <p><strong>Что делать дальше?</strong></p>
+                                    <ul>
+                                        <li>Проверьте ваше подключение к интернету</li>
+                                        <li>Обновите страницу и попробуйте сгенерировать музыку снова</li>
+                                        <li>Если проблема повторяется, возможно, у Suno API возникли технические проблемы</li>
+                                    </ul>
                                 </div>
+                                <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+                                    Обновить страницу и попробовать снова
+                                </button>
                             </div>
                         `;
+                        errorElement.style.display = 'block';
                     }
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                    
+                    // Прекращаем дальнейшие проверки
+                    return;
+                }
+                
+                // Если API статус показывает ошибку, но задача все еще в процессе, показываем специальное сообщение
+                if (data.api_status === 'error') {
+                    console.log("API вернул ошибку, но задача всё еще в обработке:", data);
+                    
+                    if (errorElement) {
+                        let errorMessage = data.message || "API вернул ошибку при генерации музыки";
+                        
+                        // Создаем блок с ошибкой и рекомендациями
+                        errorElement.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h5>Ошибка при генерации музыки</h5>
+                                <p>API вернул ошибку. Генерация музыки не может быть завершена.</p>
+                                <div class="mt-3">
+                                    <p><strong>Что делать дальше?</strong></p>
+                                    <ul>
+                                        <li>Проверьте ваше подключение к интернету</li>
+                                        <li>Обновите страницу и попробуйте снова</li>
+                                        <li>Если проблема повторяется, обратитесь к разработчикам</li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+                                    Обновить страницу
+                                </button>
+                            </div>
+                        `;
+                        errorElement.style.display = 'block';
+                    }
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                    
+                    // Прекращаем дальнейшие проверки
+                    return;
+                }
+                
+                // Если музыка все еще генерируется, обновляем прогресс и продолжаем проверки
+                if (loadingElement) {
+                    // Рассчитываем процент выполнения
+                    let progressPercent = 0;
+                    if (data.progress) {
+                        progressPercent = data.progress;
+                    } else if (data.elapsed_seconds) {
+                        // Максимальное время ожидания - 15 минут (900 секунд)
+                        progressPercent = Math.min(95, Math.round(data.elapsed_seconds / 900 * 100));
+                    } else {
+                        // Если нет данных о прогрессе, используем прогресс на основе попыток
+                        progressPercent = Math.min(90, Math.round(attempts / maxAttempts * 100));
+                    }
+                    
+                    loadingElement.innerHTML = `
+                        <p class="text-muted">Генерация музыки продолжается...</p>
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                                 style="width: ${progressPercent}%" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
+                                 ${progressPercent}%
+                            </div>
+                        </div>
+                        <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
+                        ${data.api_status ? `<span class="badge bg-secondary ms-2">API статус: ${data.api_status}</span>` : ''}
+                        <span class="badge bg-light text-dark ms-2">Попытка: ${attempts}/${maxAttempts}</span>
+                    `;
+                }
+                
+                // Если описание музыки доступно, отображаем его
+                const musicDescription = document.getElementById('music-description');
+                if (musicDescription && data.music_description) {
+                    musicDescription.textContent = data.music_description;
+                }
+                
+                // Если достигнуто максимальное количество попыток, показываем сообщение
+                if (attempts >= maxAttempts) {
+                    console.log("Достигнуто максимальное количество попыток проверки статуса");
+                    
+                    if (errorElement) {
+                        errorElement.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h5>Превышено время ожидания</h5>
+                                <p>Проверка статуса генерации музыки заняла слишком много времени (${maxAttempts} попыток).</p>
+                                <div class="mt-3">
+                                    <p><strong>Что это означает?</strong></p>
+                                    <ul>
+                                        <li>Возможно, запрос всё ещё обрабатывается на серверах Suno</li>
+                                        <li>Возможно, возникла проблема при передаче результата</li>
+                                        <li>Возможно, запрос был отменен на стороне сервера</li>
+                                    </ul>
+                                    <p><strong>Что делать дальше?</strong></p>
+                                    <ul>
+                                        <li>Вы можете подождать ещё некоторое время и проверить позже</li>
+                                        <li>Вы можете попробовать сгенерировать музыку снова</li>
+                                        <li>Проверьте ваш API ключ и количество доступных кредитов</li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
+                                    Проверить статус еще раз
+                                </button>
+                                <button class="btn btn-outline-secondary mt-2 ms-2" onclick="location.reload()">
+                                    Обновить страницу
+                                </button>
+                            </div>
+                        `;
+                        errorElement.style.display = 'block';
+                    }
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                } else {
+                    // Продолжаем проверки с интервалом
+                    setTimeout(checkStatus, 5000); // Проверяем каждые 5 секунд
                 }
             })
             .catch(error => {
-                console.error("Ошибка при проверке статуса генерации музыки:", error);
+                console.error("Ошибка при проверке статуса:", error);
                 
-                // При ошибке попытаемся продолжить, пока не достигнем максимума попыток
-                if (attempts >= maxAttempts) {
-                    clearInterval(intervalId);
-                    
-                    const loadingElement = document.getElementById('music-loading');
-    const errorElement = document.getElementById('music-error');
-                    
-                    if (loadingElement) loadingElement.style.display = 'none';
-                    
-                    // Используем новую функцию для отображения ошибки
-                    showMusicError(
-                        `Ошибка при проверке статуса музыки: ${error.message}`,
-                        {
-                            attempts: attempts,
-                            maxAttempts: maxAttempts,
-                            taskId: taskId,
-                            timestamp: new Date().toISOString()
-                        },
-                        taskId
-                    );
+                if (errorElement) {
+                    errorElement.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>Ошибка при проверке статуса</h5>
+                            <p>${error.message}</p>
+                            <div class="mt-3">
+                                <p><strong>Что делать дальше?</strong></p>
+                                <ul>
+                                    <li>Проверьте ваше подключение к интернету</li>
+                                    <li>Обновите страницу и попробуйте снова</li>
+                                    <li>Если проблема повторяется, обратитесь к разработчикам</li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+                                Обновить страницу
+                            </button>
+                        </div>
+                    `;
+                    errorElement.style.display = 'block';
+                }
+                
+                if (loadingElement) loadingElement.style.display = 'none';
+                
+                // Если ошибка не критическая и не достигнуто максимальное количество попыток, продолжаем проверки
+                if (attempts < maxAttempts) {
+                    setTimeout(checkStatus, 5000);
                 }
             });
     }
     
-    // Запускаем проверку каждые 10 секунд
-    intervalId = setInterval(checkStatus, 10000);
-    
-    // Выполняем первую проверку сразу
+    // Запускаем первую проверку
     checkStatus();
 }
 

@@ -1,0 +1,37 @@
+{
+  "title": "Diary Emotion: Смешанный, с отте... Dramatic Film Score",
+  "style": "Dramatic Film Score",
+  "mood": "dramatic",
+  "tempo": "moderate with emotional depth",
+  "instruments": "full orchestra with piano accents",
+  "emotions": [
+    "облегчение",
+    "утомленность",
+    "горечь"
+  ],
+  "emotional_tone": "смешанный, с оттенками облегчения и усталости",
+  "status": "error",
+  "created_at": "2025-05-21T09:07:27.744830",
+  "last_update": "2025-05-21T09:15:06.619678",
+  "task_id": "0c3aaca44b75189288ba140e49c6fa0a",
+  "prompt": "Create high-quality dramatic Dramatic Film Score music that conveys облегчение, утомленность, горечь. The piece should have a moderate with emotional depth rhythm with full orchestra with piano accents. The music should reflect emotions from a war diary with a смешанный, с оттенками облегчения и усталости tone. No lyrics, just instrumental music that captures the emotional essence of a diary entry.",
+  "callback_url": "http://localhost:5000/music_callback",
+  "request": {
+    "prompt": "Create high-quality dramatic Dramatic Film Score music that conveys облегчение, утомленность, горечь. The piece should have a moderate with emotional depth rhythm with full orchestra with piano accents. The music should reflect emotions from a war diary with a смешанный, с оттенками облегчения и усталости tone. No lyrics, just instrumental music that captures the emotional essence of a diary entry.",
+    "style": "Dramatic Film Score",
+    "title": "Diary Emotion: Смешанный, с отте... Dramatic Film Score",
+    "customMode": true,
+    "instrumental": true,
+    "model": "V4_5",
+    "negativeTags": "lyrics, vocals, singing, spoken words, voice",
+    "callBackUrl": "http://localhost:5000/music_callback"
+  },
+  "response": {
+    "code": 200,
+    "msg": "success",
+    "taskId": "0c3aaca44b75189288ba140e49c6fa0a"
+  },
+  "error_message": "Ошибка запроса к API: 404 - {\"timestamp\":1747808107508,\"status\":404,\"error\":\"Not Found\",\"message\":\"No message available\",\"path\":\"/api/v1/status\"}",
+  "api_status": "error",
+  "api_data": {}
+}
