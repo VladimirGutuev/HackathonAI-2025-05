@@ -1,23 +1,55 @@
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv, dotenv_values
 from openai import OpenAI       # Импортируем только новую библиотеку
 import json
 import base64  # Добавляем для работы с изображениями
 import requests  # Добавляем для работы с API
 import io  # Добавляем для работы с файлами
 from datetime import datetime  # Добавляем для работы с датами
+import time  # Добавляем для работы с временем
 
-# Загрузка переменных окружения
-load_dotenv()
+# Улучшенная загрузка переменных окружения
+env_path = find_dotenv()
+if env_path:
+    try:
+        # Загрузка переменных окружения
+        load_dotenv(dotenv_path=env_path, override=True)
+        
+        # Альтернативный способ загрузки
+        config = dotenv_values(env_path)
+        for key, value in config.items():
+            if key not in os.environ:
+                os.environ[key] = value
+    except Exception as e:
+        print(f"Ошибка при загрузке .env файла: {str(e)}")
+else:
+    print("Файл .env не найден, переменные окружения не загружены")
 
 class WarDiaryAnalyzer:
     def __init__(self):
         """
-        Инициализация анализатора дневников.
-        Получает API ключ из переменных окружения.
+        Инициализация анализатора военных дневников.
+        Загружает API ключи и конфигурирует клиент OpenAI.
         """
-        self.api_key = os.getenv('OPENAI_API_KEY')
-        print(f"Инициализация WarDiaryAnalyzer, API ключ {'найден' if self.api_key else 'НЕ НАЙДЕН'}")
+        # Загружаем переменные окружения из файла .env
+        load_dotenv()
+        
+        # Улучшенная загрузка переменных окружения
+        self.api_key = os.environ.get('OPENAI_API_KEY')
+        self.suno_api_key = os.environ.get('SUNOAI_API_KEY')
+        
+        # Если ключи не найдены в переменных окружения, пробуем получить их через getenv
+        if not self.api_key:
+            self.api_key = os.getenv('OPENAI_API_KEY')
+        if not self.suno_api_key:
+            self.suno_api_key = os.getenv('SUNOAI_API_KEY')
+        
+        print(f"Инициализация WarDiaryAnalyzer, API ключ OpenAI {'найден' if self.api_key else 'НЕ НАЙДЕН'}")
+        print(f"API ключ Suno {'найден' if self.suno_api_key else 'НЕ НАЙДЕН'}")
+        print(f"Содержимое переменной SUNOAI_API_KEY: '{self.suno_api_key}'")
+        print(f"Текущий рабочий каталог: {os.getcwd()}")
+        print(f"Проверка, существует ли файл .env: {os.path.exists('.env')}")
+        
         if not self.api_key:
             raise ValueError("Пожалуйста, установите OPENAI_API_KEY в файле .env")
         
@@ -397,7 +429,7 @@ class WarDiaryAnalyzer:
     def generate_music(self, text, emotion_analysis=None):
         """
         Генерирует музыкальное произведение на основе текста дневника и эмоционального анализа.
-        Использует MusicGen API для создания музыкального фрагмента.
+        Использует Suno API для создания музыкального фрагмента.
         
         Args:
             text (str): Текст дневника
@@ -409,124 +441,626 @@ class WarDiaryAnalyzer:
         try:
             print(f"Генерация музыки на основе текста длиной {len(text)} символов")
             
+            # Проверяем наличие API ключа Suno
+            if not self.suno_api_key:
+                print("API ключ Suno не найден. Используем запасной метод.")
+                return self._fallback_music_generation(text, emotion_analysis)
+            
             # Если текст слишком длинный, обрезаем его
             if len(text) > 4000:
                 text = text[:4000]
+            
+            # Определяем стиль, настроение и тональность музыки на основе эмоционального анализа
+            style, mood, tempo, instruments = self._determine_music_params(emotion_analysis)
             
             # Формируем музыкальный запрос на основе текста и эмоций
             if emotion_analysis and 'primary_emotions' in emotion_analysis:
                 # Определяем основные параметры на основе эмоций
                 emotions = [e['emotion'] for e in emotion_analysis['primary_emotions']]
-                intensities = [e['intensity'] for e in emotion_analysis['primary_emotions']]
-                avg_intensity = sum(intensities) / len(intensities) if intensities else 5
+                tone = emotion_analysis.get('emotional_tone', 'reflective')
                 
-                # Определяем жанр и настроение на основе эмоций
-                mood = emotion_analysis.get('emotional_tone', 'reflective')
+                music_title = f"War Diary: {tone.capitalize()} {style}"
                 
-                # Создаем более точное описание для музыки
-                music_prompt = f"""
-                Create emotional music that captures the following mood from a war diary:
+                # Составляем более детальный промпт для Suno API, включая эмоциональный контекст
+                music_prompt = f"Create high-quality {mood} {style} music that captures the following emotions: {', '.join(emotions[:3])}. "
+                music_prompt += f"The music should reflect a {tone} tone of wartime experiences. "
+                music_prompt += f"{tempo} rhythm with {instruments} as primary instruments. "
+                music_prompt += f"Based on a war diary that describes: {text[:300]}..."
                 
-                Main emotions: {', '.join(emotions[:3])}
-                Overall tone: {mood}
-                Setting: Military, wartime, {self._determine_music_genre(emotions)}
+                # Негативные теги (то, что мы хотим исключить из генерации)
+                negative_tags = "lyrics, vocals, singing, spoken words, voice"
                 
-                The music should convey the emotions of {', '.join(emotions[:2])} with 
-                intensity level {avg_intensity}/10 and reflect the atmosphere of war experiences.
-                
-                Make it {self._determine_tempo(emotions, intensities)} with 
-                {self._determine_instruments(emotions)} as primary instruments.
-                
-                Context from the diary: "{text[:500]}..."
-                """
             else:
-                # Базовое описание, если нет эмоционального анализа
-                music_prompt = f"""
-                Create emotional music that captures the mood of this war diary:
+                # Базовый запрос, если нет эмоционального анализа
+                music_title = "War Diary Reflection"
                 
-                "{text[:500]}..."
+                music_prompt = f"Create high-quality emotional {style} music that captures the mood of a war diary. "
+                music_prompt += f"The music should be {mood} and reflect the atmosphere of wartime experiences. "
+                music_prompt += f"{tempo} with {instruments} as primary instruments. "
+                music_prompt += f"Context from the diary: {text[:300]}..."
                 
-                The music should reflect the atmosphere of wartime experiences, 
-                emotional and reflective, with a mix of tension and contemplation.
-                """
+                negative_tags = "lyrics, vocals, singing, spoken words, voice"
             
-            print("Отправка запроса для генерации музыки...")
+            print(f"Формирование запроса к Suno API: {music_prompt[:150]}...")
             
-            # Создаем запрос к LLM для получения описания музыки для MusicGen
-            response = self.client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are an expert music composer who creates detailed prompts for AI music generation. Focus on emotional qualities, instruments, tempo, and mood."},
-                    {"role": "user", "content": music_prompt}
-                ],
-                temperature=0.7
-            )
-            
-            # Получаем описание музыки
-            music_description = response.choices[0].message.content.strip()
-            print(f"Получено описание музыки: {music_description[:100]}...")
-            
-            # Сохраняем описание как MIDI файл (заглушка - реальная интеграция требует MusicGen API)
-            # В реальности здесь был бы вызов MusicGen API
-            music_filename = f"music_{int(datetime.now().timestamp())}.mp3"
-            music_path = os.path.join("static", "generated_music", music_filename)
-            
-            # Создаем директорию, если не существует
-            os.makedirs(os.path.dirname(music_path), exist_ok=True)
-            
-            # Поскольку у нас нет прямого доступа к MusicGen, создаем файл с описанием
-            with open(music_path.replace('.mp3', '.txt'), 'w', encoding='utf-8') as f:
-                f.write(music_description)
-                
-            # URL для эмбеда YouTube с классической военной музыкой (как заглушка)
-            # В реальном приложении здесь был бы URL сгенерированной музыки
-            demo_music_urls = [
-                "https://www.youtube.com/embed/YPn6_YZGQWs",  # The Great Escape
-                "https://www.youtube.com/embed/wULy5uEtTyY",  # Band of Brothers Theme
-                "https://www.youtube.com/embed/TmIwm5RElRs",  # Saving Private Ryan
-                "https://www.youtube.com/embed/e2LLS33eQvk",  # We Were Soldiers
-                "https://www.youtube.com/embed/vKa2qtIbU6g"   # 1917 Theme
-            ]
-            import random
-            demo_url = random.choice(demo_music_urls)
-                
-            return {
-                'success': True,
-                'music_description': music_description,
-                'embed_url': demo_url,
-                'local_path': music_path.replace('.mp3', '.txt'),
-                'filename': music_filename.replace('.mp3', '.txt')
+            # Подготовка JSON запроса для Suno API
+            request_data = {
+                "prompt": music_prompt,
+                "style": style,
+                "title": music_title,
+                "customMode": True,
+                "instrumental": True,  # Только инструментальная музыка
+                "model": "V4_5",  # Используем лучшую версию модели для максимального качества
+                "negativeTags": negative_tags
             }
             
+            # Формируем заголовки API запроса
+            headers = {
+                "Authorization": f"Bearer {self.suno_api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+            
+            # Отправляем запрос к Suno API
+            print(f"Отправка запроса к Suno API с данными: {json.dumps(request_data, ensure_ascii=False)[:200]}...")
+            response = requests.post(
+                "https://apibox.erweima.ai/api/v1/generate",
+                json=request_data,
+                headers=headers
+            )
+            
+            print(f"Получен ответ от Suno API, код: {response.status_code}")
+            
+            if response.status_code == 200:
+                try:
+                    response_data = response.json()
+                    print(f"Ответ API: {json.dumps(response_data, ensure_ascii=False)[:500]}")
+                except Exception as e:
+                    print(f"Ошибка при разборе JSON ответа: {str(e)}")
+                    return self._fallback_music_generation(text, emotion_analysis, error=f"Ошибка разбора ответа: {str(e)}")
+                
+                # Проверяем код ответа от API
+                if response_data.get('code') != 200:
+                    error_msg = f"API вернул ошибку: {response_data.get('msg', 'Неизвестная ошибка')}"
+                    print(error_msg)
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
+                
+                # Проверяем наличие data
+                if 'data' not in response_data:
+                    error_msg = "В ответе API отсутствует поле 'data'"
+                    print(error_msg)
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
+                
+                # Получаем данные из ответа API
+                data = response_data.get('data')
+                if not isinstance(data, dict):
+                    error_msg = f"Поле 'data' не является словарем: {type(data)}"
+                    print(error_msg)
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
+                
+                # Получаем task_id для отслеживания статуса
+                task_id = data.get('taskId')
+                if not task_id:
+                    error_msg = "Не удалось получить task_id от Suno API"
+                    print(error_msg)
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
+                
+                print(f"Запрос к Suno API успешно отправлен, task_id: {task_id}")
+                
+                # Проверяем статус генерации музыки
+                # Делаем несколько попыток с интервалом
+                max_retries = 3
+                for retry in range(max_retries):
+                    print(f"Проверка статуса задачи {task_id}, попытка {retry+1}/{max_retries}...")
+                    
+                    # Делаем небольшую паузу перед проверкой статуса
+                    time.sleep(2)
+                    
+                    # Запрос статуса задачи
+                    status_response = self._check_music_generation_status(task_id)
+                    
+                    if status_response.get('success', False):
+                        # Если генерация завершена, возвращаем результат
+                        if status_response.get('status') == 'complete':
+                            print(f"Задача {task_id} завершена успешно!")
+                            return status_response
+                        else:
+                            print(f"Задача {task_id} в процессе выполнения, статус: {status_response.get('status')}")
+                
+                # Сохраняем метаданные о задаче в файл
+                music_metadata = {
+                    'task_id': task_id,
+                    'title': music_title,
+                    'prompt': music_prompt,
+                    'style': style,
+                    'mood': mood,
+                    'tempo': tempo,
+                    'instruments': instruments,
+                    'emotions': [e['emotion'] for e in emotion_analysis['primary_emotions']][:3] if emotion_analysis and 'primary_emotions' in emotion_analysis else [],
+                    'emotional_tone': emotion_analysis.get('emotional_tone', '') if emotion_analysis else '',
+                    'status': 'processing',
+                    'created_at': datetime.now().isoformat()
+                }
+                
+                # Создаем директорию, если не существует
+                os.makedirs(os.path.join('static', 'generated_music'), exist_ok=True)
+                
+                # Формируем имя файла и пути
+                metadata_filename = f"music_metadata_{task_id}.json"
+                metadata_path = os.path.join('static', 'generated_music', metadata_filename)
+                
+                # Сохраняем метаданные
+                with open(metadata_path, 'w', encoding='utf-8') as f:
+                    json.dump(music_metadata, f, ensure_ascii=False, indent=2)
+                
+                # Возвращаем информацию о музыке с прямым аудио URL, если он доступен
+                music_description = f"Сгенерирована {mood} {style} музыка, отражающая "
+                music_description += f"{', '.join(music_metadata['emotions'] if music_metadata['emotions'] else ['различные'])} эмоции. "
+                music_description += f"Использует {instruments}."
+                
+                return {
+                    'success': True,
+                    'status': 'processing',
+                    'task_id': task_id,
+                    'music_description': music_description,
+                    'audio_url': None,  # Будет заполнено, когда музыка будет готова
+                    'metadata': music_metadata,
+                    'metadata_path': metadata_path
+                }
+            else:
+                # В случае ошибки API
+                error_msg = f"Ошибка Suno API: {response.status_code}"
+                try:
+                    error_msg += f" - {response.text}"
+                except:
+                    pass
+                print(error_msg)
+                # Переходим к запасному варианту
+                return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
+                
         except Exception as e:
             print(f"Ошибка при генерации музыки: {str(e)}")
             import traceback
             traceback.print_exc()
             
+            # Переходим к запасному варианту
+            return self._fallback_music_generation(text, emotion_analysis, error=str(e))
+    
+    def _check_music_generation_status(self, task_id):
+        """
+        Проверяет статус задачи генерации музыки по task_id.
+        Теперь использует локальный файл метаданных вместо прямого API-запроса,
+        поскольку SUNO API не предоставляет надежный эндпоинт для проверки статуса задачи.
+        
+        Args:
+            task_id (str): Идентификатор задачи
+            
+        Returns:
+            dict: Информация о статусе задачи и результаты, если задача завершена
+        """
+        try:
+            # Проверка наличия task_id
+            if not task_id:
+                return {
+                    'success': False,
+                    'status': 'error',
+                    'message': "Отсутствует идентификатор задачи (task_id)"
+                }
+            
+            # Вместо API запроса проверяем локальный файл метаданных
+            metadata_path = os.path.join('static', 'generated_music', f"music_metadata_{task_id}.json")
+            if not os.path.exists(metadata_path):
+                return {
+                    'success': False,
+                    'status': 'error',
+                    'message': f"Метаданные для задачи {task_id} не найдены. Возможно, задача была удалена."
+                }
+            
+            # Загружаем метаданные
+            try:
+                with open(metadata_path, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                    
+                print(f"Загружены метаданные для задачи {task_id}: {json.dumps(metadata, ensure_ascii=False)[:500]}...")
+            except Exception as e:
+                print(f"Ошибка при чтении метаданных: {str(e)}")
+                return {
+                    'success': False,
+                    'status': 'error',
+                    'message': f"Ошибка при чтении метаданных: {str(e)}"
+                }
+            
+            # Проверяем сколько времени прошло с момента создания задачи
+            current_time = datetime.now()
+            created_at = datetime.fromisoformat(metadata.get('created_at', current_time.isoformat()))
+            elapsed_seconds = (current_time - created_at).total_seconds()
+            
+            # Определяем максимальное время ожидания (15 минут)
+            max_wait_time = 15 * 60  # секунд
+            
+            # Проверяем статус из метаданных
+            status = metadata.get('status', 'processing')
+            
+            # Если задача завершена, возвращаем результат
+            if status == 'complete':
+                print(f"Задача {task_id} завершена успешно")
+                
+                # Формируем описание музыки на основе метаданных
+                music_description = f"Сгенерирована музыка в стиле {metadata.get('style', 'инструментальный')}."
+                if 'mood' in metadata:
+                    music_description += f" Настроение: {metadata.get('mood')}."
+                if 'emotions' in metadata and metadata['emotions']:
+                    music_description += f" Отражает эмоции: {', '.join(metadata['emotions'])}."
+                
+                # Возвращаем информацию о завершенной задаче
+                return {
+                    'success': True,
+                    'status': 'complete',
+                    'audio_url': metadata.get('audio_url', ''),
+                    'stream_url': metadata.get('stream_url', ''),
+                    'image_url': metadata.get('image_url', ''),
+                    'title': metadata.get('title', ''),
+                    'task_id': task_id,
+                    'music_description': music_description,
+                    'style': metadata.get('style', ''),
+                    'mood': metadata.get('mood', ''),
+                    'emotions': metadata.get('emotions', []),
+                    'emotional_tone': metadata.get('emotional_tone', '')
+                }
+            
+            # Если превышено максимальное время ожидания, меняем статус на "timeout"
+            if elapsed_seconds > max_wait_time and status == 'processing':
+                print(f"Превышено время ожидания для задачи {task_id}: {elapsed_seconds:.2f} сек.")
+                
+                # Обновляем метаданные
+                metadata['status'] = 'timeout'
+                metadata['last_update'] = current_time.isoformat()
+                
+                with open(metadata_path, 'w', encoding='utf-8') as f:
+                    json.dump(metadata, f, ensure_ascii=False, indent=2)
+                
+                return {
+                    'success': False,
+                    'status': 'timeout',
+                    'message': f"Превышено время ожидания ({max_wait_time//60} мин). Музыка не была сгенерирована.",
+                    'task_id': task_id,
+                    'music_description': metadata.get('music_description', 'Музыка не была сгенерирована.')
+                }
+            
+            # Если задача в процессе, возвращаем статус
+            print(f"Задача {task_id} в процессе выполнения, прошло {elapsed_seconds:.2f} сек.")
+            
+            # Оценка прогресса на основе времени выполнения (очень примерно)
+            progress = min(95, int(elapsed_seconds / max_wait_time * 100))
+            
+            return {
+                'success': True,
+                'status': status,
+                'message': f"Задача в процессе выполнения ({progress}% ориентировочно)",
+                'task_id': task_id,
+                'music_description': metadata.get('music_description', 'Музыка генерируется...'),
+                'progress': progress,
+                'elapsed_seconds': int(elapsed_seconds)
+            }
+                
+        except Exception as e:
+            print(f"Ошибка при проверке статуса генерации музыки: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
             return {
                 'success': False,
-                'error': str(e)
+                'status': 'error',
+                'message': str(e),
+                'task_id': task_id
             }
     
+    def _fallback_music_generation(self, text, emotion_analysis, error=None):
+        """
+        Запасной метод генерации музыки, если основной метод недоступен.
+        Использует SUNA API для генерации музыки.
+        
+        Args:
+            text (str): Текст дневника
+            emotion_analysis (dict): Эмоциональный анализ
+            error (str, optional): Сообщение об ошибке
+            
+        Returns:
+            dict: Результат генерации музыки
+        """
+        print("Использование запасного метода генерации музыки через SUNA...")
+        
+        # Проверка параметров на None
+        if emotion_analysis is None:
+            emotion_analysis = {}
+        
+        # Определяем параметры музыки на основе эмоционального анализа
+        try:
+            style, mood, tempo, instruments = self._determine_music_params(emotion_analysis)
+        except Exception as e:
+            print(f"Ошибка при определении параметров музыки: {str(e)}")
+            # Установка значений по умолчанию при ошибке
+            style = "Instrumental"
+            mood = "reflective"
+            tempo = "moderate"
+            instruments = "piano and strings"
+        
+        if not self.suno_api_key:
+            print("\n\n====== ВНИМАНИЕ: SUNO API ключ не найден ======")
+            print("Вы можете ввести ключ вручную для текущей сессии.")
+            print("Либо добавьте SUNOAI_API_KEY=ваш_ключ в файл .env в корне проекта")
+            temp_key = input("Введите SUNO API ключ (оставьте пустым, чтобы пропустить): ")
+            if temp_key and temp_key.strip():
+                self.suno_api_key = temp_key.strip()
+                print("Ключ временно установлен для текущей сессии")
+            else:
+                print("Ключ не введен. Генерация музыки будет пропущена.")
+                return {
+                    'success': False,
+                    'error': "API ключ SUNO не найден. Пожалуйста, добавьте SUNOAI_API_KEY в файл .env для генерации музыки."
+                }
+            
+        try:
+            # Формируем подходящий музыкальный запрос на основе эмоционального анализа
+            emotions = []
+            tone = "reflective"
+            
+            if emotion_analysis and isinstance(emotion_analysis, dict) and 'primary_emotions' in emotion_analysis:
+                # Безопасное получение списка эмоций
+                if isinstance(emotion_analysis['primary_emotions'], list):
+                    emotions = [e.get('emotion', 'emotion') for e in emotion_analysis['primary_emotions'] if isinstance(e, dict)]
+                tone = emotion_analysis.get('emotional_tone', 'reflective')
+                
+            music_title = f"Diary Emotion: {tone.capitalize()} {style}"
+            
+            # Формируем детальный запрос для SUNA с учетом эмоций
+            emotions_str = ', '.join(emotions[:3]) if emotions else 'varied emotions'
+            
+            # Подробное описание для лучшей музыкальной генерации
+            music_prompt = f"Create high-quality {mood} {style} music that conveys {emotions_str}. "
+            music_prompt += f"The piece should have a {tempo} rhythm with {instruments}. "
+            music_prompt += f"The music should reflect emotions from a war diary with a {tone} tone. "
+            music_prompt += f"No lyrics, just instrumental music that captures the emotional essence of a diary entry."
+                
+            print(f"Формирование запроса к SUNA API: {music_prompt[:150]}...")
+            
+            # Подготовка параметров для SUNA API
+            headers = {
+                "Authorization": f"Bearer {self.suno_api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+            
+            # Получаем текущий хост для callback URL
+            base_url = "http://localhost:5000"  # Используем локальный URL по умолчанию
+            
+            # Создаем URL для обратного вызова
+            callback_url = f"{base_url}/music_callback"
+            
+            # Формируем запрос к SUNA API с использованием лучшей модели
+            request_data = {
+                "prompt": music_prompt,
+                "style": style,
+                "title": music_title,
+                "customMode": True,
+                "instrumental": True,
+                "model": "V4_5",  # Используем лучшую модель для качественной музыки
+                "negativeTags": "lyrics, vocals, singing, spoken words, voice",
+                "callBackUrl": callback_url  # Добавляем URL для обратного вызова
+            }
+            
+            print(f"Отправка запроса к SUNA API с данными: {json.dumps(request_data, ensure_ascii=False)[:200]}...")
+            
+            # Отправляем запрос на генерацию музыки
+            response = requests.post(
+                "https://apibox.erweima.ai/api/v1/generate",
+                json=request_data,
+                headers=headers
+            )
+            
+            print(f"Получен ответ от SUNA API, код: {response.status_code}")
+            
+            if response.status_code == 200:
+                try:
+                    result = response.json()
+                    print(f"Ответ API: {json.dumps(result, ensure_ascii=False)[:500]}")
+                except Exception as e:
+                    print(f"Ошибка при разборе JSON ответа: {str(e)}")
+                    raise ValueError(f"Не удалось разобрать ответ от API: {str(e)}")
+                
+                # Проверяем, что result - это словарь
+                if not isinstance(result, dict):
+                    raise ValueError(f"Неверный формат ответа от API: {type(result)}")
+                
+                # Проверяем код ответа от API
+                if result.get('code') != 200:
+                    raise ValueError(f"API вернул ошибку: {result.get('msg', 'Неизвестная ошибка')}")
+                
+                # Проверяем наличие data
+                if 'data' not in result:
+                    raise ValueError("В ответе API отсутствует поле 'data'")
+                
+                # Получаем data и проверяем его тип
+                data = result.get('data')
+                if not isinstance(data, dict):
+                    raise ValueError(f"Поле 'data' не является словарем: {type(data)}")
+                
+                # Получаем task_id
+                task_id = data.get('taskId')
+                if not task_id:
+                    raise ValueError("Не удалось получить task_id от SUNA API")
+                    
+                print(f"Запрос на генерацию музыки отправлен, task_id: {task_id}")
+                
+                # Создаем директорию для сохранения метаданных
+                os.makedirs(os.path.join('static', 'generated_music'), exist_ok=True)
+                
+                # Безопасное получение эмоций для метаданных
+                emotion_list = []
+                if emotion_analysis and isinstance(emotion_analysis, dict) and 'primary_emotions' in emotion_analysis:
+                    if isinstance(emotion_analysis['primary_emotions'], list):
+                        emotion_list = [e.get('emotion') for e in emotion_analysis['primary_emotions'][:3] 
+                                        if isinstance(e, dict) and 'emotion' in e]
+                
+                # Получаем текущее время для отслеживания создания задачи
+                current_time = datetime.now()
+                
+                # Метаданные музыки
+                music_metadata = {
+                    'title': music_title,
+                    'style': style,
+                    'mood': mood,
+                    'tempo': tempo,
+                    'instruments': instruments,
+                    'emotions': emotion_list,
+                    'emotional_tone': emotion_analysis.get('emotional_tone', '') if isinstance(emotion_analysis, dict) else '',
+                    'status': 'processing',
+                    'created_at': current_time.isoformat(),
+                    'last_update': current_time.isoformat(),
+                    'task_id': task_id,
+                    'prompt': music_prompt,
+                    'callback_url': callback_url,
+                    'request': request_data,
+                    'response': {
+                        'code': result.get('code'),
+                        'msg': result.get('msg'),
+                        'taskId': task_id
+                    }
+                }
+                
+                # Сохраняем метаданные в файл
+                metadata_filename = f"music_metadata_{task_id}.json"
+                metadata_path = os.path.join('static', 'generated_music', metadata_filename)
+                
+                with open(metadata_path, 'w', encoding='utf-8') as f:
+                    json.dump(music_metadata, f, ensure_ascii=False, indent=2)
+                
+                # Формируем описание музыки
+                music_description = f"Генерируется {mood} {style} музыка"
+                if emotions:
+                    music_description += f", отражающая {', '.join(emotions[:3])}. "
+                music_description += f"Используются инструменты: {instruments}."
+                
+                return {
+                    'success': True,
+                    'status': 'processing',
+                    'task_id': task_id,
+                    'music_description': music_description,
+                    'metadata': music_metadata,
+                    'metadata_path': metadata_path
+                }
+            else:
+                error_msg = f"Ошибка SUNA API: {response.status_code}"
+                try:
+                    error_text = response.text
+                    error_msg += f" - {error_text}"
+                except:
+                    pass
+                
+                print(error_msg)
+                return {
+                    'success': False,
+                    'error': error_msg
+                }
+                
+        except Exception as e:
+            print(f"Ошибка при запасной генерации музыки: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            return {
+                'success': False,
+                'error': f"Ошибка при генерации музыки: {str(e)}"
+            }
+    
+    def _determine_music_params(self, emotion_analysis):
+        """
+        Определяет музыкальные параметры на основе эмоционального анализа.
+        
+        Args:
+            emotion_analysis (dict): Эмоциональный анализ
+            
+        Returns:
+            tuple: (стиль, настроение, темп, инструменты)
+        """
+        # Если нет анализа эмоций, возвращаем базовые параметры
+        if not emotion_analysis or not isinstance(emotion_analysis, dict) or 'primary_emotions' not in emotion_analysis:
+            return "Orchestral", "dramatic", "moderate", "orchestra and piano"
+        
+        # Безопасно получаем эмоции и их интенсивность
+        emotions = []
+        intensities = []
+        
+        try:
+            primary_emotions = emotion_analysis.get('primary_emotions', [])
+            if isinstance(primary_emotions, list) and primary_emotions:
+                for e in primary_emotions:
+                    if isinstance(e, dict):
+                        if 'emotion' in e:
+                            emotions.append(e['emotion'])
+                        if 'intensity' in e and isinstance(e['intensity'], (int, float)):
+                            intensities.append(e['intensity'])
+        except Exception as e:
+            print(f"Ошибка при извлечении эмоций: {str(e)}")
+        
+        if not emotions:
+            # Если не удалось получить эмоции, используем значения по умолчанию
+            return "Orchestral", "dramatic", "moderate", "orchestra and piano"
+        
+        avg_intensity = sum(intensities) / len(intensities) if intensities else 5
+        
+        try:
+            # Определяем стиль музыки на основе эмоций
+            style = self._determine_music_genre(emotions)
+            
+            # Определяем настроение
+            if any(e.lower() in ['страх', 'ужас', 'тревога', 'fear', 'anxiety', 'panic', 'terror'] for e in emotions):
+                mood = "tense"
+            elif any(e.lower() in ['грусть', 'печаль', 'скорбь', 'sadness', 'grief', 'sorrow', 'melancholy'] for e in emotions):
+                mood = "melancholic"
+            elif any(e.lower() in ['надежда', 'радость', 'счастье', 'hope', 'joy', 'happiness'] for e in emotions):
+                mood = "hopeful"
+            elif any(e.lower() in ['гордость', 'отвага', 'мужество', 'courage', 'bravery', 'valor'] for e in emotions):
+                mood = "heroic"
+            else:
+                mood = "dramatic"
+            
+            # Определяем темп
+            tempo = self._determine_tempo(emotions, intensities)
+            
+            # Определяем инструменты
+            instruments = self._determine_instruments(emotions)
+            
+            return style, mood, tempo, instruments
+        except Exception as e:
+            print(f"Ошибка при определении музыкальных параметров: {str(e)}")
+            return "Orchestral", "dramatic", "moderate", "orchestra and piano"
+
     def _determine_music_genre(self, emotions):
         """Определяет жанр музыки на основе эмоций"""
-        if any(e in ['страх', 'ужас', 'тревога', 'fear', 'anxiety', 'panic'] for e in emotions):
-            return "tense orchestral"
-        elif any(e in ['грусть', 'печаль', 'скорбь', 'sadness', 'grief', 'sorrow'] for e in emotions):
-            return "melancholic orchestral"
-        elif any(e in ['надежда', 'решимость', 'hope', 'determination', 'courage'] for e in emotions):
-            return "triumphant orchestral"
+        if any(e.lower() in ['страх', 'ужас', 'тревога', 'fear', 'anxiety', 'panic', 'terror'] for e in emotions):
+            return "Cinematic Suspense"
+        elif any(e.lower() in ['грусть', 'печаль', 'скорбь', 'sadness', 'grief', 'sorrow', 'melancholy'] for e in emotions):
+            return "Neoclassical Piano"
+        elif any(e.lower() in ['надежда', 'радость', 'hope', 'joy', 'happiness'] for e in emotions):
+            return "Uplifting Orchestral"
+        elif any(e.lower() in ['гордость', 'отвага', 'мужество', 'courage', 'bravery', 'valor'] for e in emotions):
+            return "Epic Orchestral" 
+        elif any(e.lower() in ['решимость', 'determination', 'resolve', 'conviction'] for e in emotions):
+            return "Dramatic Orchestral"
         else:
-            return "dramatic orchestral"
+            return "Dramatic Film Score"
     
     def _determine_tempo(self, emotions, intensities):
         """Определяет темп музыки на основе эмоций и их интенсивности"""
         avg_intensity = sum(intensities) / len(intensities) if intensities else 5
         
-        if any(e in ['страх', 'fear', 'anxiety', 'panic'] for e in emotions) and avg_intensity > 7:
+        if any(e.lower() in ['страх', 'fear', 'anxiety', 'panic', 'terror'] for e in emotions) and avg_intensity > 7:
             return "fast-paced and intense"
-        elif any(e in ['грусть', 'sadness', 'grief'] for e in emotions):
+        elif any(e.lower() in ['грусть', 'печаль', 'sadness', 'grief', 'sorrow'] for e in emotions):
             return "slow and contemplative"
+        elif any(e.lower() in ['гордость', 'отвага', 'courage', 'valor'] for e in emotions):
+            return "steady and powerful"
         elif avg_intensity > 7:
             return "dynamic with building tension"
         else:
@@ -534,11 +1068,15 @@ class WarDiaryAnalyzer:
     
     def _determine_instruments(self, emotions):
         """Определяет инструменты на основе эмоций"""
-        if any(e in ['страх', 'ужас', 'fear', 'anxiety', 'panic'] for e in emotions):
+        if any(e.lower() in ['страх', 'ужас', 'тревога', 'fear', 'anxiety', 'panic', 'terror'] for e in emotions):
             return "low strings and percussion"
-        elif any(e in ['грусть', 'печаль', 'скорбь', 'sadness', 'grief'] for e in emotions):
+        elif any(e.lower() in ['грусть', 'печаль', 'скорбь', 'sadness', 'grief', 'sorrow'] for e in emotions):
             return "cello and piano"
-        elif any(e in ['надежда', 'решимость', 'hope', 'determination'] for e in emotions):
+        elif any(e.lower() in ['надежда', 'hope', 'joy', 'happiness'] for e in emotions):
+            return "strings and woodwinds"
+        elif any(e.lower() in ['гордость', 'мужество', 'отвага', 'courage', 'bravery', 'heroism'] for e in emotions):
+            return "brass and timpani"
+        elif any(e.lower() in ['решимость', 'determination', 'resolve'] for e in emotions):
             return "brass and strings"
         else:
             return "full orchestra with piano accents"

@@ -1,0 +1,18 @@
+{
+  "title": "Diary Emotion: Мрачный Neoclassical Piano",
+  "style": "Neoclassical Piano",
+  "mood": "melancholic",
+  "tempo": "slow and contemplative",
+  "instruments": "cello and piano",
+  "emotions": [
+    "решимость",
+    "усталость",
+    "грусть"
+  ],
+  "emotional_tone": "мрачный",
+  "status": "processing",
+  "created_at": "2025-05-20T21:10:53.897487",
+  "task_id": "8fa57a22f483cd089772c360158d694e",
+  "prompt": "Create high-quality melancholic Neoclassical Piano music that conveys решимость, усталость, грусть. The piece should have a slow and contemplative rhythm with cello and piano. The music should reflect emotions from a war diary with a мрачный tone. No lyrics, just instrumental music that captures the emotional essence of a diary entry.",
+  "callback_url": "http://localhost:5000/music_callback"
+}

@@ -1,14 +1,41 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response
 from war_diary_analyzer import WarDiaryAnalyzer
 from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import os
+import sys
 from datetime import datetime
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv, dotenv_values
+import json
+import requests
 
-load_dotenv()
+# Улучшенная загрузка переменных окружения
+env_path = find_dotenv() 
+if env_path:
+    print(f"Найден файл .env: {env_path}")
+    try:
+        # Чтение файла для проверки его содержимого
+        with open(env_path, 'r', encoding='utf-8') as f:
+            env_content = f.read()
+            print(f"Файл .env содержит {len(env_content.splitlines())} строк")
+            
+        # Загрузка переменных окружения
+        load_dotenv(dotenv_path=env_path, override=True)
+        
+        # Альтернативный способ загрузки
+        config = dotenv_values(env_path)
+        for key, value in config.items():
+            if key not in os.environ:
+                os.environ[key] = value
+                print(f"Установлена переменная окружения через dotenv_values: {key}")
+    except Exception as e:
+        print(f"Ошибка при загрузке .env файла: {str(e)}")
+else:
+    print("Файл .env не найден!")
 
-print("OPENAI_API_KEY:", os.environ.get("OPENAI_API_KEY"))
+# Проверка переменных окружения
+print("OPENAI_API_KEY:", "Установлен" if os.environ.get("OPENAI_API_KEY") else "НЕ УСТАНОВЛЕН")
+print("SUNOAI_API_KEY:", "Установлен" if os.environ.get("SUNOAI_API_KEY") else "НЕ УСТАНОВЛЕН")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -147,7 +174,11 @@ def analyze():
                     response_data['generated_music'] = {
                         'success': True,
                         'music_description': music_result.get('music_description', ''),
+                        'audio_url': music_result.get('audio_url', ''),
+                        'stream_url': music_result.get('stream_url', ''),
                         'embed_url': music_result.get('embed_url', ''),
+                        'task_id': music_result.get('task_id', ''),
+                        'status': music_result.get('status', 'unknown'),
                         'local_path': music_result.get('local_path', '')
                     }
                 else:
@@ -550,7 +581,12 @@ def generate_music():
         response_data = {
             'success': True,
             'music_description': music_result.get('music_description', ''),
-            'embed_url': music_result.get('embed_url', '')
+            'audio_url': music_result.get('audio_url', ''),
+            'stream_url': music_result.get('stream_url', ''),
+            'embed_url': music_result.get('embed_url', ''),
+            'task_id': music_result.get('task_id', ''),
+            'status': music_result.get('status', 'unknown'),
+            'local_path': music_result.get('local_path', '')
         }
         
         print("=== Обработка запроса /generate_music успешно завершена ===")
@@ -560,6 +596,181 @@ def generate_music():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/check_music_status')
+def check_music_status():
+    """
+    Проверяет статус задачи генерации музыки.
+    """
+    try:
+        # Получаем task_id из параметров запроса
+        task_id = request.args.get('task_id')
+        if not task_id:
+            return jsonify({'success': False, 'error': 'Не указан task_id'}), 400
+        
+        # Создаем экземпляр анализатора
+        analyzer = WarDiaryAnalyzer()
+        
+        # Проверяем статус генерации музыки
+        status_response = analyzer._check_music_generation_status(task_id)
+        
+        # Возвращаем статус
+        return jsonify(status_response)
+    except Exception as e:
+        print(f"Ошибка при проверке статуса музыки: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/music_callback', methods=['POST'])
+def music_callback():
+    """
+    Обработчик обратных вызовов от SUNO API для обновления статуса задач генерации музыки.
+    Принимает уведомления о завершении генерации музыки.
+    """
+    try:
+        # Получаем данные из запроса
+        data = request.get_json()
+        print(f"Получен callback от SUNO API: {json.dumps(data, ensure_ascii=False)[:500]}...")
+        
+        if not data:
+            return jsonify({'success': False, 'error': 'Пустые данные'}), 400
+        
+        # Проверяем структуру данных
+        if 'data' not in data:
+            return jsonify({'success': False, 'error': 'Отсутствует поле data'}), 400
+            
+        callback_data = data.get('data', {})
+        
+        # Получаем тип обратного вызова и task_id
+        callback_type = callback_data.get('callbackType')
+        task_id = callback_data.get('task_id')
+        
+        if not task_id:
+            return jsonify({'success': False, 'error': 'Отсутствует task_id'}), 400
+        
+        print(f"Обработка callback для task_id: {task_id}, тип: {callback_type}")
+        
+        # Путь к файлу метаданных
+        metadata_path = os.path.join('static', 'generated_music', f"music_metadata_{task_id}.json")
+        
+        # Проверяем существование файла метаданных
+        if not os.path.exists(metadata_path):
+            print(f"Файл метаданных не найден: {metadata_path}")
+            # Если файл не существует, создаем новый с базовой информацией
+            metadata = {
+                'task_id': task_id,
+                'status': 'unknown',
+                'created_at': datetime.now().isoformat(),
+                'last_update': datetime.now().isoformat(),
+                'callback_received': True,
+                'callback_data': callback_data
+            }
+        else:
+            # Загружаем текущие метаданные
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                metadata = json.load(f)
+        
+        # Обновляем метаданные на основе типа callback
+        metadata['status'] = callback_type if callback_type else 'updated'
+        metadata['last_update'] = datetime.now().isoformat()
+        metadata['callback_received'] = True
+        
+        # Если есть дополнительные данные в callback, сохраняем их
+        if 'callbackData' in callback_data:
+            metadata['callback_data'] = callback_data.get('callbackData')
+        
+        # Если callback_type = 'complete', значит музыка полностью сгенерирована
+        if callback_type == 'complete' and 'data' in callback_data:
+            tracks_data = callback_data.get('data', [])
+            print(f"Получены данные о треках: {json.dumps(tracks_data, ensure_ascii=False)[:500]}...")
+            
+            if tracks_data and isinstance(tracks_data, list) and len(tracks_data) > 0:
+                track = tracks_data[0]  # Берем первый трек
+                print(f"Данные первого трека: {json.dumps(track, ensure_ascii=False)}")
+                
+                # Получаем URL-адреса аудио с проверкой разных возможных полей
+                audio_url = track.get('audio_url') or track.get('audioUrl', '')
+                stream_url = track.get('stream_audio_url') or track.get('streamAudioUrl') or track.get('streamUrl', '')
+                image_url = track.get('image_url') or track.get('imageUrl', '')
+                
+                # Проверяем и логируем URL-адреса
+                print(f"Audio URL: {audio_url}")
+                print(f"Stream URL: {stream_url}")
+                print(f"Image URL: {image_url}")
+                
+                # Сохраняем информацию о треке
+                metadata['status'] = 'complete'
+                metadata['completed_at'] = datetime.now().isoformat()
+                metadata['audio_url'] = audio_url
+                metadata['stream_url'] = stream_url
+                metadata['image_url'] = image_url
+                metadata['duration'] = track.get('duration', 0)
+                metadata['tags'] = track.get('tags', '')
+                metadata['track_data'] = track  # Сохраняем все данные трека для отладки
+                
+                print(f"Обновлены метаданные для завершенной задачи: {task_id}")
+        
+        # Если callback_type = 'error', значит произошла ошибка при генерации
+        if callback_type == 'error':
+            metadata['status'] = 'error'
+            metadata['error'] = callback_data.get('message') or callback_data.get('msg') or 'Неизвестная ошибка'
+            print(f"Получена ошибка для задачи {task_id}: {metadata['error']}")
+        
+        # Сохраняем оригинальные данные callback для отладки
+        metadata['last_callback'] = data
+        
+        # Сохраняем обновленные метаданные
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+            
+        return jsonify({'success': True, 'message': f'Callback обработан для task_id: {task_id}'}), 200
+    
+    except Exception as e:
+        print(f"Ошибка при обработке callback: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/proxy_audio')
+def proxy_audio():
+    """
+    Проксирует аудио-содержимое из внешнего URL для обхода CORS-ограничений.
+    Используйте этот маршрут при проблемах с прямым доступом к аудио.
+    """
+    try:
+        url = request.args.get('url')
+        if not url:
+            return "URL не указан", 400
+        
+        print(f"Проксирование аудио с URL: {url}")
+        
+        # Проверка на валидный URL
+        if not url.startswith('http'):
+            return "Неверный формат URL", 400
+        
+        # Отправляем запрос к внешнему ресурсу
+        response = requests.get(url, stream=True)
+        response.raise_for_status()  # Проверка на ошибки HTTP
+        
+        # Получаем тип контента
+        content_type = response.headers.get('Content-Type', 'audio/mpeg')
+        
+        # Создаем поток данных
+        def generate():
+            for chunk in response.iter_content(chunk_size=8192):
+                yield chunk
+                
+        # Возвращаем аудио как поток
+        return Response(generate(), content_type=content_type)
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Ошибка при проксировании аудио: {str(e)}")
+        return f"Ошибка при получении аудио: {str(e)}", 500
+    except Exception as e:
+        print(f"Общая ошибка при проксировании аудио: {str(e)}")
+        return f"Общая ошибка: {str(e)}", 500
 
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")

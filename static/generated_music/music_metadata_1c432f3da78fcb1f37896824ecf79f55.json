@@ -1,0 +1,18 @@
+{
+  "title": "Diary Emotion: Суровый, но облегченный Dramatic Orchestral",
+  "style": "Dramatic Orchestral",
+  "mood": "dramatic",
+  "tempo": "moderate with emotional depth",
+  "instruments": "brass and strings",
+  "emotions": [
+    "решимость",
+    "отчаяние",
+    "облегчение"
+  ],
+  "emotional_tone": "суровый, но облегченный",
+  "status": "processing",
+  "created_at": "2025-05-20T21:00:40.532153",
+  "task_id": "1c432f3da78fcb1f37896824ecf79f55",
+  "prompt": "Create high-quality dramatic Dramatic Orchestral music that conveys решимость, отчаяние, облегчение. The piece should have a moderate with emotional depth rhythm with brass and strings. The music should reflect emotions from a war diary with a суровый, но облегченный tone. No lyrics, just instrumental music that captures the emotional essence of a diary entry.",
+  "callback_url": "http://localhost:5000/music_callback"
+}
