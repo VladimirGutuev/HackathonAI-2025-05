@@ -184,293 +184,263 @@
 <script>
 let lastAnalysisResults = null;
 
-document.getElementById('diary-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
+// Функция обработки отправки формы
+document.addEventListener('DOMContentLoaded', function() {
+    const diaryForm = document.getElementById('diary-form');
     
-    // Проверяем, что выбран хотя бы один тип генерации
-    const selectedTypes = Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value);
-    if (selectedTypes.length === 0) {
-        alert('Выберите хотя бы один тип генерации');
-        return;
-    }
-    
-    // Защита от повторной отправки
-    if (this.classList.contains('processing')) {
-        console.log('Форма уже обрабатывается');
-        return;
-    }
-    
-    this.classList.add('processing');
-    
-    // Находим кнопку отправки
-    const submitButton = this.querySelector('button[type="submit"]');
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.innerHTML = 'Анализируем...';
-    }
-    
-    // Создаем элемент для отображения статуса
-    let statusElement = null;
-    try {
-        statusElement = document.createElement('div');
-        statusElement.className = 'alert alert-info mt-3';
-        statusElement.innerHTML = 'Запрос отправлен. Ожидайте ответа (это может занять до 30-60 секунд)...';
-        this.appendChild(statusElement);
-    } catch (err) {
-        console.warn('Не удалось создать элемент статуса:', err);
-    }
-    
-    try {
-        console.log('Отправка запроса на /analyze...');
-        
-        // Устанавливаем таймаут для fetch с использованием AbortController
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 минуты таймаут
-        
-        const response = await fetch('/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams(new FormData(this)),
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId); // Отменяем таймаут, если ответ получен
-        
-        console.log('Получен ответ:', response.status, response.statusText);
-        
-        // Обновляем статус если элемент существует
-        if (statusElement && statusElement.parentNode) {
-            statusElement.className = 'alert alert-success mt-3';
-            statusElement.textContent = 'Ответ получен, обрабатываем результаты...';
-        }
-        
-        // Проверяем, что ответ можно преобразовать в JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            console.error('Ошибка: Сервер вернул не JSON:', contentType);
-            throw new Error('Сервер вернул не JSON ответ');
-        }
-        
-        const text = await response.text();
-        console.log('Текст ответа:', text.substring(0, 100) + '...'); // Логируем только начало
-        
-        let data;
-        try {
-            data = JSON.parse(text);
-            console.log('Данные получены успешно');
-        } catch (jsonError) {
-            console.error('Ошибка парсинга JSON:', jsonError);
-            throw new Error('Невозможно распарсить JSON');
-        }
-        
-        if (response.ok) {
-            // Удаляем статусный элемент, если он существует и является дочерним
+    if (diaryForm) {
+        diaryForm.addEventListener('submit', async function(e) {
+            // Явно предотвращаем стандартное поведение формы
+            e.preventDefault();
+            
+            // Проверяем, что выбран хотя бы один тип генерации
+            const selectedTypes = Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value);
+            if (selectedTypes.length === 0) {
+                alert('Выберите хотя бы один тип генерации');
+                return;
+            }
+            
+            // Защита от повторной отправки
+            if (this.classList.contains('processing')) {
+                console.log('Форма уже обрабатывается');
+                return;
+            }
+            
+            this.classList.add('processing');
+            
+            // Находим кнопку отправки
+            const submitButton = this.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = 'Анализируем...';
+            }
+            
+            // Создаем элемент для отображения статуса
+            let statusElement = null;
             try {
-                if (statusElement && statusElement.parentNode === this) {
-                    this.removeChild(statusElement);
-                }
-            } catch (e) {
-                console.warn('Не удалось удалить статусный элемент:', e);
+                statusElement = document.createElement('div');
+                statusElement.className = 'alert alert-info mt-3';
+                statusElement.innerHTML = 'Запрос отправлен. Ожидайте ответа (это может занять до 30-60 секунд)...';
+                this.appendChild(statusElement);
+            } catch (err) {
+                console.warn('Не удалось создать элемент статуса:', err);
             }
             
-            // Сохраняем результаты для возможной публикации
-            const diaryText = document.getElementById('diary_text');
-            lastAnalysisResults = {
-                diary_text: diaryText ? diaryText.value : '',
-                emotion_analysis: data.emotion_analysis || {},
-                generated_literary_work: data.generated_literary_work || '',
-                generation_types: Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value)
-            };
-            
-            // Безопасно обращаемся к элементам DOM
-            const resultsElement = document.getElementById('results');
-            if (resultsElement) {
-                resultsElement.style.display = 'block';
-            }
-            
-            const shareElement = document.getElementById('share-results');
-            if (shareElement) {
-                shareElement.style.display = 'block';
-            }
-            
-            // Обновляем отображение секций результатов на основе выбранных типов генерации
-            updateGenerationUI();
-            
-            // Показываем секцию сгенерированного контента
-            const generatedContentElement = document.getElementById('generated-content');
-            if (generatedContentElement) {
-                generatedContentElement.style.display = 'block';
-            }
-            
-            // Отображаем результаты эмоционального анализа
-            const emotionResults = document.getElementById('emotion-results');
-            if (emotionResults) {
-                const emotions = data.emotion_analysis || {};
-                let emotionHtml = '<div class="emotion-analysis">';
+            try {
+                console.log('Отправка запроса на /analyze...');
                 
-                if (emotions.primary_emotions && Array.isArray(emotions.primary_emotions)) {
-                    emotionHtml += '<p><strong>Основные эмоции:</strong></p><ul>';
-                    emotions.primary_emotions.forEach(emotion => {
-                        if (emotion && emotion.emotion) {
-                            emotionHtml += `<li>${emotion.emotion}: ${emotion.intensity || '?'}/10</li>`;
+                // Устанавливаем таймаут для fetch с использованием AbortController
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 минуты таймаут
+                
+                const formData = new FormData(this);
+                
+                // Передаем данные через URLSearchParams
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId); // Отменяем таймаут, если ответ получен
+                
+                console.log('Получен ответ:', response.status, response.statusText);
+                
+                // Обновляем статус если элемент существует
+                if (statusElement && statusElement.parentNode) {
+                    statusElement.className = 'alert alert-success mt-3';
+                    statusElement.textContent = 'Ответ получен, обрабатываем результаты...';
+                }
+                
+                // Проверяем, что ответ можно преобразовать в JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('Ошибка: Сервер вернул не JSON:', contentType);
+                    throw new Error('Сервер вернул не JSON ответ');
+                }
+                
+                const text = await response.text();
+                console.log('Текст ответа:', text.substring(0, 100) + '...'); // Логируем только начало
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                    console.log('Данные получены успешно');
+                } catch (jsonError) {
+                    console.error('Ошибка парсинга JSON:', jsonError);
+                    throw new Error('Невозможно распарсить JSON');
+                }
+                
+                if (response.ok) {
+                    // Удаляем статусный элемент, если он существует и является дочерним
+                    try {
+                        if (statusElement && statusElement.parentNode === this) {
+                            this.removeChild(statusElement);
+                        }
+                    } catch (e) {
+                        console.warn('Не удалось удалить статусный элемент:', e);
+                    }
+                    
+                    // Сохраняем результаты для возможной публикации
+                    const diaryText = document.getElementById('diary_text');
+                    lastAnalysisResults = {
+                        diary_text: diaryText ? diaryText.value : '',
+                        emotion_analysis: data.emotion_analysis || {},
+                        generated_literary_work: data.generated_literary_work || '',
+                        generation_types: Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value)
+                    };
+                    
+                    // Безопасно обращаемся к элементам DOM
+                    const resultsElement = document.getElementById('results');
+                    if (resultsElement) {
+                        resultsElement.style.display = 'block';
+                    }
+                    
+                    const shareElement = document.getElementById('share-results');
+                    if (shareElement) {
+                        shareElement.style.display = 'block';
+                    }
+                    
+                    // Обновляем отображение секций результатов на основе выбранных типов генерации
+                    updateGenerationUI();
+                    
+                    // Показываем секцию сгенерированного контента
+                    const generatedContentElement = document.getElementById('generated-content');
+                    if (generatedContentElement) {
+                        generatedContentElement.style.display = 'block';
+                    }
+                    
+                    // Отображаем результаты эмоционального анализа
+                    const emotionResults = document.getElementById('emotion-results');
+                    if (emotionResults) {
+                        const emotions = data.emotion_analysis || {};
+                        let emotionHtml = '<div class="emotion-analysis">';
+                        
+                        if (emotions.primary_emotions && Array.isArray(emotions.primary_emotions)) {
+                            emotionHtml += '<p><strong>Основные эмоции:</strong></p><ul>';
+                            emotions.primary_emotions.forEach(emotion => {
+                                if (emotion && emotion.emotion) {
+                                    emotionHtml += `<li>${emotion.emotion}: ${emotion.intensity || '?'}/10</li>`;
+                                }
+                            });
+                            emotionHtml += '</ul>';
+                        }
+                        
+                        if (emotions.emotional_tone) {
+                            emotionHtml += `<p><strong>Общий тон:</strong> ${emotions.emotional_tone}</p>`;
+                        }
+                        
+                        if (emotions.hidden_motives && Array.isArray(emotions.hidden_motives)) {
+                            emotionHtml += `<p><strong>Скрытые мотивы:</strong> ${emotions.hidden_motives.join(', ')}</p>`;
+                        }
+                        
+                        if (emotions.attitude) {
+                            emotionHtml += `<p><strong>Отношение:</strong> ${emotions.attitude}</p>`;
+                        }
+                        
+                        emotionHtml += '</div>';
+                        emotionResults.innerHTML = emotionHtml;
+                    }
+                    
+                    // Активируем все выбранные контейнеры контента независимо от того, 
+                    // получены ли данные для них - показываем либо контент, либо индикаторы загрузки
+                    
+                    // Показываем все выбранные секции с анимацией
+                    selectedTypes.forEach((contentType, index) => {
+                        const delay = index * 200; // Последовательная анимация с задержкой
+                        
+                        if (contentType === 'text') {
+                            const literarySection = document.querySelector('.literary-section');
+                            if (literarySection) {
+                                literarySection.style.display = 'block';
+                                setTimeout(() => literarySection.classList.add('fadeIn'), delay);
+                                
+                                // Заполняем контент, если он есть
+                                if (data.generated_literary_work) {
+                                    const literaryResults = document.getElementById('literary-results');
+                                    if (literaryResults) {
+                                        literaryResults.innerHTML = data.generated_literary_work;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (contentType === 'image') {
+                            const imageSection = document.querySelector('.image-section');
+                            if (imageSection) {
+                                imageSection.style.display = 'block';
+                                setTimeout(() => imageSection.classList.add('fadeIn'), delay);
+                                
+                                // Если изображение готово, показываем его
+                                if (data.generated_image && data.generated_image.success) {
+                                    console.log("Отображение изображения из результатов API...");
+                                    
+                                    // Сохраняем внешний URL для возможного использования при ошибке локального URL
+                                    if (data.generated_image.external_url) {
+                                        window.lastGeneratedImageExternalUrl = data.generated_image.external_url;
+                                    }
+                                    
+                                    displayGeneratedImage(data.generated_image.image_url);
+                                } else {
+                                    // Если изображение не готово, показываем индикатор загрузки
+                                    const loadingElement = document.getElementById('image-loading');
+                                    if (loadingElement) {
+                                        loadingElement.style.display = 'block';
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (contentType === 'music') {
+                            const musicSection = document.querySelector('.music-section');
+                            if (musicSection) {
+                                musicSection.style.display = 'block';
+                                setTimeout(() => musicSection.classList.add('fadeIn'), delay);
+                                
+                                // Если музыка готова или есть task_id для проверки статуса, обрабатываем
+                                if (data.generated_music) {
+                                    console.log("Данные о музыке получены:", data.generated_music);
+                                    displayGeneratedMusic(data.generated_music);
+                                }
+                            }
                         }
                     });
-                    emotionHtml += '</ul>';
-                }
-                
-                if (emotions.emotional_tone) {
-                    emotionHtml += `<p><strong>Общий тон:</strong> ${emotions.emotional_tone}</p>`;
-                }
-                
-                if (emotions.hidden_motives && Array.isArray(emotions.hidden_motives)) {
-                    emotionHtml += `<p><strong>Скрытые мотивы:</strong> ${emotions.hidden_motives.join(', ')}</p>`;
-                }
-                
-                if (emotions.attitude) {
-                    emotionHtml += `<p><strong>Отношение:</strong> ${emotions.attitude}</p>`;
-                }
-                
-                emotionHtml += '</div>';
-                emotionResults.innerHTML = emotionHtml;
-            }
-            
-            // Активируем все выбранные контейнеры контента независимо от того, 
-            // получены ли данные для них - показываем либо контент, либо индикаторы загрузки
-            
-            // Показываем все выбранные секции с анимацией
-            selectedTypes.forEach((contentType, index) => {
-                const delay = index * 200; // Последовательная анимация с задержкой
-                
-                if (contentType === 'text') {
-                    const literarySection = document.querySelector('.literary-section');
-                    if (literarySection) {
-                        literarySection.style.display = 'block';
-                        setTimeout(() => literarySection.classList.add('fadeIn'), delay);
-                        
-                        // Заполняем контент, если он есть
-                        if (data.generated_literary_work) {
-                            const literaryResults = document.getElementById('literary-results');
-                            if (literaryResults) {
-                                literaryResults.innerHTML = data.generated_literary_work;
-                            }
-                        }
+                    
+                    // Прокручиваем страницу к результатам
+                    const resultsSection = document.getElementById('results');
+                    if (resultsSection) {
+                        resultsSection.scrollIntoView({ behavior: 'smooth' });
                     }
+                    
+                } else {
+                    // В случае ошибки HTTP
+                    throw new Error(`Ошибка HTTP: ${response.status} - ${response.statusText}`);
                 }
+            } catch (error) {
+                console.error('Ошибка при обработке запроса:', error);
                 
-                if (contentType === 'image') {
-                    const imageSection = document.querySelector('.image-section');
-                    if (imageSection) {
-                        imageSection.style.display = 'block';
-                        setTimeout(() => imageSection.classList.add('fadeIn'), delay);
-                        
-                        // Если изображение готово, показываем его
-                        if (data.generated_image && data.generated_image.success) {
-                            console.log("Отображение изображения из результатов API...");
-                            
-                            // Сохраняем внешний URL для возможного использования при ошибке локального URL
-                            if (data.generated_image.external_url) {
-                                window.lastGeneratedImageExternalUrl = data.generated_image.external_url;
-                            }
-                            
-                            displayGeneratedImage(data.generated_image.image_url);
-                        } else {
-                            // Если изображение не готово, показываем индикатор загрузки
-                            const loadingElement = document.getElementById('image-loading');
-                            if (loadingElement) {
-                                loadingElement.style.display = 'block';
-                            }
-                            
-                            // Если есть ошибка, показываем её
-                            if (data.generated_image && !data.generated_image.success && data.generated_image.error) {
-                                const errorElement = document.getElementById('image-error');
-                                if (errorElement) {
-                                    errorElement.textContent = data.generated_image.error;
-                                    errorElement.style.display = 'block';
-                                    
-                                    // Скрываем индикатор загрузки
-                                    if (loadingElement) loadingElement.style.display = 'none';
-                                }
-                            }
-                        }
-                    }
+                // Отображаем сообщение об ошибке
+                if (statusElement) {
+                    statusElement.className = 'alert alert-danger mt-3';
+                    statusElement.innerHTML = `
+                        <strong>Ошибка:</strong> ${error.message || 'Произошла ошибка при обработке вашего запроса'}
+                        <br><small>Попробуйте еще раз или обновите страницу.</small>
+                    `;
                 }
+            } finally {
+                // Разблокируем форму в любом случае
+                this.classList.remove('processing');
                 
-                if (contentType === 'music') {
-                    const musicSection = document.querySelector('.music-section');
-                    if (musicSection) {
-                        musicSection.style.display = 'block';
-                        setTimeout(() => musicSection.classList.add('fadeIn'), delay);
-                        
-                        // Если музыка готова, показываем её
-                        if (data.generated_music && data.generated_music.success) {
-                            displayGeneratedMusic(data.generated_music);
-                        } else {
-                            // Если музыка не готова, показываем индикатор загрузки
-                            const loadingElement = document.getElementById('music-loading');
-                            if (loadingElement) {
-                                loadingElement.style.display = 'block';
-                            }
-                            
-                            // Если есть ошибка, показываем её
-                            if (data.generated_music && !data.generated_music.success && data.generated_music.error) {
-                                const errorElement = document.getElementById('music-error');
-                                const errorTextElement = document.getElementById('music-error-text');
-                                if (errorElement) {
-                                    if (errorTextElement) {
-                                        errorTextElement.textContent = data.generated_music.error;
-                                    } else {
-                                    errorElement.textContent = data.generated_music.error;
-                                    }
-                                    errorElement.style.display = 'block';
-                                    
-                                    // Скрываем индикатор загрузки
-                                    if (loadingElement) loadingElement.style.display = 'none';
-                                }
-                            }
-                        }
-                    }
+                // Восстанавливаем кнопку
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Анализировать';
                 }
-            });
-        } else {
-            // Обновляем статус при ошибке
-            if (statusElement && statusElement.parentNode) {
-                statusElement.className = 'alert alert-danger mt-3';
-                statusElement.textContent = 'Произошла ошибка при анализе: ' + (data.error || 'Неизвестная ошибка');
             }
-            
-            console.error('Ошибка от сервера:', data);
-            alert(data.error || 'Произошла ошибка при анализе');
-        }
-    } catch (error) {
-        // Проверяем, был ли таймаут
-        if (error.name === 'AbortError') {
-            if (statusElement && statusElement.parentNode) {
-                statusElement.className = 'alert alert-danger mt-3';
-                statusElement.textContent = 'Превышено время ожидания ответа. Попробуйте снова с меньшим текстом.';
-            }
-            console.error('Таймаут запроса');
-            alert('Превышено время ожидания ответа. Попробуйте снова с меньшим текстом.');
-        } else {
-            // Обновляем статус при других ошибках
-            if (statusElement && statusElement.parentNode) {
-                statusElement.className = 'alert alert-danger mt-3';
-                statusElement.textContent = 'Ошибка: ' + error.message;
-            }
-            
-            console.error('Ошибка при отправке запроса:', error);
-            alert('Произошла ошибка при отправке запроса: ' + error.message);
-        }
-    } finally {
-        // Разблокируем форму
-        this.classList.remove('processing');
-        
-        // Восстанавливаем кнопку
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = 'Анализировать';
-        }
+        });
     }
 });
 
@@ -616,6 +586,252 @@ function displayGeneratedImage(imageUrl) {
     
     // Начинаем загрузку изображения
     tryLoadImage(imageUrl);
+}
+
+// Функция для проверки статуса генерации музыки
+function checkMusicGenerationStatus(taskId) {
+    if (!taskId) {
+        console.error("Отсутствует ID задачи для проверки статуса");
+        return;
+    }
+    
+    console.log(`Проверка статуса генерации музыки для задачи: ${taskId}`);
+    
+    // Счетчик попыток и максимальное количество повторений
+    let attempts = 0;
+    const maxAttempts = 60; // 60 повторений с интервалом 5 секунд = 5 минут
+    
+    // Устанавливаем индикатор загрузки
+    const loadingElement = document.getElementById('music-loading');
+    const errorElement = document.getElementById('music-error');
+    const musicContainer = document.getElementById('generated-music-container');
+    
+    if (loadingElement) {
+        loadingElement.style.display = 'block';
+        loadingElement.innerHTML = `
+            <p class="text-muted">Проверка статуса генерации музыки...</p>
+            <div class="progress mb-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+            </div>
+            <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
+        `;
+    }
+    
+    // Скрываем сообщение об ошибке
+    if (errorElement) errorElement.style.display = 'none';
+    
+    // Функция для выполнения одной проверки статуса
+    function checkStatus() {
+        // Увеличиваем счетчик попыток
+        attempts++;
+        
+        fetch(`/check_music_status?task_id=${taskId}&t=${new Date().getTime()}`) // Добавляем timestamp для избежания кэширования
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(`Получен статус для задачи ${taskId} (попытка ${attempts}/${maxAttempts}):`, data);
+                
+                // Проверяем успешность запроса
+                if (!data.success) {
+                    // Если у нас более 3 попыток, продолжаем сделать еще несколько попыток
+                    if (attempts < 3) {
+                        throw new Error(data.message || "Ошибка при проверке статуса");
+                    } else {
+                        console.log("Ошибка при проверке статуса, но продолжаем попытки:", data.message);
+                    }
+                }
+                
+                // Если музыка готова, отображаем ее
+                if (data.status === 'complete' || data.is_music_ready === true || 
+                    data.audio_url || data.stream_url || data.local_audio_url || 
+                    data.proxy_url) {
+                    console.log("Музыка готова! Отображаем плеер:", data);
+                    
+                    // Отображаем готовую музыку
+                    displayGeneratedMusic(data);
+                    
+                    // Прекращаем дальнейшие проверки
+                    return;
+                }
+                
+                // Если статус "timeout" или ошибка, показываем сообщение об ошибке
+                if (data.status === 'timeout' || data.status === 'error') {
+                    console.log("Ошибка при генерации музыки:", data.message);
+                    
+                    if (errorElement) {
+                        let errorMessage = data.message || "Превышено время ожидания или произошла ошибка";
+                        
+                        // Создаем блок с ошибкой и рекомендациями
+                        errorElement.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h5>Ошибка при проверке статуса</h5>
+                                <p>${errorMessage}</p>
+                                <div class="mt-3">
+                                    <p><strong>Что делать дальше?</strong></p>
+                                    <ul>
+                                        <li>Проверьте ваше подключение к интернету</li>
+                                        <li>Обновите страницу и попробуйте сгенерировать музыку снова</li>
+                                        <li>Если проблема повторяется, возможно, у Suno API возникли технические проблемы</li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+                                    Обновить страницу и попробовать снова
+                                </button>
+                            </div>
+                        `;
+                        errorElement.style.display = 'block';
+                    }
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                    
+                    // Прекращаем дальнейшие проверки
+                    return;
+                }
+                
+                // Если API статус показывает ошибку, но задача все еще в процессе, показываем специальное сообщение
+                if (data.api_status === 'error') {
+                    console.log("API вернул ошибку, но задача всё еще в обработке:", data);
+                    
+                    // Если это первые 5 попыток, продолжаем пробовать, возможно временная ошибка
+                    if (attempts <= 5) {
+                        console.log("Продолжаем попытки, несмотря на ошибку API...");
+                    } else {
+                        if (errorElement) {
+                            let errorMessage = data.message || "API вернул ошибку при генерации музыки";
+                            
+                            // Создаем блок с ошибкой и рекомендациями
+                            errorElement.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <h5>Ошибка при генерации музыки</h5>
+                                    <p>API вернул ошибку. Генерация музыки не может быть завершена.</p>
+                                    <div class="mt-3">
+                                        <p><strong>Что делать дальше?</strong></p>
+                                        <ul>
+                                            <li>Проверьте ваше подключение к интернету</li>
+                                            <li>Обновите страницу и попробуйте снова</li>
+                                            <li>Если проблема повторяется, обратитесь к разработчикам</li>
+                                        </ul>
+                                    </div>
+                                    <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+                                        Обновить страницу
+                                    </button>
+                                </div>
+                            `;
+                            errorElement.style.display = 'block';
+                        }
+                        
+                        if (loadingElement) loadingElement.style.display = 'none';
+                        
+                        // Прекращаем дальнейшие проверки
+                        return;
+                    }
+                }
+                
+                // Если музыка все еще генерируется, обновляем прогресс и продолжаем проверки
+                if (loadingElement) {
+                    // Рассчитываем процент выполнения
+                    let progressPercent = 0;
+                    if (data.progress) {
+                        progressPercent = data.progress;
+                    } else if (data.elapsed_seconds) {
+                        // Максимальное время ожидания - 15 минут (900 секунд)
+                        progressPercent = Math.min(95, Math.round(data.elapsed_seconds / 900 * 100));
+                    } else {
+                        // Если нет данных о прогрессе, используем прогресс на основе попыток
+                        progressPercent = Math.min(90, Math.round(attempts / maxAttempts * 100));
+                    }
+                    
+                    loadingElement.innerHTML = `
+                        <p class="text-muted">Генерация музыки продолжается...</p>
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                                 style="width: ${progressPercent}%" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
+                                 ${progressPercent}%
+                            </div>
+                        </div>
+                        <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
+                        ${data.api_status ? `<span class="badge bg-secondary ms-2">API статус: ${data.api_status}</span>` : ''}
+                        <span class="badge bg-light text-dark ms-2">Попытка: ${attempts}/${maxAttempts}</span>
+                    `;
+                }
+                
+                // Если описание музыки доступно, отображаем его
+                const musicDescription = document.getElementById('music-description');
+                if (musicDescription && data.music_description) {
+                    musicDescription.textContent = data.music_description;
+                }
+                
+                // Если достигнуто максимальное количество попыток, показываем сообщение
+                if (attempts >= maxAttempts) {
+                    console.log("Достигнуто максимальное количество попыток проверки статуса");
+                    
+                    if (errorElement) {
+                        errorElement.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h5>Превышено время ожидания</h5>
+                                <p>Проверка статуса генерации музыки заняла слишком много времени (${maxAttempts} попыток).</p>
+                                <div class="mt-3">
+                                    <p><strong>Что это означает?</strong></p>
+                                    <ul>
+                                        <li>Возможно, запрос всё ещё обрабатывается на серверах Suno</li>
+                                        <li>Возможно, возникла проблема при передаче результата</li>
+                                        <li>Возможно, запрос был отменен на стороне сервера</li>
+                                    </ul>
+                                    <p><strong>Что делать дальше?</strong></p>
+                                    <ul>
+                                        <li>Вы можете подождать ещё некоторое время и проверить позже</li>
+                                        <li>Вы можете попробовать сгенерировать музыку снова</li>
+                                        <li>Проверьте ваш API ключ и количество доступных кредитов</li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
+                                    Проверить статус еще раз
+                                </button>
+                                <button class="btn btn-outline-secondary mt-2 ms-2" onclick="location.reload()">
+                                    Обновить страницу
+                                </button>
+                            </div>
+                        `;
+                        errorElement.style.display = 'block';
+                    }
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                } else {
+                    // Продолжаем проверки с интервалом
+                    setTimeout(checkStatus, 5000); // Проверяем каждые 5 секунд
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка при проверке статуса:", error);
+                
+                if (errorElement) {
+                    errorElement.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>Ошибка при проверке статуса</h5>
+                            <p>${error.message || 'Произошла ошибка при проверке статуса генерации музыки'}</p>
+                            <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
+                                Попробовать снова
+                            </button>
+                        </div>
+                    `;
+                    errorElement.style.display = 'block';
+                }
+                
+                if (loadingElement) loadingElement.style.display = 'none';
+                
+                // Пробуем еще раз через 10 секунд, если не превышено максимальное количество попыток
+                if (attempts < maxAttempts) {
+                    setTimeout(checkStatus, 10000);
+                }
+            });
+    }
+    
+    // Запускаем первую проверку
+    checkStatus();
 }
 
 // Функция для отображения ошибки генерации музыки
@@ -797,7 +1013,9 @@ function displayGeneratedMusic(musicData) {
         }
         
         musicContainer.style.display = 'block';
-    } else if (musicData.status === 'complete' || musicData.audio_url || musicData.stream_url || musicData.embed_url || musicData.local_audio_url || (musicData.is_music_ready === true)) {
+    } else if (musicData.status === 'complete' || musicData.audio_url || musicData.stream_url || 
+              musicData.embed_url || musicData.local_audio_url || musicData.proxy_url || 
+              (musicData.is_music_ready === true)) {
         // Музыка готова, показываем плеер
         console.log("Музыка готова к воспроизведению");
         
@@ -831,12 +1049,17 @@ function displayGeneratedMusic(musicData) {
         audioContainer.appendChild(audioTitle);
         
         // Получаем URL аудио, проверяя разные возможные источники
-        // Приоритет: 1) локальный файл, 2) обычный URL, 3) стрим URL
-        const localAudioUrl = musicData.local_audio_url || '';
+        // Приоритет: 1) локальный файл, 2) прокси URL, 3) обычный URL, 4) стрим URL
+        let localAudioUrl = musicData.local_audio_url || '';
         const audioUrl = musicData.audio_url || '';
         const streamUrl = musicData.stream_url || '';
         const embedUrl = musicData.embed_url || '';
         const proxyUrl = musicData.proxy_url || (audioUrl ? `/proxy_audio?url=${encodeURIComponent(audioUrl)}` : '');
+        
+        // Если localAudioUrl не начинается с /, добавляем
+        if (localAudioUrl && !localAudioUrl.startsWith('/')) {
+            localAudioUrl = '/' + localAudioUrl;
+        }
         
         // Флаг для отслеживания, был ли хотя бы один успешно загруженный плеер
         let playerSuccessful = false;
@@ -863,431 +1086,194 @@ function displayGeneratedMusic(musicData) {
         }
         
         // Создаем аудио-плеер
-        if (localAudioUrl || audioUrl || streamUrl) {
+        if (localAudioUrl || audioUrl || streamUrl || proxyUrl) {
             const audioPlayer = document.createElement('audio');
             audioPlayer.controls = true;
             audioPlayer.className = 'w-100 mb-3';
+            audioPlayer.preload = 'auto'; // Предзагрузка аудио
+            audioPlayer.volume = 0.8; // Устанавливаем громкость
             
+            // Добавляем обработчик для автоматического перехода к альтернативному источнику при ошибке
             // Приоритет источников
+            let audioSources = [];
+            
+            // 1. Локальный файл
             if (localAudioUrl) {
-                console.log('Используем локальный аудиофайл:', localAudioUrl);
-                audioPlayer.src = localAudioUrl;
-                
-                // Добавляем уведомление о локальном файле
-                const localNote = document.createElement('div');
-                localNote.className = 'alert alert-success small mb-2';
-                localNote.textContent = 'Используется локально сохраненный аудиофайл';
-                audioContainer.appendChild(localNote);
-                
-            } else {
-                // Используем сначала основной URL
-                audioPlayer.src = audioUrl || streamUrl;
+                audioSources.push({
+                    url: localAudioUrl,
+                    type: 'audio/mpeg',
+                    description: 'Локальный файл'
+                });
             }
+            
+            // 2. Прокси URL
+            if (proxyUrl) {
+                audioSources.push({
+                    url: proxyUrl,
+                    type: 'audio/mpeg',
+                    description: 'Через прокси-сервер'
+                });
+            }
+            
+            // 3. Обычный URL
+            if (audioUrl) {
+                audioSources.push({
+                    url: audioUrl,
+                    type: 'audio/mpeg',
+                    description: 'Прямой URL аудио'
+                });
+            }
+            
+            // 4. Стрим URL
+            if (streamUrl) {
+                audioSources.push({
+                    url: streamUrl,
+                    type: 'audio/mpeg',
+                    description: 'Стрим URL'
+                });
+            }
+            
+            // Добавляем все источники к аудиоплееру
+            audioSources.forEach((source, index) => {
+                const sourceElement = document.createElement('source');
+                sourceElement.src = source.url;
+                sourceElement.type = source.type;
+                audioPlayer.appendChild(sourceElement);
+            });
             
             // Добавляем плеер в контейнер
             audioContainer.appendChild(audioPlayer);
             
-            // Отслеживаем ошибки загрузки аудио
-            let audioLoadAttempt = 0;
-            audioPlayer.onerror = (e) => {
-                console.error(`Ошибка загрузки аудио (попытка ${++audioLoadAttempt}):`, e);
+            // Информация о текущем источнике
+            const audioSourceInfo = document.createElement('div');
+            audioSourceInfo.className = 'alert alert-info small mb-2';
+            audioSourceInfo.innerHTML = 'Загрузка аудио...';
+            audioContainer.appendChild(audioSourceInfo);
+            
+            // Отслеживаем успешную загрузку аудио
+            audioPlayer.oncanplay = () => {
+                const currentSource = audioPlayer.currentSrc || audioPlayer.src;
+                let sourceType = "неизвестный";
                 
-                if (audioLoadAttempt === 1 && !localAudioUrl && streamUrl && streamUrl !== audioUrl) {
-                    // При первой ошибке пробуем stream_url, если локального файла нет
-                    console.log('Пробуем использовать stream_url:', streamUrl);
-                    audioPlayer.src = streamUrl;
-                    
-                    // Добавляем уведомление
-                    const streamNote = document.createElement('div');
-                    streamNote.className = 'alert alert-info small mb-2';
-                    streamNote.textContent = 'Используется стриминговый URL для воспроизведения';
-                    audioContainer.insertBefore(streamNote, audioPlayer.nextSibling);
-                    
-                } else if (audioLoadAttempt === 2 && proxyUrl) {
-                    // При второй ошибке пробуем через прокси
-                    console.log('Пробуем использовать прокси:', proxyUrl);
-                    audioPlayer.src = proxyUrl;
-                    
-                    // Добавляем уведомление
-                    const proxyNote = document.createElement('div');
-                    proxyNote.className = 'alert alert-info small mb-2';
-                    proxyNote.textContent = 'Используется прокси-сервер для воспроизведения';
-                    audioContainer.insertBefore(proxyNote, audioPlayer.nextSibling);
-                    
-                } else if (audioLoadAttempt > 2) {
-                    // Показываем сообщение с альтернативными вариантами
-                    const errorNote = document.createElement('div');
-                    errorNote.className = 'alert alert-danger small';
-                    errorNote.innerHTML = `
-                        <p>Не удалось загрузить аудио. Попробуйте следующие варианты:</p>
-                        <ol>
-                            <li>Обновите страницу и попробуйте снова</li>
-                            <li>Проверьте подключение к интернету</li>
-                            ${audioUrl ? `<li>Попробуйте <a href="${audioUrl}" target="_blank">скачать аудио напрямую</a></li>` : ''}
-                            ${proxyUrl ? `<li>Попробуйте <a href="${proxyUrl}" target="_blank">прослушать через прокси</a></li>` : ''}
-                        </ol>
-                    `;
-                    audioContainer.appendChild(errorNote);
-                    
-                    // Если не удалось воспроизвести, предлагаем скачать
-                    if (audioUrl || streamUrl) {
-                        const downloadButton = document.createElement('a');
-                        downloadButton.href = audioUrl || streamUrl;
-                        downloadButton.target = '_blank';
-                        downloadButton.className = 'btn btn-primary btn-sm';
-                        downloadButton.textContent = 'Скачать аудиофайл';
-                        downloadButton.download = 'music.mp3';
-                        audioContainer.appendChild(downloadButton);
+                for (const source of audioSources) {
+                    if (currentSource.includes(new URL(source.url, window.location.href).pathname)) {
+                        sourceType = source.description;
+                        break;
                     }
                 }
+                
+                audioSourceInfo.innerHTML = `Используется источник: <strong>${sourceType}</strong>`;
+                audioSourceInfo.className = 'alert alert-success small mb-2';
+                playerSuccessful = true;
+                console.log(`Аудио успешно загружено из источника: ${sourceType}`);
             };
             
-            // Успешная загрузка аудио
-            audioPlayer.onloadeddata = () => {
-                playerSuccessful = true;
-                console.log("Аудио успешно загружено");
+            // Отслеживаем общую ошибку загрузки аудио
+            audioPlayer.onerror = () => {
+                console.error("Не удалось загрузить аудио ни из одного источника");
+                audioSourceInfo.innerHTML = `
+                    <strong>Ошибка загрузки аудио из всех источников.</strong><br>
+                    Попробуйте вручную скачать аудиофайл ниже.
+                `;
+                audioSourceInfo.className = 'alert alert-danger small mb-2';
                 
-                // Если аудио загружено с внешнего URL и нет локальной копии, предлагаем скачать
-                if (!localAudioUrl && (audioUrl || streamUrl)) {
-                    const downloadContainer = document.createElement('div');
-                    downloadContainer.className = 'text-end mt-2';
-                    
-                    const downloadButton = document.createElement('a');
-                    downloadButton.href = audioUrl || streamUrl;
-                    downloadButton.target = '_blank';
-                    downloadButton.className = 'btn btn-outline-secondary btn-sm';
-                    downloadButton.textContent = 'Скачать MP3';
-                    downloadButton.download = 'music.mp3';
-                    
-                    downloadContainer.appendChild(downloadButton);
+                // Добавляем ссылки для скачивания всех источников
+                const downloadContainer = document.createElement('div');
+                downloadContainer.className = 'mt-3';
+                
+                let hasAnyValidSource = false;
+                
+                audioSources.forEach((source, index) => {
+                    if (source.url) {
+                        hasAnyValidSource = true;
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = source.url;
+                        downloadLink.target = '_blank';
+                        downloadLink.className = 'btn btn-sm btn-outline-primary mr-2 mb-2';
+                        downloadLink.innerHTML = `Скачать (источник ${index + 1}: ${source.description})`;
+                        downloadLink.download = `music_${index + 1}.mp3`;
+                        downloadContainer.appendChild(downloadLink);
+                        
+                        // Добавляем пробел после каждой кнопки
+                        downloadContainer.appendChild(document.createTextNode(' '));
+                    }
+                });
+                
+                if (hasAnyValidSource) {
                     audioContainer.appendChild(downloadContainer);
                 }
             };
+            
+            // Устанавливаем первый источник по умолчанию
+            if (audioSources.length > 0) {
+                audioPlayer.src = audioSources[0].url;
+            }
+            
+            // Пробуем начать предзагрузку
+            try {
+                audioPlayer.load();
+            } catch (e) {
+                console.error("Ошибка при предзагрузке аудио:", e);
+            }
         }
         
-        // Если есть изображение обложки, добавляем его
-        const coverImageUrl = musicData.local_image_url || musicData.image_url || '';
-        if (coverImageUrl) {
-            const coverImage = document.createElement('img');
-            coverImage.src = coverImageUrl;
-            coverImage.alt = 'Обложка трека';
-            coverImage.className = 'img-fluid mb-3';
-            coverImage.style.maxHeight = '200px';
-            audioContainer.appendChild(coverImage);
-        }
-        
-        // Добавляем контейнер аудиоплеера в основной контейнер
+        // Добавляем аудио-контейнер в основной контейнер
         musicContainer.appendChild(audioContainer);
-        
-        // Добавляем информацию о треке
-        if (musicData.title || musicData.task_id) {
-            const trackInfoContainer = document.createElement('div');
-            trackInfoContainer.className = 'track-info small text-muted mt-2';
-            
-            if (musicData.title) {
-                const titleElement = document.createElement('p');
-                titleElement.className = 'mb-1';
-                titleElement.textContent = `Название: ${musicData.title}`;
-                trackInfoContainer.appendChild(titleElement);
-            }
-            
-            if (musicData.task_id) {
-                const idElement = document.createElement('p');
-                idElement.className = 'mb-1';
-                idElement.textContent = `ID задачи: ${musicData.task_id}`;
-                trackInfoContainer.appendChild(idElement);
-            }
-            
-            musicContainer.appendChild(trackInfoContainer);
-        }
-        
         musicContainer.style.display = 'block';
-    } else {
-        // Неизвестный статус или ошибка
+        
+        // Добавляем сообщение, если не удалось загрузить ни один плеер
+        setTimeout(() => {
+            if (!playerSuccessful) {
+                console.log("Ни один из плееров не был успешно загружен, показываем сообщение с инструкциями");
+                
+                const fallbackMessage = document.createElement('div');
+                fallbackMessage.className = 'alert alert-warning mt-3';
+                fallbackMessage.innerHTML = `
+                    <h5>Не удалось воспроизвести музыку</h5>
+                    <p>Возможно, ваш браузер не поддерживает формат аудио или возникли проблемы с загрузкой файла.</p>
+                    <p>Попробуйте обновить страницу или воспользуйтесь ссылками ниже для скачивания:</p>
+                    <div class="mt-2">
+                        ${localAudioUrl ? `<a href="${localAudioUrl}" class="btn btn-outline-primary btn-sm mr-2" download>Скачать локальный файл</a> ` : ''}
+                        ${proxyUrl ? `<a href="${proxyUrl}" class="btn btn-outline-primary btn-sm mr-2" download>Скачать через прокси</a> ` : ''}
+                        ${audioUrl ? `<a href="${audioUrl}" class="btn btn-outline-primary btn-sm mr-2" target="_blank">Открыть аудио URL</a> ` : ''}
+                        ${streamUrl ? `<a href="${streamUrl}" class="btn btn-outline-primary btn-sm" target="_blank">Открыть стрим URL</a> ` : ''}
+                    </div>
+                `;
+                musicContainer.appendChild(fallbackMessage);
+            }
+        }, 5000); // Проверяем через 5 секунд
+    } else if (musicData.status === 'error') {
+        // Ошибка при генерации музыки
+        console.log("Ошибка при генерации музыки:", musicData);
+        
         if (errorElement) {
-            errorElement.innerHTML = '<p>Произошла ошибка при генерации музыки или статус неизвестен.</p>';
-            
-            // Отображаем возможные варианты решения
-            const solutions = [
-                'Попробуйте обновить страницу и генерировать музыку снова',
-                'Проверьте ваше подключение к интернету',
-                'Убедитесь, что все API ключи настроены правильно'
-            ];
-            
-            const solutionsList = document.createElement('ul');
-            solutionsList.className = 'mb-2';
-            
-            // Выводим идентификатор задачи
-            if (musicData.task_id) {
-                const taskIdItem = document.createElement('p');
-                taskIdItem.className = 'mb-1';
-                taskIdItem.innerHTML = `Идентификатор задачи: <code>${musicData.task_id}</code>`;
-                errorElement.appendChild(taskIdItem);
-            }
-            
-            // Добавляем все решения в список
-            solutions.forEach(solution => {
-                const solutionItem = document.createElement('li');
-                solutionItem.textContent = solution;
-                solutionsList.appendChild(solutionItem);
-            });
-            
-            errorElement.appendChild(solutionsList);
-            
-            // Кнопка для повторной проверки статуса
-            if (musicData.task_id) {
-                const recheckButton = document.createElement('button');
-                recheckButton.className = 'btn btn-sm btn-outline-primary mt-3';
-                recheckButton.textContent = 'Проверить статус еще раз';
-                recheckButton.onclick = () => checkMusicGenerationStatus(musicData.task_id);
-                errorElement.appendChild(recheckButton);
-            }
-            
+            errorElement.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5>Ошибка при генерации музыки</h5>
+                    <p>${musicData.message || musicData.error || "Неизвестная ошибка"}</p>
+                </div>
+            `;
             errorElement.style.display = 'block';
         }
-    }
-}
-
-// Функция для проверки статуса генерации музыки
-function checkMusicGenerationStatus(taskId) {
-    if (!taskId) {
-        console.error("Отсутствует ID задачи для проверки статуса");
-        return;
-    }
-    
-    console.log(`Проверка статуса генерации музыки для задачи: ${taskId}`);
-    
-    // Счетчик попыток и максимальное количество повторений
-    let attempts = 0;
-    const maxAttempts = 60; // 60 повторений с интервалом 5 секунд = 5 минут
-    
-    // Устанавливаем индикатор загрузки
-    const loadingElement = document.getElementById('music-loading');
-    const errorElement = document.getElementById('music-error');
-    const musicContainer = document.getElementById('generated-music-container');
-    
-    if (loadingElement) {
-        loadingElement.style.display = 'block';
-        loadingElement.innerHTML = `
-            <p class="text-muted">Проверка статуса генерации музыки...</p>
-            <div class="progress mb-3">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
-            </div>
-            <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
-        `;
-    }
-    
-    // Скрываем сообщение об ошибке
-    if (errorElement) errorElement.style.display = 'none';
-    
-    // Функция для выполнения одной проверки статуса
-    function checkStatus() {
-        // Увеличиваем счетчик попыток
-        attempts++;
         
-        fetch(`/check_music_status?task_id=${taskId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log(`Получен статус для задачи ${taskId} (попытка ${attempts}/${maxAttempts}):`, data);
-                
-                // Проверяем успешность запроса
-                if (!data.success) {
-                    throw new Error(data.message || "Ошибка при проверке статуса");
-                }
-                
-                // Если музыка готова, отображаем ее
-                if (data.status === 'complete' || data.audio_url || data.stream_url || data.local_audio_url || data.is_music_ready) {
-                    console.log("Музыка готова! Отображаем плеер:", data);
-                    
-                    // Отображаем готовую музыку
-                    displayGeneratedMusic(data);
-                    
-                    // Прекращаем дальнейшие проверки
-                    return;
-                }
-                
-                // Если статус "timeout" или ошибка, показываем сообщение об ошибке
-                if (data.status === 'timeout' || data.status === 'error') {
-                    console.log("Ошибка при генерации музыки:", data.message);
-                    
-                    if (errorElement) {
-                        let errorMessage = data.message || "Превышено время ожидания или произошла ошибка";
-                        
-                        // Создаем блок с ошибкой и рекомендациями
-                        errorElement.innerHTML = `
-                            <div class="alert alert-danger">
-                                <h5>Ошибка при проверке статуса</h5>
-                                <p>${errorMessage}</p>
-                                <div class="mt-3">
-                                    <p><strong>Что делать дальше?</strong></p>
-                                    <ul>
-                                        <li>Проверьте ваше подключение к интернету</li>
-                                        <li>Обновите страницу и попробуйте сгенерировать музыку снова</li>
-                                        <li>Если проблема повторяется, возможно, у Suno API возникли технические проблемы</li>
-                                    </ul>
-                                </div>
-                                <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
-                                    Обновить страницу и попробовать снова
-                                </button>
-                            </div>
-                        `;
-                        errorElement.style.display = 'block';
-                    }
-                    
-                    if (loadingElement) loadingElement.style.display = 'none';
-                    
-                    // Прекращаем дальнейшие проверки
-                    return;
-                }
-                
-                // Если API статус показывает ошибку, но задача все еще в процессе, показываем специальное сообщение
-                if (data.api_status === 'error') {
-                    console.log("API вернул ошибку, но задача всё еще в обработке:", data);
-                    
-                    if (errorElement) {
-                        let errorMessage = data.message || "API вернул ошибку при генерации музыки";
-                        
-                        // Создаем блок с ошибкой и рекомендациями
-                        errorElement.innerHTML = `
-                            <div class="alert alert-danger">
-                                <h5>Ошибка при генерации музыки</h5>
-                                <p>API вернул ошибку. Генерация музыки не может быть завершена.</p>
-                                <div class="mt-3">
-                                    <p><strong>Что делать дальше?</strong></p>
-                                    <ul>
-                                        <li>Проверьте ваше подключение к интернету</li>
-                                        <li>Обновите страницу и попробуйте снова</li>
-                                        <li>Если проблема повторяется, обратитесь к разработчикам</li>
-                                    </ul>
-                                </div>
-                                <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
-                                    Обновить страницу
-                                </button>
-                            </div>
-                        `;
-                        errorElement.style.display = 'block';
-                    }
-                    
-                    if (loadingElement) loadingElement.style.display = 'none';
-                    
-                    // Прекращаем дальнейшие проверки
-                    return;
-                }
-                
-                // Если музыка все еще генерируется, обновляем прогресс и продолжаем проверки
-                if (loadingElement) {
-                    // Рассчитываем процент выполнения
-                    let progressPercent = 0;
-                    if (data.progress) {
-                        progressPercent = data.progress;
-                    } else if (data.elapsed_seconds) {
-                        // Максимальное время ожидания - 15 минут (900 секунд)
-                        progressPercent = Math.min(95, Math.round(data.elapsed_seconds / 900 * 100));
-                    } else {
-                        // Если нет данных о прогрессе, используем прогресс на основе попыток
-                        progressPercent = Math.min(90, Math.round(attempts / maxAttempts * 100));
-                    }
-                    
-                    loadingElement.innerHTML = `
-                        <p class="text-muted">Генерация музыки продолжается...</p>
-                        <div class="progress mb-3">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
-                                 style="width: ${progressPercent}%" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
-                                 ${progressPercent}%
-                            </div>
-                        </div>
-                        <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
-                        ${data.api_status ? `<span class="badge bg-secondary ms-2">API статус: ${data.api_status}</span>` : ''}
-                        <span class="badge bg-light text-dark ms-2">Попытка: ${attempts}/${maxAttempts}</span>
-                    `;
-                }
-                
-                // Если описание музыки доступно, отображаем его
-                const musicDescription = document.getElementById('music-description');
-                if (musicDescription && data.music_description) {
-                    musicDescription.textContent = data.music_description;
-                }
-                
-                // Если достигнуто максимальное количество попыток, показываем сообщение
-                if (attempts >= maxAttempts) {
-                    console.log("Достигнуто максимальное количество попыток проверки статуса");
-                    
-                    if (errorElement) {
-                        errorElement.innerHTML = `
-                            <div class="alert alert-warning">
-                                <h5>Превышено время ожидания</h5>
-                                <p>Проверка статуса генерации музыки заняла слишком много времени (${maxAttempts} попыток).</p>
-                                <div class="mt-3">
-                                    <p><strong>Что это означает?</strong></p>
-                                    <ul>
-                                        <li>Возможно, запрос всё ещё обрабатывается на серверах Suno</li>
-                                        <li>Возможно, возникла проблема при передаче результата</li>
-                                        <li>Возможно, запрос был отменен на стороне сервера</li>
-                                    </ul>
-                                    <p><strong>Что делать дальше?</strong></p>
-                                    <ul>
-                                        <li>Вы можете подождать ещё некоторое время и проверить позже</li>
-                                        <li>Вы можете попробовать сгенерировать музыку снова</li>
-                                        <li>Проверьте ваш API ключ и количество доступных кредитов</li>
-                                    </ul>
-                                </div>
-                                <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
-                                    Проверить статус еще раз
-                                </button>
-                                <button class="btn btn-outline-secondary mt-2 ms-2" onclick="location.reload()">
-                                    Обновить страницу
-                                </button>
-                            </div>
-                        `;
-                        errorElement.style.display = 'block';
-                    }
-                    
-                    if (loadingElement) loadingElement.style.display = 'none';
-                } else {
-                    // Продолжаем проверки с интервалом
-                    setTimeout(checkStatus, 5000); // Проверяем каждые 5 секунд
-                }
-            })
-            .catch(error => {
-                console.error("Ошибка при проверке статуса:", error);
-                
-                if (errorElement) {
-                    errorElement.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h5>Ошибка при проверке статуса</h5>
-                            <p>${error.message}</p>
-                            <div class="mt-3">
-                                <p><strong>Что делать дальше?</strong></p>
-                                <ul>
-                                    <li>Проверьте ваше подключение к интернету</li>
-                                    <li>Обновите страницу и попробуйте снова</li>
-                                    <li>Если проблема повторяется, обратитесь к разработчикам</li>
-                                </ul>
-                            </div>
-                            <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
-                                Обновить страницу
-                            </button>
-                        </div>
-                    `;
-                    errorElement.style.display = 'block';
-                }
-                
-                if (loadingElement) loadingElement.style.display = 'none';
-                
-                // Если ошибка не критическая и не достигнуто максимальное количество попыток, продолжаем проверки
-                if (attempts < maxAttempts) {
-                    setTimeout(checkStatus, 5000);
-                }
-            });
+        if (loadingElement) loadingElement.style.display = 'none';
+    } else {
+        // Неизвестный статус, показываем сообщение
+        console.log("Неизвестный статус музыки:", musicData);
+        
+        if (errorElement) {
+            errorElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <h5>Неизвестный статус музыки</h5>
+                    <p>Полученные данные о музыке имеют неизвестный формат. Попробуйте обновить страницу.</p>
+                    <pre class="small">${JSON.stringify(musicData, null, 2)}</pre>
+                </div>
+            `;
+            errorElement.style.display = 'block';
+        }
+        
+        if (loadingElement) loadingElement.style.display = 'none';
     }
-    
-    // Запускаем первую проверку
-    checkStatus();
 }
 
 // Функция для отображения ошибки генерации изображения
