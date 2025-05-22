@@ -385,10 +385,120 @@ document.addEventListener('DOMContentLoaded', function() {
                                     
                                     displayGeneratedImage(data.generated_image.image_url);
                                 } else {
-                                    // Если изображение не готово, показываем индикатор загрузки
+                                    // Если произошла ошибка, показываем сообщение
                                     const loadingElement = document.getElementById('image-loading');
                                     if (loadingElement) {
-                                        loadingElement.style.display = 'block';
+                                        if (data.generated_image && data.generated_image.error) {
+                                            // Проверяем, является ли ошибка связанной с запрещенным контентом
+                                            if (data.generated_image.type === 'content_policy_violation' && data.generated_image.can_regenerate_safe) {
+                                                // Показываем специальное сообщение с возможностью перегенерации
+                                                loadingElement.innerHTML = `
+                                                    <div class="alert alert-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i> 
+                                                        <strong>${data.generated_image.error}</strong>
+                                                        <p class="mt-2">Вы можете:</p>
+                                                        <ul>
+                                                            <li>Выбрать другой отрывок дневника без описаний насилия</li>
+                                                            <li>Сгенерировать символическую иллюстрацию (качество может быть ниже и содержание менее точным)</li>
+                                                        </ul>
+                                                        <button id="generate-safe-image" class="btn btn-sm btn-outline-primary mt-2">
+                                                            Создать символическую иллюстрацию
+                                                        </button>
+                                                    </div>`;
+                                                loadingElement.classList.remove('progress');
+                                                
+                                                // Добавляем обработчик для кнопки перегенерации
+                                                document.getElementById('generate-safe-image').addEventListener('click', function() {
+                                                    // Показываем индикатор загрузки
+                                                    loadingElement.innerHTML = `
+                                                        <p class="text-muted">Генерация символического изображения...</p>
+                                                        <div class="progress">
+                                                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                                 role="progressbar" style="width: 100%"></div>
+                                                        </div>`;
+                                                    
+                                                    // Отправляем запрос на генерацию безопасного изображения
+                                                    fetch('/generate_safe_image', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/x-www-form-urlencoded',
+                                                        },
+                                                        body: new URLSearchParams({
+                                                            diary_text: document.getElementById('diary_text').value
+                                                        })
+                                                    })
+                                                    .then(response => {
+                                                        // Проверяем, что ответ - JSON
+                                                        const contentType = response.headers.get('content-type');
+                                                        if (!contentType || !contentType.includes('application/json')) {
+                                                            throw new Error('Сервер вернул не JSON ответ');
+                                                        }
+                                                        return response.text();
+                                                    })
+                                                    .then(responseText => {
+                                                        // Безопасный парсинг JSON-ответа с проверкой
+                                                        let data;
+                                                        try {
+                                                            data = JSON.parse(responseText);
+                                                            console.log("Получен ответ для безопасного изображения:", data);
+                                                        } catch (e) {
+                                                            console.error("Ошибка парсинга JSON:", e, "Текст ответа:", responseText);
+                                                            throw new Error("Ошибка парсинга JSON-ответа");
+                                                        }
+                                                        
+                                                        if (data.success && data.image_url) {
+                                                            // Сохраняем внешний URL, если он есть
+                                                            if (data.external_url) {
+                                                                window.lastGeneratedImageExternalUrl = data.external_url;
+                                                            }
+                                                            
+                                                            // Показываем сгенерированное безопасное изображение
+                                                            displayGeneratedImage(data.image_url);
+                                                            
+                                                            // Добавляем уведомление о символической альтернативе
+                                                            const noticeElement = document.createElement('div');
+                                                            noticeElement.className = 'alert alert-info mt-3';
+                                                            noticeElement.innerHTML = `
+                                                                <i class="fas fa-info-circle"></i>
+                                                                Было создано символическое изображение вместо прямой иллюстрации содержимого дневника.
+                                                            `;
+                                                            document.getElementById('image-results').appendChild(noticeElement);
+                                                        } else {
+                                                            // Показываем ошибку
+                                                            loadingElement.innerHTML = `
+                                                                <div class="alert alert-danger">
+                                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                                    Не удалось сгенерировать даже символическое изображение: ${data.error || 'Неизвестная ошибка'}
+                                                                </div>`;
+                                                        }
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Ошибка при запросе безопасного изображения:', error);
+                                                        loadingElement.innerHTML = `
+                                                            <div class="alert alert-danger">
+                                                                <i class="fas fa-exclamation-triangle"></i>
+                                                                Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+                                                            </div>`;
+                                                    });
+                                                });
+                                            } else {
+                                                // Обычная ошибка
+                                                loadingElement.innerHTML = `
+                                                    <div class="alert alert-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i> 
+                                                        Не удалось сгенерировать изображение: ${data.generated_image.error}
+                                                    </div>`;
+                                                loadingElement.classList.remove('progress');
+                                            }
+                                        } else {
+                                            // Если нет конкретной ошибки, показываем общее сообщение
+                                            loadingElement.innerHTML = `
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    Не удалось сгенерировать изображение. Попробуйте другой текст или повторите позже.
+                                                </div>`;
+                                            loadingElement.classList.remove('progress');
+                                        }
                                     }
                                 }
                             }
@@ -514,9 +624,33 @@ function displayGeneratedImage(imageUrl) {
         return;
     }
     
+    // Проверяем, что URL не пустой
+    if (!imageUrl || imageUrl === 'undefined') {
+        console.error("Получен пустой URL изображения");
+        if (errorElement) {
+            errorElement.textContent = "Получен некорректный URL изображения";
+            errorElement.style.display = 'block';
+        }
+        if (loadingElement) loadingElement.style.display = 'none';
+        return;
+    }
+    
+    // Нормализуем URL изображения
+    let normalizedUrl = imageUrl;
+    
+    // Если URL слишком длинный, вероятно, он содержит ошибку
+    if (normalizedUrl.length > 1000) {
+        console.warn("Подозрительно длинный URL изображения:", normalizedUrl.length, "символов");
+        // Проверяем наличие двойной кодировки
+        if (normalizedUrl.includes('%25')) {
+            normalizedUrl = decodeURIComponent(normalizedUrl);
+            console.log("Декодирован URL с двойной кодировкой");
+        }
+    }
+    
     // Сохраняем URL для возможного использования в будущем
-    if (imageUrl && imageUrl.startsWith('http')) {
-        window.lastGeneratedImageExternalUrl = imageUrl;
+    if (normalizedUrl && normalizedUrl.startsWith('http')) {
+        window.lastGeneratedImageExternalUrl = normalizedUrl;
     }
     
     // Скрываем загрузку и ошибки
@@ -528,7 +662,7 @@ function displayGeneratedImage(imageUrl) {
     
     // Счетчик попыток загрузки
     let retryCount = 0;
-    const maxRetries = 2;
+    const maxRetries = 3;
     
     // Функция для попытки загрузки изображения
     function tryLoadImage(url) {
@@ -546,6 +680,10 @@ function displayGeneratedImage(imageUrl) {
                 if (retryCount === 1 && url.startsWith('/')) {
                     // Если URL начинается с /, пробуем без /
                     setTimeout(() => tryLoadImage(url.substring(1)), 500);
+                } else if (retryCount === 2 && url.includes('//')) {
+                    // Если URL содержит двойной слеш, пробуем исправить
+                    const fixedUrl = url.replace(/([^:])\/\/+/g, '$1/');
+                    setTimeout(() => tryLoadImage(fixedUrl), 500);
                 } else if (window.lastGeneratedImageExternalUrl && window.lastGeneratedImageExternalUrl !== url) {
                     // Пробуем внешний URL
                     setTimeout(() => tryLoadImage(window.lastGeneratedImageExternalUrl), 500);
@@ -571,7 +709,9 @@ function displayGeneratedImage(imageUrl) {
         };
         
         // Устанавливаем изображение
-        imageElement.src = url;
+        // Добавляем параметр времени, чтобы обойти кэширование
+        const cacheBuster = `?t=${new Date().getTime()}`;
+        imageElement.src = url + cacheBuster;
     }
     
     // Функция для отображения ошибки загрузки
@@ -585,7 +725,7 @@ function displayGeneratedImage(imageUrl) {
     }
     
     // Начинаем загрузку изображения
-    tryLoadImage(imageUrl);
+    tryLoadImage(normalizedUrl);
 }
 
 // Функция для проверки статуса генерации музыки
@@ -1273,15 +1413,6 @@ function displayGeneratedMusic(musicData) {
         }
         
         if (loadingElement) loadingElement.style.display = 'none';
-    }
-}
-
-// Функция для отображения ошибки генерации изображения
-function showImageError(errorText) {
-    const errorElement = document.getElementById('image-error');
-    if (errorElement) {
-        errorElement.textContent = errorText;
-        errorElement.style.display = 'block';
     }
 }
 

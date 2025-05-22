@@ -552,6 +552,74 @@ def generate_image():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/generate_safe_image', methods=['POST'])
+def generate_safe_image():
+    """
+    Генерирует безопасную (символическую/метафорическую) версию изображения для 
+    дневникового текста, который не прошел модерацию из-за упоминания насилия.
+    
+    Этот эндпоинт вызывается после того, как пользователь согласился 
+    генерировать альтернативное изображение.
+    """
+    try:
+        diary_text = request.form.get('diary_text', '')
+        
+        if not diary_text:
+            return jsonify({'success': False, 'error': 'Текст дневника не указан'}), 400
+        
+        # Создаем анализатор
+        analyzer = WarDiaryAnalyzer()
+        
+        # Проводим эмоциональный анализ для лучшей генерации
+        emotions = analyzer.analyze_emotions(diary_text)
+        
+        # Логируем начало безопасной генерации
+        print(f"Начинаем генерацию БЕЗОПАСНОГО символического изображения по запросу пользователя")
+        
+        # Генерируем символическое изображение
+        result = analyzer.generate_safe_image_from_diary(diary_text, emotions)
+        
+        print(f"Результат генерации безопасного изображения: {result}")
+        
+        # Формируем ответ
+        if result.get('success', False):
+            # Получаем URL изображения
+            image_url = result.get('image_url', '')
+            local_path = result.get('local_path', '')
+            
+            # Используем локальный путь, если доступен, иначе внешний URL
+            display_url = f"/{local_path}" if local_path else image_url
+            
+            # Если локальный путь не начинается с /, добавляем его
+            if display_url and not display_url.startswith('/'):
+                display_url = '/' + display_url
+                
+            return jsonify({
+                'success': True, 
+                'image_url': display_url,
+                'external_url': image_url,  # Сохраняем внешний URL как запасной вариант
+                'is_safe_alternative': True,
+                'message': 'Создано символическое изображение на основе дневникового текста вместо прямой иллюстрации'
+            })
+        else:
+            # Если произошла ошибка
+            error_message = result.get('error', 'Неизвестная ошибка при генерации изображения')
+            return jsonify({
+                'success': False,
+                'error': error_message,
+                'technical_error': result.get('technical_error', '')
+            }), 500
+            
+    except Exception as e:
+        print(f"Ошибка при генерации безопасного изображения: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            'success': False,
+            'error': f"Ошибка при генерации безопасного изображения: {str(e)}"
+        }), 500
+
 @app.route('/generate_music', methods=['POST'])
 def generate_music():
     try:
