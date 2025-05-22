@@ -593,7 +593,7 @@ class WarDiaryAnalyzer:
                             .replace("убитых", "пострадавших")
                             .replace("мертвых", "павших"))
             
-            # Сначала пытаемся создать более прямой промпт на основе дневникового текста
+            # Создаем промпт на основе дневникового текста и эмоционального анализа
             if emotion_analysis and 'primary_emotions' in emotion_analysis:
                 # Используем эмоциональный анализ для улучшения запроса
                 emotions_text = ', '.join([f"{e['emotion']} ({e['intensity']})" for e in emotion_analysis['primary_emotions'][:3]])
@@ -625,16 +625,16 @@ class WarDiaryAnalyzer:
             # Убедимся, что директория для изображений существует
             os.makedirs(os.path.join('static', 'generated_images'), exist_ok=True)
             
-            print(f"Начинаем запрос к API для генерации прямого изображения...")
+            print(f"Начинаем запрос к API для генерации изображения...")
             
-            # Пытаемся сгенерировать изображение напрямую
+            # Пытаемся сгенерировать изображение
             try:
                 result = self.generate_image(direct_prompt)
-                print(f"Ответ от API получен для прямого изображения: {result}")
+                print(f"Ответ от API получен для изображения: {result}")
                 return result
             except Exception as direct_image_error:
                 error_message = str(direct_image_error)
-                print(f"Ошибка при прямой генерации изображения: {error_message}")
+                print(f"Ошибка при генерации изображения: {error_message}")
                 
                 # Проверяем, связана ли ошибка с модерацией контента
                 is_content_policy_error = (
@@ -645,73 +645,24 @@ class WarDiaryAnalyzer:
                 )
                 
                 if is_content_policy_error:
-                    # Возвращаем специальный статус, чтобы фронтенд показал соответствующее сообщение
-                    # и предложил пользователю сгенерировать безопасную альтернативу
+                    # ВАЖНО: В данном случае мы ВСЕГДА возвращаем ошибку нарушения политики контента,
+                    # чтобы фронтенд мог показать пользователю предупреждение и предложить
+                    # генерацию безопасной версии изображения
                     return {
                         'success': False,
                         'error': "Текст содержит описания, которые невозможно визуализировать согласно политике OpenAI.",
                         'type': 'content_policy_violation',
                         'can_regenerate_safe': True,
+                        'original_prompt_failed': True,  # Новый флаг, указывающий что исходный промпт не прошел
                         'technical_error': error_message
                     }
                 else:
-                    # Для других технических ошибок, пробуем безопасную версию без запроса пользователя
-                    print("Техническая ошибка, автоматически пробуем безопасную версию...")
-                    
-                    # Создаем более абстрактное и художественное описание
-                    if emotion_analysis and 'primary_emotions' in emotion_analysis:
-                        # Используем эмоциональный анализ для улучшения запроса
-                        emotions_text = ', '.join([f"{e['emotion']}" for e in emotion_analysis['primary_emotions'][:3]])
-                        tone = emotion_analysis.get('emotional_tone', '')
-                        
-                        # Используем формулировки, связанные с историческими событиями, но без прямых упоминаний войны
-                        safe_prompt = f"""
-                        I NEED to create a historical scene that is thematically related to the diary content but safe for image generation:
-                        
-                        Create a symbolic artistic illustration about historical memories from the Great Patriotic War period (1941-1945).
-                        The scene should convey {emotions_text} emotions and a {tone} atmosphere.
-                        
-                        Include these symbolic elements that relate to the diary's themes:
-                        - A Soviet soldier's personal items (like letters, photos, compass, medals)
-                        - Eastern Front landscape with weather matching the emotional tone
-                        - Symbolic elements suggesting challenge and resilience (broken buildings in distance, sunset/sunrise)
-                        
-                        Style: painterly, realistic with atmospheric lighting.
-                        Avoid depicting any violence, weapons, injuries, or explicit war imagery.
-                        Focus on emotional storytelling through objects, landscapes and atmosphere.
-                        """
-                    else:
-                        # Если анализа эмоций нет, используем нейтральный исторический шаблон
-                        safe_prompt = f"""
-                        I NEED to create a historical scene that is thematically related to the diary content but safe for image generation:
-                        
-                        Create a symbolic artistic illustration about historical memories from the Great Patriotic War (1941-1945).
-                        
-                        Include subtle symbolic elements that relate to the diary's themes:
-                        - Soviet soldier's personal items from the era (letters, compass, old photos, journal, military cap)
-                        - Eastern Front landscape with atmospheric lighting
-                        - Symbolic elements suggesting challenging times in Soviet Russia (distant smoke, sunset/sunrise)
-                        
-                        Style: painterly, realistic with atmospheric lighting.
-                        Avoid depicting any violence, weapons, injuries, or explicit war imagery.
-                        Focus on emotional storytelling through objects, landscapes and atmosphere.
-                        """
-                    
-                    try:
-                        safe_result = self.generate_image(safe_prompt)
-                        print(f"Ответ от API получен для безопасного изображения: {safe_result}")
-                        
-                        # Помечаем как безопасную альтернативу
-                        if safe_result.get('success'):
-                            safe_result['is_safe_alternative'] = True
-                            
-                        return safe_result
-                    except Exception as safe_error:
-                        print(f"Ошибка при безопасной генерации: {str(safe_error)}")
-                        return {
-                            'success': False,
-                            'error': f"Ошибка при генерации изображения: {str(direct_image_error)}"
-                        }
+                    # Для других технических ошибок возвращаем общее сообщение
+                    return {
+                        'success': False,
+                        'error': f"Техническая ошибка при генерации изображения: {error_message}",
+                        'technical_error': error_message
+                    }
         
         except Exception as e:
             print(f"Ошибка при генерации изображения из дневника: {str(e)}")

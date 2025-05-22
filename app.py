@@ -523,13 +523,24 @@ def generate_image():
         
         # Генерация изображения
         image_result = analyzer.generate_image_from_diary(text, emotion_analysis)
-        print(f"Генерация изображения завершена: {image_result['success']}")
+        print(f"Генерация изображения завершена: {image_result.get('success', False)}")
         
         if not image_result.get('success', False):
-            return jsonify({
+            # Передаем все поля из image_result, включая type и can_regenerate_safe, если они есть
+            response_data = {
                 'success': False,
                 'error': image_result.get('error', 'Не удалось сгенерировать изображение')
-            }), 500
+            }
+            
+            # Добавляем дополнительные поля, если они есть
+            if 'type' in image_result:
+                response_data['type'] = image_result['type']
+            if 'can_regenerate_safe' in image_result:
+                response_data['can_regenerate_safe'] = image_result['can_regenerate_safe']
+            if 'technical_error' in image_result:
+                response_data['technical_error'] = image_result['technical_error']
+                
+            return jsonify(response_data), 500
         
         # Преобразуем пути к изображениям в URL-адреса
         local_path = image_result.get('local_path', '')

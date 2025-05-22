@@ -411,6 +411,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 document.getElementById('generate-safe-image').addEventListener('click', function() {
                                                     // Показываем индикатор загрузки
                                                     loadingElement.innerHTML = `
+                                                        <div class="alert alert-warning mb-3">
+                                                            <i class="fas fa-exclamation-triangle"></i> 
+                                                            <strong>Внимание!</strong> Изображение будет сгенерировано на основе безопасного альтернативного промпта из-за нарушения политики содержания OpenAI. 
+                                                            Качество и точность изображения могут отличаться от исходной задумки.
+                                                        </div>
                                                         <p class="text-muted">Генерация символического изображения...</p>
                                                         <div class="progress">
                                                             <div class="progress-bar progress-bar-striped progress-bar-animated" 
@@ -1468,5 +1473,278 @@ function updateGenerationUI() {
         }
     }
 }
+
+// Функция для отдельной генерации изображения
+function generateImageOnly(text, emotions) {
+    // Находим или создаем контейнер для изображения
+    let imageSection = document.querySelector('.image-section');
+    if (!imageSection) {
+        imageSection = document.createElement('div');
+        imageSection.className = 'image-section mt-4 p-3 border rounded bg-light';
+        
+        // Заголовок
+        const header = document.createElement('h3');
+        header.textContent = 'Сгенерированное изображение';
+        imageSection.appendChild(header);
+        
+        // Контейнер для результатов
+        const imageResults = document.createElement('div');
+        imageResults.id = 'image-results';
+        imageSection.appendChild(imageResults);
+        
+        // Индикатор загрузки
+        const loading = document.createElement('div');
+        loading.id = 'image-loading';
+        loading.className = 'progress my-3';
+        loading.innerHTML = `
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" style="width: 100%"></div>
+        `;
+        imageResults.appendChild(loading);
+        
+        // Контейнер для изображения
+        const imageContainer = document.createElement('div');
+        imageContainer.id = 'generated-image-container';
+        imageContainer.className = 'text-center mb-3';
+        imageContainer.style.display = 'none';
+        
+        const imageElement = document.createElement('img');
+        imageElement.id = 'generated-image';
+        imageElement.className = 'img-fluid rounded shadow';
+        imageElement.alt = 'Сгенерированная иллюстрация';
+        
+        imageContainer.appendChild(imageElement);
+        imageResults.appendChild(imageContainer);
+        
+        // Добавляем на страницу
+        const resultsSection = document.getElementById('results');
+        if (resultsSection) {
+            resultsSection.appendChild(imageSection);
+        } else {
+            document.body.appendChild(imageSection);
+        }
+    }
+    
+    // Показываем секцию
+    imageSection.style.display = 'block';
+    imageSection.classList.add('fadeIn');
+    
+    // Показываем индикатор загрузки
+    const loadingElement = document.getElementById('image-loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'block';
+        loadingElement.innerHTML = `
+            <p class="text-muted">Генерация изображения...</p>
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 100%"></div>
+            </div>`;
+    }
+    
+    // Отправляем запрос на генерацию изображения
+    fetch('/generate_image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            text: text,
+            emotion_analysis: emotions
+        })
+    })
+    .then(response => {
+        // Проверяем, что ответ - JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Сервер вернул не JSON ответ');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Ответ от сервера /generate_image:', data);
+        
+        // Обрабатываем успешный ответ
+        if (data.success) {
+            // Сохраняем внешний URL, если он есть
+            if (data.external_url) {
+                window.lastGeneratedImageExternalUrl = data.external_url;
+            }
+            
+            // Показываем изображение
+            displayGeneratedImage(data.image_url);
+        }
+        // Обрабатываем ошибку
+        else {
+            if (loadingElement) {
+                // Проверяем, является ли ошибка связанной с запрещенным контентом
+                // Примечание: API может вернуть поля на верхнем уровне, а не внутри генерированного изображения
+                if (data.type === 'content_policy_violation' && data.can_regenerate_safe) {
+                    // Показываем специальное сообщение с возможностью перегенерации
+                    loadingElement.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>${data.error}</strong>
+                            <p class="mt-2">Вы можете:</p>
+                            <ul>
+                                <li>Выбрать другой отрывок дневника без описаний насилия</li>
+                                <li>Сгенерировать символическую иллюстрацию (качество может быть ниже и содержание менее точным)</li>
+                            </ul>
+                            <button id="generate-safe-image-only" class="btn btn-sm btn-outline-primary mt-2">
+                                Создать символическую иллюстрацию
+                            </button>
+                        </div>`;
+                    loadingElement.classList.remove('progress');
+                    
+                    // Добавляем обработчик для кнопки перегенерации
+                    document.getElementById('generate-safe-image-only').addEventListener('click', function() {
+                        // Показываем индикатор загрузки и предупреждение
+                        loadingElement.innerHTML = `
+                            <div class="alert alert-warning mb-3">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                <strong>Внимание!</strong> Изображение будет сгенерировано на основе безопасного альтернативного промпта из-за нарушения политики содержания OpenAI. 
+                                Качество и точность изображения могут отличаться от исходной задумки.
+                            </div>
+                            <p class="text-muted">Генерация символического изображения...</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 100%"></div>
+                            </div>`;
+                        
+                        // Отправляем запрос на генерацию безопасного изображения
+                        fetch('/generate_safe_image', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({
+                                diary_text: text
+                            })
+                        })
+                        .then(response => {
+                            // Проверяем, что ответ - JSON
+                            const contentType = response.headers.get('content-type');
+                            if (!contentType || !contentType.includes('application/json')) {
+                                throw new Error('Сервер вернул не JSON ответ');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("Получен ответ для безопасного изображения:", data);
+                            
+                            if (data.success && data.image_url) {
+                                // Сохраняем внешний URL, если он есть
+                                if (data.external_url) {
+                                    window.lastGeneratedImageExternalUrl = data.external_url;
+                                }
+                                
+                                // Показываем сгенерированное безопасное изображение
+                                displayGeneratedImage(data.image_url);
+                                
+                                // Добавляем уведомление о символической альтернативе
+                                const noticeElement = document.createElement('div');
+                                noticeElement.className = 'alert alert-info mt-3';
+                                noticeElement.innerHTML = `
+                                    <i class="fas fa-info-circle"></i>
+                                    Было создано символическое изображение вместо прямой иллюстрации содержимого дневника.
+                                `;
+                                document.getElementById('image-results').appendChild(noticeElement);
+                            } else {
+                                // Показываем ошибку
+                                loadingElement.innerHTML = `
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Не удалось сгенерировать даже символическое изображение: ${data.error || 'Неизвестная ошибка'}
+                                    </div>`;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при запросе безопасного изображения:', error);
+                            loadingElement.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+                                </div>`;
+                        });
+                    });
+                } else {
+                    // Обычная ошибка
+                    loadingElement.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Не удалось сгенерировать изображение: ${data.error || 'Неизвестная ошибка'}
+                        </div>`;
+                    loadingElement.classList.remove('progress');
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка при запросе изображения:', error);
+        if (loadingElement) {
+            loadingElement.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+                </div>`;
+        }
+    });
+    
+    // Прокручиваем страницу к результатам
+    const resultsSection = document.getElementById('results');
+    if (resultsSection) {
+        resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Добавим кнопку для тестирования функционала отдельной генерации изображения
+document.addEventListener('DOMContentLoaded', function() {
+    // Создаем кнопку тестирования
+    const testButton = document.createElement('button');
+    testButton.id = 'test-policy-violation';
+    testButton.className = 'btn btn-sm btn-outline-danger mt-2';
+    testButton.textContent = 'Тест обработки запрещенного контента';
+    
+    // Находим подходящее место для кнопки
+    const formControls = document.querySelector('.form-controls');
+    if (formControls) {
+        formControls.appendChild(testButton);
+    } else {
+        // Если нет подходящего места, добавляем после формы
+        const analysisForm = document.getElementById('analysis-form');
+        if (analysisForm) {
+            analysisForm.insertAdjacentElement('afterend', testButton);
+        }
+    }
+    
+    // Добавляем обработчик события
+    testButton.addEventListener('click', function() {
+        // Используем специальный тестовый текст с описаниями насилия
+        const testText = `
+12 августа 1943 года. Под Курском.
+
+Сегодня был страшный бой. Наш батальон попал под массированный огонь немецких пулеметов. Я видел, как пули прошивали тела моих товарищей. Кровь была везде.
+
+Вчера нам удалось захватить немецкий танк. Мы расстреляли экипаж, когда они пытались выбраться. Их командир умолял сохранить ему жизнь, но после того, что они сделали с нашей деревней, пощады не было.
+
+Ночью помогал санитарам собирать раненых. Многие были изуродованы до неузнаваемости. У Петровича оторвало обе ноги, но он еще был жив, когда мы его нашли. Умер по дороге в медсанбат.
+
+Мы нашли тела мирных жителей со следами пыток. Женщины и дети... Не могу описать, что с ними сделали. После этого мы поклялись не брать пленных.
+
+Завтра снова в бой. Запас патронов пополнили, гранаты получили. Командир сказал, будем прорываться к железнодорожной станции. Немцы хорошо укрепились, но мы должны выбить их оттуда любой ценой.`;
+        
+        // Эмоциональный анализ (упрощенный)
+        const emotions = {
+            "primary_emotions": [
+                {"emotion": "ужас", "intensity": 9},
+                {"emotion": "гнев", "intensity": 8},
+                {"emotion": "отчаяние", "intensity": 7}
+            ],
+            "emotional_tone": "мрачный"
+        };
+        
+        // Вызываем функцию генерации изображения
+        generateImageOnly(testText, emotions);
+    });
+});
 </script>
 {% endblock %} 
