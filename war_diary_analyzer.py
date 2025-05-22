@@ -238,12 +238,22 @@ class WarDiaryAnalyzer:
                            "war", "battle", "violence", "dead", "kill", "blood", "weapon", "gun",
                            "attack", "corpse", "victim", "bomb", "explosive", "combat", "fight"]
             
-            # Если в промпте есть рискованные слова, модифицируем его, используя инструкцию 
-            # от разработчиков OpenAI для обхода автоматического расширения промпта
-            if any(word in prompt.lower() for word in risky_words) and not "I NEED to" in prompt:
-                # Оборачиваем промпт в инструкцию не модифицировать его
-                print("Обнаружены потенциально рискованные слова в промпте, модифицируем запрос")
-                prompt = f"I NEED to create a historical symbolic scene. DO NOT add any detail about war or violence: {prompt}"
+            extremely_violent_words = [
+                "кровь", "пытки", "расстрел", "убил", "пули", "труп", "пытка", 
+                "изуродован", "оторвало", "blood", "torture", "shot", "killed", "bullets",
+                "corpse", "mutilated", "dismembered", "gore", "visceral"
+            ]
+            
+            # Проверяем на наличие очень жестокого содержимого
+            if any(word in prompt.lower() for word in extremely_violent_words):
+                print("Обнаружены явные описания насилия в промпте, сразу возвращаем ошибку политики содержания")
+                raise Exception(f"Запрос содержит описания насилия, которые запрещены политикой содержания OpenAI.")
+            
+            # Если в промпте есть потенциально рискованные слова, добавляем префикс, но не пытаемся явно обойти фильтры
+            if any(word in prompt.lower() for word in risky_words):
+                print("Обнаружены потенциально рискованные слова в промпте, добавляем префикс")
+                # Используем менее агрессивный префикс
+                prompt = f"Create a symbolic historical scene that avoids explicit violence: {prompt}"
             
             # Определяем функцию для генерации изображения
             tools = [
@@ -346,10 +356,10 @@ class WarDiaryAnalyzer:
                                     "mood": "dramatic"
                                 }
                             else:
-                                # Если не удалось найти по regex, используем ПОЛНЫЙ оригинальный промпт
-                                print("Не удалось извлечь промпт из JSON, используем полный оригинальный промпт")
+                                # Если не удалось найти по regex, используем оригинальный промпт
+                                print("Не удалось извлечь промпт из JSON, используем оригинальный промпт")
                                 function_args = {
-                                    "detailed_prompt": f"Create a realistic illustration depicting: {prompt}",
+                                    "detailed_prompt": f"Create a realistic illustration inspired by historical context: {prompt}",
                                     "style": "realistic",
                                     "mood": "dramatic"
                                 }
@@ -360,18 +370,17 @@ class WarDiaryAnalyzer:
                 print(f"Критическая ошибка при парсинге JSON аргументов: {e}")
                 print(f"Начало аргументов: {arguments_text[:100]}{'...' if len(arguments_text) > 100 else ''}")
                 
-                # Создаем безопасные аргументы по умолчанию, включая ПОЛНЫЙ оригинальный промпт
+                # Создаем безопасные аргументы
                 function_args = {
-                    "detailed_prompt": f"Create a detailed artistic illustration of: {prompt}",
+                    "detailed_prompt": f"Create a detailed artistic illustration of a historical scene",
                     "style": "realistic",
                     "mood": "dramatic"
                 }
-                print("Используем аргументы по умолчанию с ПОЛНЫМ оригинальным запросом")
+                print("Используем безопасные аргументы")
             except Exception as e:
                 print(f"Неожиданная ошибка при обработке аргументов: {e}")
-                # Даже в случае ошибки используем полный промпт
                 function_args = {
-                    "detailed_prompt": f"Create an artistic illustration depicting: {prompt}",
+                    "detailed_prompt": f"Create an artistic historical illustration",
                     "style": "realistic",
                     "mood": "atmospheric"
                 }
@@ -381,11 +390,16 @@ class WarDiaryAnalyzer:
             style = function_args.get('style', 'realistic')
             mood = function_args.get('mood', 'dramatic')
             
-            # Проверяем детальный промпт на наличие рискованных слов
+            # Проверяем детальный промпт на наличие крайне жестоких слов
+            if any(word in enhanced_prompt.lower() for word in extremely_violent_words):
+                print("Обнаружены экстремально жестокие слова в обогащенном промпте, прерываем генерацию")
+                raise Exception("Запрос содержит описания насилия, которые запрещены политикой содержания OpenAI.")
+            
+            # Если в обогащенном промпте есть рискованные слова, мягко корректируем его
             if any(word in enhanced_prompt.lower() for word in risky_words):
-                print("Обнаружены рискованные слова в обогащенном промпте, модифицируем...")
+                print("Обнаружены рискованные слова в обогащенном промпте, делаем промпт более абстрактным")
                 
-                # Удаляем упоминания военной тематики из промпта
+                # Делаем промпт более абстрактным и символическим
                 enhanced_prompt = (enhanced_prompt.replace("war", "historical period")
                                   .replace("battle", "event")
                                   .replace("weapon", "object")
@@ -396,25 +410,13 @@ class WarDiaryAnalyzer:
                                   .replace("оружие", "предмет")
                                   .replace("бой", "эпизод"))
                 
-                # Добавляем инструкцию избегать нежелательного контента
-                enhanced_prompt = "Create a symbolic, metaphorical image without any violence or weapons: " + enhanced_prompt
+                # Добавляем направление для символической интерпретации
+                enhanced_prompt = "Create a symbolic, metaphorical image of historical context: " + enhanced_prompt
             
             # Добавляем стиль и настроение к промпту
             final_prompt = f"{enhanced_prompt} Style: {style}. Mood: {mood}."
             # Логируем только начало для отладки, но передаем полный промпт
             print(f"Обогащенный промпт (начало): {final_prompt[:150]}{'...' if len(final_prompt) > 150 else ''}")
-            
-            # Очищаем финальный промпт от потенциально проблемных слов еще раз
-            final_prompt = (final_prompt.replace("weapon", "object")
-                           .replace("violence", "emotion")
-                           .replace("combat", "scene")
-                           .replace("soldier", "person")
-                           .replace("military", "historical")
-                           .replace("war", "historical period")
-                           .replace("battle", "event"))
-            
-            # Добавляем префикс, который помогает избежать блокировки модерацией
-            final_prompt = f"I NEED a simple historical illustration. {final_prompt}"
             
             # Теперь вызываем Image Generation API с улучшенным промптом и таймаутом
             try:
@@ -432,55 +434,8 @@ class WarDiaryAnalyzer:
                 
                 # Проверяем ошибки, связанные с политикой контента
                 if "content_policy_violation" in error_message or "image_generation_user_error" in error_message or "violates" in error_message.lower():
-                    # Пробуем еще более упрощенный промпт
-                    try:
-                        print("Попытка генерации с предельно упрощенным безопасным промптом...")
-                        
-                        # Создаем максимально абстрактный промпт
-                        safe_prompt = """
-                        Create a symbolic artistic painting with soft colors depicting a peaceful Eastern European landscape 
-                        with sky and natural elements. An old desk with Soviet military personal items from 1941-1945 Great Patriotic War era - 
-                        journal with Cyrillic writing, compass, old photos of soldiers, Soviet medals and insignia. No people, no weapons, 
-                        no violence, just nostalgic objects of the Soviet wartime period and nature. Style: warm realistic oil painting.
-                        """
-                        
-                        # Пробуем еще раз с безопасным промптом
-                        image_response = self.client.images.generate(
-                            model="dall-e-3",
-                            prompt=safe_prompt,
-                            size=size,
-                            quality="standard",
-                            n=1,
-                            timeout=60
-                        )
-                        
-                        print("Безопасный промпт успешно обработан!")
-                    except Exception as safe_error:
-                        print(f"Ошибка при генерации с безопасным промптом: {str(safe_error)}")
-                        
-                        # Пробуем финальную попытку с ультра-безопасным промптом, вообще не связанным с темой
-                        try:
-                            print("Попытка генерации с ультра-безопасным промптом без исторического контекста...")
-                            ultra_safe_prompt = """
-                            Create a peaceful artistic painting showing a sunset over Eastern European landscape with a calm lake.
-                            Include subtle elements suggesting the 1941-1945 era such as distant village architecture typical of Soviet Russia.
-                            Style: realistic oil painting with warm colors. Beautiful nature scene with historical context.
-                            """
-                            
-                            image_response = self.client.images.generate(
-                                model="dall-e-3",
-                                prompt=ultra_safe_prompt,
-                                size=size,
-                                quality="standard",
-                                n=1,
-                                timeout=60
-                            )
-                            
-                            print("Ультра-безопасный промпт успешно обработан!")
-                        except Exception as ultra_safe_error:
-                            print(f"Ошибка при генерации с ультра-безопасным промптом: {str(ultra_safe_error)}")
-                            # Если все попытки неудачны, пробрасываем исходную ошибку
-                            raise Exception(f"Запрос отклонен политикой контента: {error_message}")
+                    print("Обнаружено нарушение политики содержания при вызове DALL-E API")
+                    raise Exception(f"Запрос отклонен политикой содержания OpenAI: {error_message}")
                 else:
                     # Другие ошибки пробрасываем дальше
                     raise dalle_error
@@ -587,6 +542,28 @@ class WarDiaryAnalyzer:
             # Если текст слишком длинный, обрезаем его
             if len(diary_text) > 4000:
                 diary_text = diary_text[:4000]
+            
+            # Сначала проверяем текст на очень жестокое содержимое, чтобы не пытаться генерировать изображение
+            extremely_violent_words = [
+                "кровь", "пытки", "расстреляли", "убили", "пули", "трупы", "пытка", 
+                "изуродованы", "оторвало", "blood", "torture", "shot", "killed", "bullets",
+                "corpses", "mutilated", "dismembered", "gore", "visceral"
+            ]
+            
+            # Проверяем наличие очень жестокого содержимого
+            contains_extreme_violence = any(word in diary_text.lower() for word in extremely_violent_words)
+            
+            # Если обнаружен очень жестокий контент, сразу возвращаем ошибку политики содержания
+            if contains_extreme_violence:
+                print("Обнаружены явные описания насилия, сразу возвращаем ошибку политики содержания")
+                return {
+                    'success': False,
+                    'error': "Текст содержит описания, которые невозможно визуализировать согласно политике OpenAI.",
+                    'type': 'content_policy_violation',
+                    'can_regenerate_safe': True,
+                    'original_prompt_failed': True,
+                    'technical_error': "Текст содержит явные описания насилия, что запрещено политикой OpenAI."
+                }
             
             # Минимально фильтруем текст для предотвращения очевидных нарушений
             filtered_text = (diary_text.replace("трупы", "павшие")

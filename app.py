@@ -147,20 +147,56 @@ def analyze():
                         'external_url': image_result.get('image_url', '')
                     }
                 else:
-                    error_msg = image_result.get('error', 'Неизвестная ошибка при генерации изображения')
-                    print(f"Ошибка генерации изображения: {error_msg}")
-                    response_data['generated_image'] = {
-                        'success': False,
-                        'error': error_msg
-                    }
+                    error_message = image_result.get('error', 'Неизвестная ошибка при генерации изображения')
+                    print(f"Ошибка генерации изображения: {error_message}")
+                    
+                    # Проверяем, связана ли ошибка с политикой содержания
+                    if 'type' in image_result and image_result['type'] == 'content_policy_violation':
+                        # Если тип уже определен в image_result, используем его напрямую
+                        response_data['generated_image'] = {
+                            'success': False,
+                            'error': error_message,
+                            'type': 'content_policy_violation',
+                            'can_regenerate_safe': image_result.get('can_regenerate_safe', True),
+                            'technical_error': image_result.get('technical_error', '')
+                        }
+                    elif any(term in error_message.lower() for term in 
+                          ["content_policy_violation", "policy", "violates", "content policy", "насилия", "насилие"]):
+                        # Если ошибка похожа на нарушение политики содержания
+                        response_data['generated_image'] = {
+                            'success': False,
+                            'error': "Текст содержит описания, которые невозможно визуализировать согласно политике OpenAI.",
+                            'type': 'content_policy_violation',
+                            'can_regenerate_safe': True,
+                            'technical_error': error_message
+                        }
+                    else:
+                        # Другие типы ошибок
+                        response_data['generated_image'] = {
+                            'success': False,
+                            'error': error_message
+                        }
             except Exception as img_error:
                 print(f"Исключение при генерации изображения: {str(img_error)}")
                 import traceback
                 traceback.print_exc()
-                response_data['generated_image'] = {
-                    'success': False,
-                    'error': f"Ошибка: {str(img_error)}"
-                }
+                
+                error_message = str(img_error)
+                # Проверяем, связана ли ошибка с политикой содержания
+                if any(term in error_message.lower() for term in 
+                      ["content_policy_violation", "policy", "violates", "content policy", "насилия", "насилие"]):
+                    response_data['generated_image'] = {
+                        'success': False,
+                        'error': "Текст содержит описания, которые невозможно визуализировать согласно политике OpenAI.",
+                        'type': 'content_policy_violation',
+                        'can_regenerate_safe': True,
+                        'technical_error': error_message
+                    }
+                else:
+                    response_data['generated_image'] = {
+                        'success': False,
+                        'error': f"Ошибка: {str(img_error)}"
+                    }
         
         if 'music' in generation_types:
             print("Начало генерации музыки")
