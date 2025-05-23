@@ -320,26 +320,40 @@ a {
 audio {
     display: block !important;
     width: 100% !important;
-    max-width: 100% !important;
-    opacity: 1 !important;
+    min-height: 50px !important;
     visibility: visible !important;
-    margin-bottom: 10px;
+    opacity: 1 !important;
+    background-color: #f5f5f5;
+    border: 3px solid #4a76a8 !important;
+    margin: 15px 0 !important;
+    position: relative !important;
+    z-index: 9999 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+    border-radius: 6px;
+}
+
+[data-theme="dark"] audio {
+    background-color: var(--textarea-bg) !important;
+    border-color: rgba(255,255,255,.3) !important;
 }
 
 .audio-player-container {
     border: 2px solid #f0ad4e;
     border-radius: 8px;
-    background-color: #fffaf0;
+    background-color: var(--card-bg);
     padding: 15px !important;
     margin-bottom: 15px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: block !important;
+    position: relative !important;
+    z-index: 9998 !important;
 }
 
 /* Стили для альтернативного плеера */
 .alternative-player {
     border: 2px solid #5bc0de;
     border-radius: 8px;
-    background-color: #f0f8ff;
+    background-color: var(--card-bg);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     margin-top: 20px;
 }
@@ -363,4 +377,188 @@ audio {
 
 .fadeIn {
     animation: fadeIn 0.5s ease forwards;
+}
+
+/* Стили для музыкальной секции в ночном режиме */
+[data-theme="dark"] .audio-player-wrapper {
+    background-color: var(--card-bg) !important;
+    border-color: rgba(255,255,255,.3) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .audio-player-wrapper h4 {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .audio-player-wrapper p {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .audio-player-wrapper audio {
+    background-color: var(--textarea-bg) !important;
+    border-color: rgba(255,255,255,.3) !important;
+}
+
+[data-theme="dark"] .download-audio-btn {
+    background-color: var(--link-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .backup-player {
+    background-color: var(--card-bg) !important;
+    border-color: rgba(255,255,255,.3) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .backup-player h4 {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .backup-player p {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .alternative-player {
+    background-color: var(--card-bg) !important;
+    border-color: rgba(255,255,255,.3) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .audio-player-container {
+    background-color: var(--card-bg) !important;
+    border-color: rgba(255,255,255,.3) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .backup-player-item {
+    background-color: var(--card-bg) !important;
+    border-color: rgba(255,255,255,.2) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .backup-player-item h5 {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .backup-player-item p {
+    color: var(--muted-text) !important;
+}
+
+[data-theme="dark"] .backup-audio-player {
+    background-color: var(--textarea-bg) !important;
+}
+
+/* Специальные стили для фиолетового заголовка музыкальной секции */
+[data-theme="dark"] .music-section .card-header {
+    background-color: #4a2c7d !important; /* Темно-фиолетовый для ночного режима */
+    color: #ffffff !important; /* Белый текст для соответствия другим заголовкам */
+    border-color: #4a2c7d !important;
+}
+
+[data-theme="dark"] .bg-warning {
+}
+
+[data-theme="dark"] .text-dark {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .progress {
+    background-color: rgba(255,255,255,.1) !important;
+}
+
+[data-theme="dark"] .progress-bar {
+    background-color: var(--link-color) !important;
+}
+
+[data-theme="dark"] .badge {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid rgba(255,255,255,.2) !important;
+}
+
+[data-theme="dark"] .emergency-audio-players {
+    background-color: var(--card-bg) !important;
+    border-color: rgba(255,255,255,.3) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .emergency-player-item {
+    background-color: var(--textarea-bg) !important;
+    border-color: rgba(255,255,255,.2) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .alert {
+    background-color: var(--card-bg) !important;
+    border-color: rgba(255,255,255,.2) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: #664d03 !important;
+    border-color: #856404 !important;
+    color: #ffecb5 !important;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: #055160 !important;
+    border-color: #0c7489 !important;
+    color: #b6effb !important;
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: #721c24 !important;
+    border-color: #a52834 !important;
+    color: #f5c2c7 !important;
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: #0f2419 !important;
+    border-color: #146c43 !important;
+    color: #a3cfbb !important;
+}
+
+/* Обеспечение видимости контейнеров с музыкой */
+#music-results {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#generated-music-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Стили для кнопки скачивания с эффектами */
+.download-audio-btn {
+    display: inline-block !important;
+    background-color: #28a745 !important;
+    color: white !important;
+    font-weight: bold !important;
+    padding: 10px 20px !important;
+    border-radius: 5px !important;
+    text-decoration: none !important;
+    margin-top: 10px !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+    transition: all 0.3s ease !important;
+}
+
+.download-audio-btn:hover {
+    background-color: #218838 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+    transform: translateY(-2px) !important;
+    color: white !important;
+    text-decoration: none !important;
+}
+
+[data-theme="dark"] .download-audio-btn {
+    background-color: var(--link-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .download-audio-btn:hover {
+    background-color: #0b5ed7 !important;
+    color: var(--text-color) !important;
 } 

@@ -1202,6 +1202,10 @@ def proxy_audio():
         print(f"Неизвестная ошибка при проксировании аудио: {str(e)}")
         return jsonify({'error': f"Неизвестная ошибка: {str(e)}"}), 500
 
+@app.route('/forum')
+def forum():
+    return redirect(url_for('index'))
+
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")
     print(f"API ключ OpenAI: {'настроен' if os.environ.get('OPENAI_API_KEY') else 'НЕ НАСТРОЕН'}")

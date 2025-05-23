@@ -1,0 +1,89 @@
+{
+  "task_id": "3eeaf5c596c7b24f4699382b3ea31178",
+  "title": "War Diary: Позитивный, споко... Uplifting Orchestral",
+  "prompt": "Create high-quality hopeful Uplifting Orchestral music that captures the following emotions: надежда, решимость, любовь. The music should reflect a позитивный, спокойный tone of wartime experiences. moderate with emotional depth rhythm with strings and woodwinds as primary instruments. Based on a war diary that describes: Мамочка, я прошу тебя, хоть не волнуйся за меня.\nУ меня всё хорошо. Дело простое, солдатское – воюем.\nСтараемся поскорее добить фашистов. Когда окончится война\nи мы соберёмся все вместе, я расскажу тебе о себе много-много,\nкак я здесь жил, как мы воевали…...",
+  "style": "Uplifting Orchestral",
+  "mood": "hopeful",
+  "tempo": "moderate with emotional depth",
+  "instruments": "strings and woodwinds",
+  "emotions": [
+    "надежда",
+    "решимость",
+    "любовь"
+  ],
+  "emotional_tone": "позитивный, спокойный",
+  "status": "complete",
+  "created_at": "2025-05-23T10:18:35.687864",
+  "callback_url": "https://abeb-79-127-211-217.ngrok-free.app/music_callback",
+  "last_update": "2025-05-23T10:20:42.416764",
+  "callback_received": true,
+  "last_callback": {
+    "code": 200,
+    "data": {
+      "callbackType": "complete",
+      "data": [
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2.mp3",
+          "createTime": 1747984842294,
+          "duration": 167.0,
+          "id": "650bd404-bca2-4799-a21a-822761a68f56",
+          "image_url": "https://apiboxfiles.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/650bd404-bca2-4799-a21a-822761a68f56.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_650bd404-bca2-4799-a21a-822761a68f56.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/650bd404-bca2-4799-a21a-822761a68f56.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2",
+          "tags": "Uplifting Orchestral",
+          "title": "War Diary: Позитивный, споко... Uplifting Orchestral"
+        },
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/OTE5MjgwZDYtMzk1Yi00YzBiLWFjMjAtNmQ3YmRkYTdjMjBi.mp3",
+          "createTime": 1747984842294,
+          "duration": 240.36,
+          "id": "919280d6-395b-4c0b-ac20-6d7bdda7c20b",
+          "image_url": "https://apiboxfiles.erweima.ai/OTE5MjgwZDYtMzk1Yi00YzBiLWFjMjAtNmQ3YmRkYTdjMjBi.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/919280d6-395b-4c0b-ac20-6d7bdda7c20b.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_919280d6-395b-4c0b-ac20-6d7bdda7c20b.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/919280d6-395b-4c0b-ac20-6d7bdda7c20b.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/OTE5MjgwZDYtMzk1Yi00YzBiLWFjMjAtNmQ3YmRkYTdjMjBi",
+          "tags": "Uplifting Orchestral",
+          "title": "War Diary: Позитивный, споко... Uplifting Orchestral"
+        }
+      ],
+      "task_id": "3eeaf5c596c7b24f4699382b3ea31178"
+    },
+    "msg": "All generated successfully."
+  },
+  "completed_at": "2025-05-23T10:20:47.169076",
+  "audio_url": "https://apiboxfiles.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2.mp3",
+  "stream_url": "https://mfile.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2",
+  "image_url": "https://apiboxfiles.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2.jpeg",
+  "embed_url": "",
+  "proxy_url": "/proxy_audio?url=https%3A//apiboxfiles.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2.mp3",
+  "local_audio_path": "static\\generated_music\\audio\\music_3eeaf5c596c7b24f4699382b3ea31178.mp3",
+  "local_image_path": "static\\generated_music\\covers\\cover_3eeaf5c596c7b24f4699382b3ea31178.jpg",
+  "local_audio_url": "/static/generated_music/audio/music_3eeaf5c596c7b24f4699382b3ea31178.mp3",
+  "local_image_url": "/static/generated_music/covers/cover_3eeaf5c596c7b24f4699382b3ea31178.jpg",
+  "duration": 167.0,
+  "tags": "Uplifting Orchestral",
+  "track_data": {
+    "audio_url": "https://apiboxfiles.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2.mp3",
+    "createTime": 1747984842294,
+    "duration": 167.0,
+    "id": "650bd404-bca2-4799-a21a-822761a68f56",
+    "image_url": "https://apiboxfiles.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2.jpeg",
+    "model_name": "chirp-auk",
+    "prompt": "",
+    "source_audio_url": "https://cdn1.suno.ai/650bd404-bca2-4799-a21a-822761a68f56.mp3",
+    "source_image_url": "https://cdn2.suno.ai/image_650bd404-bca2-4799-a21a-822761a68f56.jpeg",
+    "source_stream_audio_url": "https://cdn1.suno.ai/650bd404-bca2-4799-a21a-822761a68f56.mp3",
+    "stream_audio_url": "https://mfile.erweima.ai/NjUwYmQ0MDQtYmNhMi00Nzk5LWEyMWEtODIyNzYxYTY4ZjU2",
+    "tags": "Uplifting Orchestral",
+    "title": "War Diary: Позитивный, споко... Uplifting Orchestral"
+  },
+  "music_description": "Сгенерирована музыка в стиле Uplifting Orchestral, настроение: hopeful. Отражает эмоции: надежда, решимость, любовь",
+  "is_music_ready": true
+}

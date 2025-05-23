@@ -1,120 +1,5 @@
 <style>
-/* КРИТИЧЕСКИ ВАЖНЫЕ СТИЛИ ДЛЯ ОТОБРАЖЕНИЯ АУДИОПЛЕЕРА */
-audio {
-    display: block !important;
-    width: 100% !important;
-    min-height: 50px !important;
-    max-height: 50px !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    background-color: #f5f5f5 !important;
-    border: 3px solid #4a76a8 !important;
-    margin: 15px 0 !important;
-    position: relative !important;
-    z-index: 9999 !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
-}
-
-.audio-player-container {
-    display: block !important;
-    position: relative !important;
-    background-color: #f9f9f9 !important;
-    border: 2px solid #5a8bc6 !important;
-    padding: 15px !important;
-    margin: 15px 0 !important;
-    z-index: 9998 !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-}
-
-.music-section {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    margin: 20px 0 !important;
-    padding: 15px !important;
-    background-color: #f8f8f8 !important;
-    border: 1px solid #dddddd !important;
-}
-
-#generated-music-container {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Обеспечение видимости контейнеров с музыкой */
-#music-results {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Стили для резервного плеера */
-.backup-player {
-    background-color: #fff0f0 !important;
-    border: 3px solid #ff0000 !important;
-    border-radius: 8px !important;
-    padding: 15px !important;
-    margin: 20px 0 !important;
-    display: block !important;
-}
-
-.backup-player h4 {
-    color: #ff0000 !important;
-    margin-bottom: 15px !important;
-    font-weight: bold !important;
-}
-
-.backup-player audio {
-    border-color: #ff0000 !important;
-}
-
-/* Стили для кнопки скачивания */
-.download-audio-btn {
-    display: inline-block !important;
-    background-color: #28a745 !important;
-    color: white !important;
-    font-weight: bold !important;
-    padding: 10px 20px !important;
-    border-radius: 5px !important;
-    text-decoration: none !important;
-    margin-top: 10px !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
-    transition: all 0.3s ease !important;
-}
-
-.download-audio-btn:hover {
-    background-color: #218838 !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
-    transform: translateY(-2px) !important;
-}
-
-/* Стили для улучшения видимости плеера */
-.music-section {
-    display: block !important; /* Гарантированно отображать секцию */
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-
-.audio-player-container {
-    border: 2px solid #f0ad4e;
-    border-radius: 8px;
-    background-color: #fffaf0;
-    padding: 15px !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-audio {
-    width: 100%;
-    max-width: 100%;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    border-radius: 6px;
-    display: block !important;
-}
-
-#generated-music-container {
-    display: block !important;
-}
+/* Переместил все стили в static/css/styles.css для корректной работы ночного режима */
 </style>
 
 {% extends "base.html" %}
@@ -211,7 +96,7 @@ audio {
                             </div>
                         </div>
                         
-                        <div class="card mb-4 border-0 shadow music-section">                            <div class="card-header bg-warning text-dark">                                <h4 class="m-0"><i class="bi bi-music-note-beamed"></i> Музыкальное сопровождение</h4>                            </div>                            <div class="card-body" id="music-results">                                <div id="generated-music-container" class="text-center mb-3">
+                        <div class="card mb-4 border-0 shadow music-section">                            <div class="card-header" style="background-color: #6f42c1; color: white;">                                <h4 class="m-0"><i class="bi bi-music-note-beamed"></i> Музыкальное сопровождение</h4>                            </div>                            <div class="card-body" id="music-results">                                <div id="generated-music-container" class="text-center mb-3">
                                     <div class="ratio ratio-16x9 mb-3">
                                         <iframe id="music-iframe" src="" title="Сгенерированная музыка" allowfullscreen></iframe>
                                     </div>
@@ -1276,11 +1161,11 @@ function displayGeneratedMusic(musicData) {
         // Создаем надежный контейнер для плеера
         const audioPlayerWrapper = document.createElement('div');
         audioPlayerWrapper.className = 'audio-player-wrapper';
-        audioPlayerWrapper.style.cssText = 'display:block !important; margin:20px 0 !important; background:#f9f9f9 !important; padding:15px !important; border:2px solid #5a8bc6 !important; border-radius:8px !important;';
+        audioPlayerWrapper.style.cssText = 'display:block !important; margin:20px 0 !important; padding:15px !important; border:2px solid #5a8bc6 !important; border-radius:8px !important;';
         
         // Заголовок
         const title = document.createElement('h4');
-        title.style.cssText = 'color:#2c5282 !important; margin-bottom:15px !important; font-weight:bold !important;';
+        title.style.cssText = 'margin-bottom:15px !important; font-weight:bold !important;';
         title.textContent = 'Музыкальное сопровождение';
         audioPlayerWrapper.appendChild(title);
         
@@ -1298,7 +1183,7 @@ function displayGeneratedMusic(musicData) {
         audioPlayer.autoplay = false;
         audioPlayer.preload = 'auto';
         audioPlayer.className = 'primary-audio-player';
-        audioPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:3px solid #4a76a8 !important; background:#f5f5f5 !important; margin:10px 0 !important;';
+        audioPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:3px solid #4a76a8 !important; margin:10px 0 !important;';
         
         // Добавляем источник
         const source = document.createElement('source');
@@ -1321,7 +1206,7 @@ function displayGeneratedMusic(musicData) {
         downloadLink.href = finalAudioUrl;
         downloadLink.download = 'music_download.mp3';
         downloadLink.className = 'download-audio-btn';
-        downloadLink.style.cssText = 'display:inline-block !important; background:#4a76a8 !important; color:white !important; padding:10px 20px !important; text-decoration:none !important; border-radius:5px !important; font-weight:bold !important;';
+        downloadLink.style.cssText = 'display:inline-block !important; padding:10px 20px !important; text-decoration:none !important; border-radius:5px !important; font-weight:bold !important;';
         downloadLink.innerHTML = '<i class="bi bi-download"></i> Скачать аудиофайл';
         actionsContainer.appendChild(downloadLink);
         
@@ -1411,11 +1296,11 @@ function createBackupPlayer(audioUrl) {
     // Создаем контейнер для резервных плееров
     const backupContainer = document.createElement('div');
     backupContainer.className = 'backup-player';
-    backupContainer.style.cssText = 'background:#f0f5fa !important; border:2px solid #4a76a8 !important; border-radius:8px !important; padding:15px !important; margin:20px 0 !important; display:block !important;';
+    backupContainer.style.cssText = 'border:2px solid #4a76a8 !important; border-radius:8px !important; padding:15px !important; margin:20px 0 !important; display:block !important;';
     
     // Заголовок
     const title = document.createElement('h4');
-    title.style.cssText = 'color:#2c5282 !important; margin-bottom:15px !important; font-weight:bold !important;';
+    title.style.cssText = 'margin-bottom:15px !important; font-weight:bold !important;';
     title.textContent = 'Резервные аудиоплееры';
     backupContainer.appendChild(title);
     
@@ -1428,12 +1313,12 @@ function createBackupPlayer(audioUrl) {
     // Создаем первый резервный плеер
     const backupPlayerContainer = document.createElement('div');
     backupPlayerContainer.className = 'backup-player-item';
-    backupPlayerContainer.style.cssText = 'background:#ffffff !important; border:1px solid #dddddd !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
+    backupPlayerContainer.style.cssText = 'border:1px solid #dddddd !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
     
     // Заголовок плеера
     const playerTitle = document.createElement('h5');
     playerTitle.textContent = 'Вариант 1: Стандартный HTML5 плеер';
-    playerTitle.style.cssText = 'color:#2c5282 !important; margin-bottom:10px !important; font-size:16px !important;';
+    playerTitle.style.cssText = 'margin-bottom:10px !important; font-size:16px !important;';
     backupPlayerContainer.appendChild(playerTitle);
     
     // Создаем аудиоплеер
@@ -1441,7 +1326,7 @@ function createBackupPlayer(audioUrl) {
     backupPlayer.controls = true;
     backupPlayer.preload = 'auto';
     backupPlayer.className = 'backup-audio-player';
-    backupPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:2px solid #4a76a8 !important; background:#f5f5f5 !important; margin:10px 0 !important;';
+    backupPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:2px solid #4a76a8 !important; margin:10px 0 !important;';
     
     // Добавляем источник
     const source = document.createElement('source');
@@ -1483,12 +1368,12 @@ function createBackupPlayer(audioUrl) {
     // Создаем второй резервный вариант с простым аудио без стилей
     const rawPlayerContainer = document.createElement('div');
     rawPlayerContainer.className = 'backup-player-item';
-    rawPlayerContainer.style.cssText = 'background:#ffffff !important; border:1px solid #dddddd !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
+    rawPlayerContainer.style.cssText = 'border:1px solid #dddddd !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
     
     // Заголовок
     const rawPlayerTitle = document.createElement('h5');
     rawPlayerTitle.textContent = 'Вариант 2: Простой аудиоплеер';
-    rawPlayerTitle.style.cssText = 'color:#2c5282 !important; margin-bottom:10px !important; font-size:16px !important;';
+    rawPlayerTitle.style.cssText = 'margin-bottom:10px !important; font-size:16px !important;';
     rawPlayerContainer.appendChild(rawPlayerTitle);
     
     // Описание
@@ -1530,13 +1415,16 @@ function createBackupPlayer(audioUrl) {
         backupContainer.style.display = 'none';
         
         // Находим кнопку "Не работает?" и активируем ее снова
-        const troubleshootBtns = document.querySelectorAll('.audio-player-wrapper button');
-        troubleshootBtns.forEach(btn => {
-            if (btn.innerHTML.includes('Не работает') || btn.innerHTML.includes('Резервные плееры активированы')) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-question-circle"></i> Не работает?';
-            }
-        });
+        const musicResults = document.getElementById('music-results');
+        if (musicResults) {
+            const troubleshootBtns = musicResults.querySelectorAll('button');
+            troubleshootBtns.forEach(btn => {
+                if (btn.innerHTML.includes('Резервные плееры активированы') || btn.innerHTML.includes('Не работает')) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-question-circle"></i> Не работает?';
+                }
+            });
+        }
     };
     backupContainer.appendChild(closeButton);
     

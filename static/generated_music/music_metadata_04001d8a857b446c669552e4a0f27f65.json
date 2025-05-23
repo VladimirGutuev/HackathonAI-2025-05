@@ -1,0 +1,20 @@
+{
+  "task_id": "04001d8a857b446c669552e4a0f27f65",
+  "status": "error",
+  "created_at": "2025-05-23T10:08:35.121504",
+  "last_update": "2025-05-23T10:08:35.121504",
+  "callback_received": true,
+  "callback_data": {
+    "callbackType": "complete",
+    "task_id": "04001d8a857b446c669552e4a0f27f65"
+  },
+  "error": "Internal Error, Please try again later.",
+  "last_callback": {
+    "code": 500,
+    "data": {
+      "callbackType": "complete",
+      "task_id": "04001d8a857b446c669552e4a0f27f65"
+    },
+    "msg": "Internal Error, Please try again later."
+  }
+}
