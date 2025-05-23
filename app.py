@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response
 from war_diary_analyzer import WarDiaryAnalyzer
-from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote
+from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote, UserFeedback
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import os
 import sys
@@ -1205,6 +1205,71 @@ def proxy_audio():
 @app.route('/forum')
 def forum():
     return redirect(url_for('index'))
+
+@app.route('/submit_feedback', methods=['POST'])
+def submit_feedback():
+    """Обработка обратной связи пользователей"""
+    try:
+        data = request.get_json()
+        content_type = data.get('content_type')  # 'literary_work', 'generated_image', 'generated_music'
+        feedback_type = data.get('feedback_type')  # 'like', 'dislike'
+        timestamp = data.get('timestamp')
+        
+        # Валидация данных
+        if not content_type or not feedback_type:
+            return jsonify({'error': 'Отсутствуют обязательные параметры'}), 400
+            
+        if content_type not in ['literary_work', 'generated_image', 'generated_music']:
+            return jsonify({'error': 'Неверный тип контента'}), 400
+            
+        if feedback_type not in ['like', 'dislike']:
+            return jsonify({'error': 'Неверный тип обратной связи'}), 400
+        
+        # Получаем IP адрес для защиты от спама
+        user_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+        user_id = current_user.id if current_user.is_authenticated else None
+        
+        # Создаем новую запись обратной связи
+        feedback = UserFeedback(
+            content_type=content_type,
+            feedback_type=feedback_type,
+            user_id=user_id,
+            user_ip=user_ip,
+            timestamp=datetime.now()
+        )
+        
+        db.session.add(feedback)
+        db.session.commit()
+        
+        # Получаем общую статистику для данного типа контента
+        total_likes = UserFeedback.query.filter_by(
+            content_type=content_type, 
+            feedback_type='like'
+        ).count()
+        
+        total_dislikes = UserFeedback.query.filter_by(
+            content_type=content_type, 
+            feedback_type='dislike'
+        ).count()
+        
+        # Логируем для анализа
+        print(f"Получена обратная связь: {content_type} - {feedback_type} от {'пользователя' if user_id else 'анонима'}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Обратная связь успешно сохранена',
+            'total_count': total_likes if feedback_type == 'like' else total_dislikes,
+            'statistics': {
+                'likes': total_likes,
+                'dislikes': total_dislikes
+            }
+        })
+        
+    except Exception as e:
+        print(f"Ошибка при сохранении обратной связи: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
 
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")

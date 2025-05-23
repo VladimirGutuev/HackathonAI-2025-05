@@ -60,10 +60,26 @@ class TopicVote(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class MessageVote(db.Model):
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    message_id = db.Column(db.Integer, db.ForeignKey('message.id'), primary_key=True)
-    vote_type = db.Column(db.Integer, nullable=False)  # 1 for upvote, -1 for downvote
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
+    vote_type = db.Column(db.String(10), nullable=False)  # 'like' или 'dislike'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserFeedback(db.Model):
+    """Модель для хранения обратной связи пользователей о генерируемом контенте"""
+    id = db.Column(db.Integer, primary_key=True)
+    content_type = db.Column(db.String(50), nullable=False)  # 'literary_work', 'generated_image', 'generated_music'
+    feedback_type = db.Column(db.String(10), nullable=False)  # 'like', 'dislike'
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # может быть анонимным
+    user_ip = db.Column(db.String(45), nullable=True)  # для защиты от спама
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Связи
+    user = db.relationship('User', backref=db.backref('feedback', lazy=True))
+    
+    def __repr__(self):
+        return f'<UserFeedback {self.content_type}:{self.feedback_type}>'
 
 def init_forum(app):
     db.init_app(app)

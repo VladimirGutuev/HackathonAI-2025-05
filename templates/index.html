@@ -49,6 +49,31 @@
                         </div>
                     </div>
                     
+                    <!-- Согласие с этическими нормами -->
+                    <div class="card mb-3 border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="bi bi-shield-check"></i> Этические нормы и правила использования</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="small text-muted mb-3">
+                                <p><strong>Правила использования сервиса:</strong></p>
+                                <ul class="mb-0">
+                                    <li>Генерируемый контент должен быть уважительным к исторической памяти</li>
+                                    <li>Запрещено искажение исторических фактов о Великой Отечественной войне</li>
+                                    <li>Недопустимо создание контента, разжигающего ненависть или вражду</li>
+                                    <li>Сгенерированные произведения проходят модерацию на соответствие этическим нормам</li>
+                                    <li>Вы обязуетесь использовать сервис исключительно в образовательных и художественных целях</li>
+                                </ul>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ethicsAgreement" required>
+                                <label class="form-check-label fw-bold" for="ethicsAgreement">
+                                    Я согласен(-на) с правилами использования и обязуюсь соблюдать этические нормы при работе с историческими материалами
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary">Анализировать текст</button>
                 </form>
 
@@ -67,8 +92,6 @@
                         </div>
                     </div>
                     
-                                        <!-- Содержимое генерации будет отображаться далее -->
-                    
                     <!-- Контейнеры для результатов генерации -->
                     <div id="generated-content" style="display: none;">
                         <div class="card mb-4 border-0 shadow literary-section" style="display: none;">
@@ -76,6 +99,17 @@
                                 <h4 class="m-0"><i class="bi bi-file-text"></i> Художественное произведение</h4>
                             </div>
                             <div class="card-body" id="literary-results"></div>
+                            <div class="card-footer bg-light">
+                                <div class="feedback-section" data-type="text">
+                                    <span class="text-muted me-3">Оцените качество текста:</span>
+                                    <button class="btn btn-outline-success btn-sm feedback-btn" data-feedback="like" data-content-type="literary_work">
+                                        <i class="bi bi-hand-thumbs-up"></i> Нравится <span class="feedback-count">0</span>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm ms-2 feedback-btn" data-feedback="dislike" data-content-type="literary_work">
+                                        <i class="bi bi-hand-thumbs-down"></i> Не нравится <span class="feedback-count">0</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="card mb-4 border-0 shadow image-section" style="display: none;">
@@ -94,9 +128,25 @@
                                 </div>
                                 <div id="image-error" class="alert alert-danger" style="display: none;"></div>
                             </div>
+                            <div class="card-footer bg-light" id="image-feedback" style="display: none;">
+                                <div class="feedback-section" data-type="image">
+                                    <span class="text-muted me-3">Оцените качество изображения:</span>
+                                    <button class="btn btn-outline-success btn-sm feedback-btn" data-feedback="like" data-content-type="generated_image">
+                                        <i class="bi bi-hand-thumbs-up"></i> Нравится <span class="feedback-count">0</span>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm ms-2 feedback-btn" data-feedback="dislike" data-content-type="generated_image">
+                                        <i class="bi bi-hand-thumbs-down"></i> Не нравится <span class="feedback-count">0</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="card mb-4 border-0 shadow music-section">                            <div class="card-header" style="background-color: #6f42c1; color: white;">                                <h4 class="m-0"><i class="bi bi-music-note-beamed"></i> Музыкальное сопровождение</h4>                            </div>                            <div class="card-body" id="music-results">                                <div id="generated-music-container" class="text-center mb-3">
+                        <div class="card mb-4 border-0 shadow music-section">
+                            <div class="card-header" style="background-color: #6f42c1; color: white;">
+                                <h4 class="m-0"><i class="bi bi-music-note-beamed"></i> Музыкальное сопровождение</h4>
+                            </div>
+                            <div class="card-body" id="music-results">
+                                <div id="generated-music-container" class="text-center mb-3">
                                     <div class="ratio ratio-16x9 mb-3">
                                         <iframe id="music-iframe" src="" title="Сгенерированная музыка" allowfullscreen></iframe>
                                     </div>
@@ -113,6 +163,17 @@
                                 </div>
                                 <div id="music-error" class="alert alert-danger" style="display: none;">
                                     <span id="music-error-text"></span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light" id="music-feedback" style="display: none;">
+                                <div class="feedback-section" data-type="music">
+                                    <span class="text-muted me-3">Оцените качество музыки:</span>
+                                    <button class="btn btn-outline-success btn-sm feedback-btn" data-feedback="like" data-content-type="generated_music">
+                                        <i class="bi bi-hand-thumbs-up"></i> Нравится <span class="feedback-count">0</span>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm ms-2 feedback-btn" data-feedback="dislike" data-content-type="generated_music">
+                                        <i class="bi bi-hand-thumbs-down"></i> Не нравится <span class="feedback-count">0</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -182,6 +243,121 @@
 {% block scripts %}
 <script>
 let lastAnalysisResults = null;
+
+// Обработка обратной связи (лайки/дизлайки)
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработчик для кнопок обратной связи
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('feedback-btn') || e.target.closest('.feedback-btn')) {
+            const button = e.target.classList.contains('feedback-btn') ? e.target : e.target.closest('.feedback-btn');
+            const feedbackType = button.getAttribute('data-feedback'); // 'like' или 'dislike'
+            const contentType = button.getAttribute('data-content-type'); // 'literary_work', 'generated_image', 'generated_music'
+            
+            // Отправляем обратную связь на сервер
+            submitFeedback(contentType, feedbackType, button);
+        }
+    });
+    
+    // Проверка согласия с этическими нормами
+    const ethicsAgreement = document.getElementById('ethicsAgreement');
+    const submitButton = document.querySelector('#diary-form button[type="submit"]');
+    
+    if (ethicsAgreement && submitButton) {
+        function updateSubmitButton() {
+            if (ethicsAgreement.checked) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('btn-secondary');
+                submitButton.classList.add('btn-primary');
+            } else {
+                submitButton.disabled = true;
+                submitButton.classList.add('btn-secondary');
+                submitButton.classList.remove('btn-primary');
+            }
+        }
+        
+        // Изначально отключаем кнопку
+        updateSubmitButton();
+        
+        // Обновляем состояние при изменении чекбокса
+        ethicsAgreement.addEventListener('change', updateSubmitButton);
+    }
+});
+
+// Функция отправки обратной связи
+async function submitFeedback(contentType, feedbackType, buttonElement) {
+    try {
+        // Визуальная обратная связь
+        const originalText = buttonElement.innerHTML;
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = '<i class="bi bi-check-circle"></i> Отправка...';
+        
+        const response = await fetch('/submit_feedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                content_type: contentType,
+                feedback_type: feedbackType,
+                timestamp: new Date().toISOString()
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Успешная отправка
+            buttonElement.innerHTML = feedbackType === 'like' ? 
+                '<i class="bi bi-hand-thumbs-up-fill"></i> Отправлено' : 
+                '<i class="bi bi-hand-thumbs-down-fill"></i> Отправлено';
+            
+            // Обновляем счетчик, если он есть в ответе
+            if (data.total_count !== undefined) {
+                const countElement = buttonElement.querySelector('.feedback-count');
+                if (countElement) {
+                    countElement.textContent = data.total_count;
+                }
+            }
+            
+            // Показываем благодарность
+            showFeedbackNotification('Спасибо за вашу оценку! Это поможет улучшить качество генерации.', 'success');
+            
+        } else {
+            // Ошибка при отправке
+            buttonElement.innerHTML = originalText;
+            buttonElement.disabled = false;
+            showFeedbackNotification('Не удалось отправить оценку. Попробуйте позже.', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Ошибка при отправке обратной связи:', error);
+        buttonElement.innerHTML = originalText;
+        buttonElement.disabled = false;
+        showFeedbackNotification('Не удалось отправить оценку. Проверьте подключение к интернету.', 'error');
+    }
+}
+
+// Функция показа уведомлений об обратной связи
+function showFeedbackNotification(message, type) {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Добавляем на страницу
+    document.body.appendChild(notification);
+    
+    // Автоматически убираем через 3 секунды
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
 
 // Функция обработки отправки формы
 document.addEventListener('DOMContentLoaded', function() {
@@ -319,25 +495,81 @@ document.addEventListener('DOMContentLoaded', function() {
                         let emotionHtml = '<div class="emotion-analysis">';
                         
                         if (emotions.primary_emotions && Array.isArray(emotions.primary_emotions)) {
-                            emotionHtml += '<p><strong>Основные эмоции:</strong></p><ul>';
+                            emotionHtml += '<div class="mb-3"><h5>Основные эмоции:</h5><ul class="list-unstyled">';
                             emotions.primary_emotions.forEach(emotion => {
                                 if (emotion && emotion.emotion) {
-                                    emotionHtml += `<li>${emotion.emotion}: ${emotion.intensity || '?'}/10</li>`;
+                                    const intensity = emotion.intensity || 0;
+                                    const barWidth = (intensity / 10) * 100;
+                                    emotionHtml += `
+                                        <li class="mb-2">
+                                            <strong>${emotion.emotion}</strong>: ${intensity}/10
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" style="width: ${barWidth}%"></div>
+                                            </div>
+                                        </li>`;
                                 }
                             });
-                            emotionHtml += '</ul>';
+                            emotionHtml += '</ul></div>';
                         }
                         
                         if (emotions.emotional_tone) {
-                            emotionHtml += `<p><strong>Общий тон:</strong> ${emotions.emotional_tone}</p>`;
+                            emotionHtml += `<div class="mb-3"><h5>Общий тон:</h5><p class="text-muted">${emotions.emotional_tone}</p></div>`;
                         }
                         
-                        if (emotions.hidden_motives && Array.isArray(emotions.hidden_motives)) {
-                            emotionHtml += `<p><strong>Скрытые мотивы:</strong> ${emotions.hidden_motives.join(', ')}</p>`;
+                        if (emotions.hidden_motives && emotions.hidden_motives.length > 0) {
+                            emotionHtml += `<div class="mb-3"><h5>Скрытые мотивы:</h5><p class="text-muted">${emotions.hidden_motives.join(', ')}</p></div>`;
                         }
                         
                         if (emotions.attitude) {
-                            emotionHtml += `<p><strong>Отношение:</strong> ${emotions.attitude}</p>`;
+                            emotionHtml += `<div class="mb-3"><h5>Отношение:</h5><p class="text-muted">${emotions.attitude}</p></div>`;
+                        }
+                        
+                        // Новый раздел: Тематический анализ
+                        if (emotions.thematic_analysis) {
+                            const thematic = emotions.thematic_analysis;
+                            emotionHtml += '<div class="mb-3"><h5>Тематический анализ военных деталей:</h5>';
+                            
+                            if (thematic.military_characters && thematic.military_characters.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-person-badge"></i> Военные персонажи:</strong> 
+                                        <span class="text-muted">${thematic.military_characters.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.battle_locations && thematic.battle_locations.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-geo-alt"></i> Места сражений:</strong> 
+                                        <span class="text-muted">${thematic.battle_locations.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.war_equipment && thematic.war_equipment.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-shield"></i> Военная техника:</strong> 
+                                        <span class="text-muted">${thematic.war_equipment.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.frontline_life && thematic.frontline_life.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-house"></i> Фронтовая жизнь:</strong> 
+                                        <span class="text-muted">${thematic.frontline_life.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.historical_events && thematic.historical_events.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-calendar-event"></i> Исторические события:</strong> 
+                                        <span class="text-muted">${thematic.historical_events.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            emotionHtml += '</div>';
                         }
                         
                         emotionHtml += '</div>';
@@ -359,10 +591,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 // Заполняем контент, если он есть
                                 if (data.generated_literary_work) {
-                                    const literaryResults = document.getElementById('literary-results');
-                                    if (literaryResults) {
-                                        literaryResults.innerHTML = data.generated_literary_work;
+                                    document.getElementById('literary-results').innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
+                                    document.querySelector('.literary-section').style.display = 'block';
+                                    // Показываем секцию обратной связи для текста
+                                    const literarySection = document.querySelector('.literary-section .card-footer');
+                                    if (literarySection) {
+                                        literarySection.style.display = 'block';
                                     }
+                                    generatedContent.style.display = 'block';
                                 }
                             }
                         }
@@ -724,6 +960,12 @@ function displayGeneratedImage(imageUrl) {
             
             // Показываем контейнер с изображением
             imageContainer.style.display = 'block';
+            
+            // Показываем секцию обратной связи для изображения
+            const imageFeedback = document.getElementById('image-feedback');
+            if (imageFeedback) {
+                imageFeedback.style.display = 'block';
+            }
         };
         
         // Устанавливаем изображение
@@ -1267,6 +1509,14 @@ function displayGeneratedMusic(musicData) {
             errorElement.style.display = 'block';
         }
     }
+    
+    // Показываем секцию обратной связи для музыки
+    const musicFeedback = document.getElementById('music-feedback');
+    if (musicFeedback) {
+        musicFeedback.style.display = 'block';
+    }
+    
+    console.log("Музыкальная секция успешно отображена");
 }
 
 // Функция для создания резервного плеера

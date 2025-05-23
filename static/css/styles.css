@@ -561,4 +561,113 @@ audio {
 [data-theme="dark"] .download-audio-btn:hover {
     background-color: #0b5ed7 !important;
     color: var(--text-color) !important;
+}
+
+/* Стили для обратной связи */
+.feedback-section {
+    border-top: 1px solid #dee2e6;
+    padding-top: 15px;
+}
+
+.feedback-btn {
+    margin-right: 10px;
+    transition: all 0.3s ease;
+}
+
+.feedback-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.feedback-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.feedback-count {
+    margin-left: 5px;
+    font-weight: normal;
+}
+
+/* Стили для этического соглашения */
+.ethics-agreement {
+    background: linear-gradient(135deg, #fff3cd 0%, #fef5e7 100%);
+}
+
+.ethics-agreement .form-check-input:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.ethics-agreement .form-check-input:checked {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+/* Стили для тематического анализа */
+.emotion-analysis h5 {
+    color: var(--text-color);
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.emotion-analysis .progress {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.thematic-analysis-item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.thematic-analysis-item:last-child {
+    border-bottom: none;
+}
+
+.thematic-analysis-item i {
+    color: var(--link-color);
+    margin-right: 8px;
+}
+
+/* Стили для обновленного эмоционального анализа */
+.emotion-analysis .list-unstyled li {
+    background: rgba(0,123,255,0.05);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 4px solid var(--link-color);
+}
+
+.emotion-analysis .progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Темная тема для новых элементов */
+[data-theme="dark"] .feedback-section {
+    border-color: rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .emotion-analysis .list-unstyled li {
+    background: rgba(255,255,255,0.05);
+    border-left-color: var(--link-color);
+}
+
+[data-theme="dark"] .thematic-analysis-item {
+    border-color: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .ethics-agreement {
+    background: linear-gradient(135deg, rgba(255, 243, 205, 0.1) 0%, rgba(254, 245, 231, 0.1) 100%);
+}
+
+/* Улучшенные стили для кнопок */
+.btn-outline-success:hover {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
 } 
