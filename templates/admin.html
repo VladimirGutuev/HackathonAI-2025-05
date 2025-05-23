@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Администрирование - Анализатор военных дневников{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="bi bi-gear"></i> Администрирование системы
+            </h1>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-music-note"></i> Музыкальные треки
+                    </h5>
+                    <h2>{{ track_count }}</h2>
+                    <p class="card-text">Всего треков в системе</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-image"></i> Изображения
+                    </h5>
+                    <h2>{{ image_count }}</h2>
+                    <p class="card-text">Сгенерированных изображений</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-database"></i> RAG система
+                    </h5>
+                    <h2><i class="bi bi-check-circle"></i></h2>
+                    <p class="card-text">
+                        <a href="/rag_stats" class="text-white">Статистика RAG</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Управление треками -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-music-note-list"></i> Управление музыкальными треками
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <button class="btn btn-warning me-2" onclick="cleanupTracks('incomplete')">
+                            <i class="bi bi-trash"></i> Удалить незавершенные
+                        </button>
+                        <button class="btn btn-secondary me-2" onclick="cleanupTracks('old')">
+                            <i class="bi bi-calendar-x"></i> Удалить старые (>7 дней)
+                        </button>
+                        <button class="btn btn-danger" onclick="cleanupTracks('all')" 
+                                data-bs-toggle="modal" data-bs-target="#confirmModal">
+                            <i class="bi bi-trash3"></i> Удалить все треки
+                        </button>
+                    </div>
+                    
+                    <div id="cleanup-result" class="alert" style="display: none;"></div>
+                    
+                    <!-- Список треков -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Название</th>
+                                    <th>Статус</th>
+                                    <th>Стиль</th>
+                                    <th>Создан</th>
+                                    <th>Аудио</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for track in tracks %}
+                                <tr>
+                                    <td>
+                                        <code>{{ track.task_id[:8] }}...</code>
+                                    </td>
+                                    <td>{{ track.title[:50] }}{% if track.title|length > 50 %}...{% endif %}</td>
+                                    <td>
+                                        {% if track.status == 'complete' %}
+                                            <span class="badge bg-success">{{ track.status }}</span>
+                                        {% elif track.status == 'processing' %}
+                                            <span class="badge bg-warning">{{ track.status }}</span>
+                                        {% elif track.status == 'error' %}
+                                            <span class="badge bg-danger">{{ track.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ track.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ track.style }}</td>
+                                    <td>
+                                        {% if track.created_at %}
+                                            {{ track.created_at[:19] }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if track.has_audio %}
+                                            <i class="bi bi-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="bi bi-x-circle text-danger"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="deleteTrack('{{ track.task_id }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Тестирование изображений -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-image"></i> Тестирование генерации изображений
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="test-text" class="form-label">Тестовый текст:</label>
+                        <textarea class="form-control" id="test-text" rows="3" 
+                                  placeholder="Введите текст для тестирования генерации изображения">Солдат идет по полю после битвы, вокруг разрушенные здания</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-primary me-2" onclick="testImageGeneration()">
+                            <i class="bi bi-image"></i> Тестировать генерацию
+                        </button>
+                        <button class="btn btn-secondary" onclick="testSafeImageGeneration()">
+                            <i class="bi bi-shield-check"></i> Тестировать безопасную генерацию
+                        </button>
+                    </div>
+                    
+                    <div id="image-test-result" style="display: none;">
+                        <div id="image-test-loading" class="text-center mb-3" style="display: none;">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                            <p class="mt-2">Генерация изображения...</p>
+                        </div>
+                        <div id="image-test-error" class="alert alert-danger" style="display: none;"></div>
+                        <div id="image-test-success" class="text-center" style="display: none;">
+                            <img id="test-image" class="img-fluid rounded shadow" style="max-width: 500px;" />
+                            <p class="mt-2 text-success">Изображение успешно сгенерировано!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние изображения -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-images"></i> Последние сгенерированные изображения
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="recent-images">
+                        <!-- Изображения будут загружены через JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить все треки? Это действие нельзя отменить.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCleanupAll()">Удалить все</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Функция очистки треков
+function cleanupTracks(type) {
+    if (type === 'all') {
+        return; // Для 'all' используем модальное окно
+    }
+    
+    const resultDiv = document.getElementById('cleanup-result');
+    resultDiv.style.display = 'block';
+    resultDiv.className = 'alert alert-info';
+    resultDiv.innerHTML = '<i class="bi bi-hourglass-split"></i> Выполняется очистка...';
+    
+    fetch('/cleanup_music_tracks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: type })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.className = 'alert alert-success';
+            resultDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${data.message}`;
+            // Перезагружаем страницу через 2 секунды
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Ошибка: ${data.error}`;
+        }
+    })
+    .catch(error => {
+        resultDiv.className = 'alert alert-danger';
+        resultDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Ошибка: ${error.message}`;
+    });
+}
+
+// Подтверждение удаления всех треков
+function confirmCleanupAll() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+    modal.hide();
+    cleanupTracks('all');
+}
+
+// Удаление отдельного трека
+function deleteTrack(taskId) {
+    if (!confirm('Удалить этот трек?')) return;
+    
+    fetch(`/delete_music_track/${taskId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Трек удален');
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+}
+
+// Тестирование генерации изображений
+function testImageGeneration() {
+    const text = document.getElementById('test-text').value;
+    if (!text.trim()) {
+        alert('Введите текст для тестирования');
+        return;
+    }
+    
+    const resultDiv = document.getElementById('image-test-result');
+    const loadingDiv = document.getElementById('image-test-loading');
+    const errorDiv = document.getElementById('image-test-error');
+    const successDiv = document.getElementById('image-test-success');
+    
+    // Показываем результат и загрузку
+    resultDiv.style.display = 'block';
+    loadingDiv.style.display = 'block';
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+    
+    fetch('/generate_image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            text: text,
+            emotion_analysis: null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingDiv.style.display = 'none';
+        
+        if (data.success) {
+            const img = document.getElementById('test-image');
+            img.src = data.image_url;
+            successDiv.style.display = 'block';
+        } else {
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = 'Ошибка: ' + data.error;
+        }
+    })
+    .catch(error => {
+        loadingDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Ошибка: ' + error.message;
+    });
+}
+
+// Тестирование безопасной генерации
+function testSafeImageGeneration() {
+    const text = document.getElementById('test-text').value;
+    if (!text.trim()) {
+        alert('Введите текст для тестирования');
+        return;
+    }
+    
+    const resultDiv = document.getElementById('image-test-result');
+    const loadingDiv = document.getElementById('image-test-loading');
+    const errorDiv = document.getElementById('image-test-error');
+    const successDiv = document.getElementById('image-test-success');
+    
+    // Показываем результат и загрузку
+    resultDiv.style.display = 'block';
+    loadingDiv.style.display = 'block';
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+    
+    fetch('/generate_safe_image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            diary_text: text
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingDiv.style.display = 'none';
+        
+        if (data.success) {
+            const img = document.getElementById('test-image');
+            img.src = data.image_url;
+            successDiv.style.display = 'block';
+        } else {
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = 'Ошибка: ' + data.error;
+        }
+    })
+    .catch(error => {
+        loadingDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Ошибка: ' + error.message;
+    });
+}
+
+// Загрузка последних изображений
+function loadRecentImages() {
+    // Здесь можно добавить загрузку последних изображений
+    // Пока оставим заглушку
+    const container = document.getElementById('recent-images');
+    container.innerHTML = '<div class="col-12"><p class="text-muted">Функция в разработке</p></div>';
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecentImages();
+});
+</script>
+{% endblock %} 
