@@ -1,0 +1,18 @@
+{
+  "task_id": "d3cdbe52d2f42e3fba92e1fc6f2e67ea",
+  "title": "War Diary: Позитивный с нотк... Cinematic Suspense",
+  "prompt": "Create high-quality tense Cinematic Suspense music that captures the following emotions: надежда, решимость, тревога. The music should reflect a позитивный с нотками тревоги tone of wartime experiences. moderate with emotional depth rhythm with low strings and percussion as primary instruments. Based on a war diary that describes: Мамочка, я прошу тебя, хоть не волнуйся за меня.\nУ меня всё хорошо. Дело простое, солдатское – воюем.\nСтараемся поскорее добить фашистов. Когда окончится война\nи мы соберёмся все вместе, я расскажу тебе о себе много-много,\nкак я здесь жил, как мы воевали…...",
+  "style": "Cinematic Suspense",
+  "mood": "tense",
+  "tempo": "moderate with emotional depth",
+  "instruments": "low strings and percussion",
+  "emotions": [
+    "надежда",
+    "решимость",
+    "тревога"
+  ],
+  "emotional_tone": "позитивный с нотками тревоги",
+  "status": "processing",
+  "created_at": "2025-05-22T21:55:55.720625",
+  "callback_url": "http://localhost:5000/music_callback"
+}

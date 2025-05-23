@@ -9,6 +9,7 @@ from dotenv import load_dotenv, find_dotenv, dotenv_values
 import json
 import requests
 from urllib.parse import quote
+import urllib.parse
 
 # Улучшенная загрузка переменных окружения
 env_path = find_dotenv() 
@@ -204,10 +205,20 @@ def analyze():
                 # Убедимся, что папка для музыки существует
                 os.makedirs(os.path.join('static', 'generated_music'), exist_ok=True)
                 
-                music_result = analyzer.generate_music(diary_text, emotions)
-                print(f"Генерация музыки завершена: {music_result.get('success', False)}")
+                # Используем внешний URL, если он указан, или request.host_url в противном случае
+                base_url = os.environ.get('EXTERNAL_URL', request.host_url.rstrip('/'))
+                print(f"Используется base_url для коллбэка: {base_url}")
+                music_result = analyzer.generate_music(diary_text, emotions, base_url=base_url)
+                print(f"Генерация музыки завершена: {music_result['success']}")
                 
-                if music_result.get('success', False):
+                if not music_result.get('success', False):
+                    error_msg = music_result.get('error', 'Неизвестная ошибка при генерации музыки')
+                    print(f"Ошибка генерации музыки: {error_msg}")
+                    response_data['generated_music'] = {
+                        'success': False,
+                        'error': error_msg
+                    }
+                else:
                     response_data['generated_music'] = {
                         'success': True,
                         'music_description': music_result.get('music_description', ''),
@@ -217,13 +228,6 @@ def analyze():
                         'task_id': music_result.get('task_id', ''),
                         'status': music_result.get('status', 'unknown'),
                         'local_path': music_result.get('local_path', '')
-                    }
-                else:
-                    error_msg = music_result.get('error', 'Неизвестная ошибка при генерации музыки')
-                    print(f"Ошибка генерации музыки: {error_msg}")
-                    response_data['generated_music'] = {
-                        'success': False,
-                        'error': error_msg
                     }
             except Exception as music_error:
                 print(f"Исключение при генерации музыки: {str(music_error)}")
@@ -684,9 +688,12 @@ def generate_music():
         print(f"Получен текст длиной {len(text)} символов")
         analyzer = WarDiaryAnalyzer()
         
-        # Генерация музыки
-        music_result = analyzer.generate_music(text, emotion_analysis)
-        print(f"Генерация музыки завершена: {music_result['success']}")
+        # Генерация музыки (только отправка задачи, не ожидание результата)
+        # Используем внешний URL, если он указан, или request.host_url в противном случае
+        base_url = os.environ.get('EXTERNAL_URL', request.host_url.rstrip('/'))
+        print(f"Используется base_url для коллбэка: {base_url}")
+        music_result = analyzer.generate_music(text, emotion_analysis, base_url=base_url, wait_for_result=False)
+        print(f"Генерация музыки: {music_result}")
         
         if not music_result.get('success', False):
             return jsonify({
@@ -694,18 +701,14 @@ def generate_music():
                 'error': music_result.get('error', 'Не удалось сгенерировать музыку')
             }), 500
         
+        # Сразу возвращаем task_id и статус ожидания
         response_data = {
             'success': True,
-            'music_description': music_result.get('music_description', ''),
-            'audio_url': music_result.get('audio_url', ''),
-            'stream_url': music_result.get('stream_url', ''),
-            'embed_url': music_result.get('embed_url', ''),
             'task_id': music_result.get('task_id', ''),
-            'status': music_result.get('status', 'unknown'),
-            'local_path': music_result.get('local_path', '')
+            'status': 'processing',
+            'music_description': music_result.get('music_description', '')
         }
-        
-        print("=== Обработка запроса /generate_music успешно завершена ===")
+        print("=== Обработка запроса /generate_music завершена (асинхронно) ===")
         return jsonify(response_data)
     except Exception as e:
         print(f"Критическая ошибка в /generate_music: {str(e)}")
@@ -722,27 +725,24 @@ def check_music_status():
         # Получаем task_id из параметров запроса
         task_id = request.args.get('task_id')
         if not task_id:
-            return jsonify({'success': False, 'error': 'Не указан task_id'}), 400
-        
+            return jsonify({'success': False, 'error': 'Не указан task_id', 'status': 'error'}), 200
         print(f"Получен запрос на проверку статуса для задачи: {task_id}")
-        
-        # Проверяем наличие локального файла метаданных напрямую
         metadata_path = os.path.join('static', 'generated_music', f"music_metadata_{task_id}.json")
-        
         if os.path.exists(metadata_path):
             try:
-                # Загружаем метаданные
                 with open(metadata_path, 'r', encoding='utf-8') as f:
                     metadata = json.load(f)
                 
-                # Проверяем наличие уже скачанного аудио
+                # Проверка наличия локального аудиофайла
                 local_audio_path = metadata.get('local_audio_path', '')
+                local_audio_url = None
+                
                 if local_audio_path and os.path.exists(local_audio_path) and os.path.getsize(local_audio_path) > 0:
-                    # Формируем относительный URL для аудио
                     audio_filename = os.path.basename(local_audio_path)
                     local_audio_url = f"/static/generated_music/audio/{audio_filename}"
+                    print(f"Локальный аудиофайл найден: {local_audio_url}")
                     
-                    # Возвращаем успешный статус
+                    # Если файл существует, возвращаем успешный ответ с данными
                     return jsonify({
                         'success': True,
                         'status': 'complete',
@@ -751,57 +751,85 @@ def check_music_status():
                         'music_description': metadata.get('music_description', 'Сгенерированная музыка'),
                         'style': metadata.get('style', ''),
                         'mood': metadata.get('mood', '')
-                    })
+                    }), 200
+                
+                # Проверяем наличие аудио URL в метаданных (которые могли быть обновлены callback'ом)
+                audio_url = metadata.get('audio_url', '')
+                stream_url = metadata.get('stream_url', '')
+                embed_url = metadata.get('embed_url', '')
+                
+                # Если есть какой-либо URL аудио, считаем, что музыка готова
+                if audio_url or stream_url or embed_url or metadata.get('status') == 'complete':
+                    print(f"Найдены URL'ы аудио, но локальный файл отсутствует")
+                    
+                    # Формируем прокси URL для аудиофайла, если он не был скачан локально
+                    proxy_url = f"/proxy_audio?url={urllib.parse.quote(audio_url)}" if audio_url else ""
+                    
+                    return jsonify({
+                        'success': True,
+                        'status': 'complete',
+                        'is_music_ready': True,
+                        'audio_url': audio_url,
+                        'stream_url': stream_url,
+                        'embed_url': embed_url,
+                        'proxy_url': proxy_url,
+                        'local_audio_url': local_audio_url,
+                        'music_description': metadata.get('music_description', 'Сгенерированная музыка')
+                    }), 200
+                
+                # Если файлов нет, но есть последние данные коллбэка, проверяем их
+                if 'last_callback' in metadata and metadata['last_callback']:
+                    callback_data = metadata['last_callback']
+                    if isinstance(callback_data, dict):
+                        # Проверяем данные из callback на наличие URL'ов
+                        data_field = callback_data.get('data', {})
+                        
+                        # Извлекаем URL'ы аудио из разных возможных мест в callback данных
+                        audio_url = data_field.get('audio_url') or callback_data.get('audio_url') or ''
+                        stream_url = data_field.get('stream_url') or callback_data.get('stream_url') or ''
+                        
+                        if audio_url or stream_url:
+                            print(f"Найдены URL'ы аудио в callback данных")
+                            proxy_url = f"/proxy_audio?url={urllib.parse.quote(audio_url)}" if audio_url else ""
+                            
+                            return jsonify({
+                                'success': True,
+                                'status': 'complete',
+                                'is_music_ready': True,
+                                'audio_url': audio_url,
+                                'stream_url': stream_url,
+                                'proxy_url': proxy_url,
+                                'music_description': metadata.get('music_description', 'Сгенерированная музыка')
+                            }), 200
             except Exception as e:
                 print(f"Ошибка при чтении метаданных: {str(e)}")
                 # Продолжаем выполнение, чтобы проверить статус через API
         
-        # Создаем экземпляр анализатора
+        # Если не удалось получить данные из локального файла, проверяем через API
         analyzer = WarDiaryAnalyzer()
-        
-        # Проверяем статус генерации музыки через API
         status_response = analyzer._check_music_generation_status(task_id)
         
-        # Логируем результат для отладки
-        print(f"Результат проверки статуса: {json.dumps(status_response, default=str)[:500]}")
-        
-        # Для завершенных задач добавляем ссылки для проксирования
-        if status_response.get('success') and status_response.get('status') == 'complete':
-            audio_url = status_response.get('audio_url')
-            if audio_url:
-                # Добавляем URL для проксирования аудио
-                status_response['proxy_url'] = f"/proxy_audio?url={quote(audio_url)}"
+        # Если получен успешный статус от API, обновляем его
+        if status_response.get('status') == 'complete' and (status_response.get('audio_url') or status_response.get('stream_url')):
+            print(f"API вернул статус complete для задачи {task_id}")
+            status_response['is_music_ready'] = True
             
-            # Проверяем локальный аудио URL
-            local_audio_url = status_response.get('local_audio_url', '')
-            
-            # Если локальный аудио URL не начинается с /, добавляем его
-            if local_audio_url and not local_audio_url.startswith('/'):
-                status_response['local_audio_url'] = f"/{local_audio_url}"
-            
-            # Проверяем наличие локального аудио-файла напрямую из пути
-            if 'local_audio_path' in status_response and status_response['local_audio_path']:
-                path = status_response['local_audio_path']
-                if os.path.exists(path) and os.path.getsize(path) > 0:
-                    filename = os.path.basename(path)
-                    status_response['local_audio_url'] = f"/static/generated_music/audio/{filename}"
-                    status_response['is_music_ready'] = True
+            # Добавляем прокси URL для аудио
+            if status_response.get('audio_url'):
+                status_response['proxy_url'] = f"/proxy_audio?url={urllib.parse.quote(status_response['audio_url'])}"
         
-        # Добавляем время запроса для отладки
-        status_response['request_time'] = datetime.now().isoformat()
-        
-        # Возвращаем статус
-        return jsonify(status_response)
+        print(f"Возвращаем статус: {status_response.get('status')}")
+        return jsonify(status_response), 200
     except Exception as e:
         print(f"Ошибка при проверке статуса музыки: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({
-            'success': False, 
+            'success': False,
             'error': str(e),
             'status': 'error',
             'message': f"Ошибка при проверке статуса: {str(e)}",
-        }), 500
+        }), 200
 
 @app.route('/music_callback', methods=['POST'])
 def music_callback():
@@ -978,12 +1006,13 @@ def process_track_data(metadata, track, task_id):
     # Создаем ссылку для проксирования, если аудио URL существует
     proxy_url = ''
     if audio_url:
-        proxy_url = f"/proxy_audio?url={audio_url}"
+        proxy_url = f"/proxy_audio?url={quote(audio_url)}"
     
-    # Скачиваем аудиофайл и сохраняем его локально, если URL существует
+    # Переменные для отслеживания локальных путей и URL-адресов
     local_audio_path = ''
     local_audio_url = ''
     
+    # Пытаемся скачать аудиофайл, если есть URL
     if audio_url or stream_url:
         # Создаем директорию для аудиофайлов, если она не существует
         audio_dir = os.path.join('static', 'generated_music', 'audio')
@@ -992,6 +1021,9 @@ def process_track_data(metadata, track, task_id):
         # Формируем имя файла и путь для сохранения
         audio_filename = f"music_{task_id}.mp3"
         full_audio_path = os.path.join(audio_dir, audio_filename)
+        
+        # Формируем URL для доступа из браузера (в любом случае)
+        local_audio_url = f"/static/generated_music/audio/{audio_filename}"
         
         # URL для скачивания (предпочитаем audio_url, если есть)
         download_url = audio_url if audio_url else stream_url
@@ -1017,8 +1049,7 @@ def process_track_data(metadata, track, task_id):
                 if os.path.exists(full_audio_path) and os.path.getsize(full_audio_path) > 0:
                     print(f"Аудиофайл успешно скачан и сохранен: {full_audio_path}")
                     local_audio_path = full_audio_path
-                    # Корректный URL для веб-доступа
-                    local_audio_url = f"/static/generated_music/audio/{audio_filename}"
+                    # URL установлен выше, проверяем что он соответствует пути
                     print(f"Сформирован URL для аудио: {local_audio_url}")
                 else:
                     print(f"Ошибка: файл не был скачан или имеет нулевой размер")
@@ -1033,7 +1064,9 @@ def process_track_data(metadata, track, task_id):
                         if os.path.exists(full_audio_path) and os.path.getsize(full_audio_path) > 0:
                             print(f"Аудиофайл успешно скачан альтернативным способом: {full_audio_path}")
                             local_audio_path = full_audio_path
-                            local_audio_url = f"/static/generated_music/audio/{audio_filename}"
+                            # URL установлен выше
+                        else:
+                            print("Альтернативное скачивание тоже не удалось: файл имеет нулевой размер")
                     except Exception as e:
                         print(f"Альтернативное скачивание тоже не удалось: {str(e)}")
             except Exception as e:
@@ -1054,6 +1087,7 @@ def process_track_data(metadata, track, task_id):
             # Формируем имя файла и путь
             image_filename = f"cover_{task_id}.jpg"
             local_image_path = os.path.join(image_dir, image_filename)
+            local_image_url = f"/static/generated_music/covers/{image_filename}"
             
             # Скачиваем изображение
             print(f"Начинаем скачивание обложки с URL: {image_url}")
@@ -1068,14 +1102,26 @@ def process_track_data(metadata, track, task_id):
             
             # Проверяем результат
             if os.path.exists(local_image_path) and os.path.getsize(local_image_path) > 0:
-                local_image_url = f"/static/generated_music/covers/{image_filename}"
                 print(f"Обложка успешно скачана: {local_image_path}")
             else:
                 print(f"Ошибка: изображение не было скачано или имеет нулевой размер")
                 local_image_path = ''
+                local_image_url = ''
         except Exception as e:
             print(f"Ошибка при скачивании обложки: {str(e)}")
             local_image_path = ''
+            local_image_url = ''
+    
+    # Создаем описание музыки на основе метаданных
+    music_description = ''
+    if 'style' in metadata:
+        music_description = f"Сгенерирована музыка в стиле {metadata.get('style', 'инструментальный')}"
+        if 'mood' in metadata:
+            music_description += f", настроение: {metadata.get('mood')}"
+        if 'emotions' in metadata and metadata['emotions']:
+            music_description += f". Отражает эмоции: {', '.join(metadata['emotions'])}"
+    else:
+        music_description = "Сгенерирована музыка на основе дневниковых записей"
     
     # Сохраняем информацию о треке
     metadata['status'] = 'complete'
@@ -1092,14 +1138,12 @@ def process_track_data(metadata, track, task_id):
     metadata['duration'] = track.get('duration', 0)
     metadata['tags'] = track.get('tags', '')
     metadata['track_data'] = track  # Сохраняем все данные трека для отладки
+    metadata['music_description'] = music_description
     
     print(f"Обновлены метаданные для задачи: {task_id}")
     
-    # Важно! Устанавливаем флаг готовности музыки на основе наличия аудио-файла
-    if local_audio_path and os.path.exists(local_audio_path) and os.path.getsize(local_audio_path) > 0:
-        metadata['is_music_ready'] = True
-    elif audio_url:
-        # Если локальный путь не создан, но есть внешний URL, все равно отмечаем как готовую
+    # Важно! Устанавливаем флаг готовности музыки на основе наличия аудио-файла или URL
+    if (local_audio_path and os.path.exists(local_audio_path) and os.path.getsize(local_audio_path) > 0) or audio_url or stream_url:
         metadata['is_music_ready'] = True
     else:
         metadata['is_music_ready'] = False
@@ -1107,41 +1151,56 @@ def process_track_data(metadata, track, task_id):
 @app.route('/proxy_audio')
 def proxy_audio():
     """
-    Проксирует аудио-содержимое из внешнего URL для обхода CORS-ограничений.
-    Используйте этот маршрут при проблемах с прямым доступом к аудио.
+    Проксирование запросов к аудиофайлам для обхода CORS и других ограничений.
     """
     try:
         url = request.args.get('url')
         if not url:
-            return "URL не указан", 400
+            return "URL parameter is required", 400
         
-        print(f"Проксирование аудио с URL: {url}")
+        print(f"Проксирование аудио из URL: {url}")
         
-        # Проверка на валидный URL
-        if not url.startswith('http'):
-            return "Неверный формат URL", 400
+        # Настройки запроса
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'audio/*, */*',
+            'Connection': 'keep-alive'
+        }
+        timeout = 60  # Увеличиваем тайм-аут до 60 секунд
         
-        # Отправляем запрос к внешнему ресурсу
-        response = requests.get(url, stream=True)
-        response.raise_for_status()  # Проверка на ошибки HTTP
+        # Используем requests для получения содержимого файла
+        # Отключаем стриминг и получаем весь файл сразу - решение проблемы с потоком
+        response = requests.get(url, headers=headers, timeout=timeout, stream=False)
+        response.raise_for_status()
         
-        # Получаем тип контента
+        # Получаем данные аудиофайла полностью в память
+        audio_data = response.content
+        
+        # Определяем тип контента
         content_type = response.headers.get('Content-Type', 'audio/mpeg')
+        if 'audio' not in content_type:
+            content_type = 'audio/mpeg'  # Устанавливаем по умолчанию audio/mpeg
         
-        # Создаем поток данных
-        def generate():
-            for chunk in response.iter_content(chunk_size=8192):
-                yield chunk
-                
-        # Возвращаем аудио как поток
-        return Response(generate(), content_type=content_type)
+        # Формируем ответ с правильными заголовками
+        flask_response = Response(audio_data)
+        flask_response.headers['Content-Type'] = content_type
+        flask_response.headers['Content-Length'] = str(len(audio_data))
+        flask_response.headers['Content-Disposition'] = 'inline; filename="audio.mp3"'
+        flask_response.headers['Accept-Ranges'] = 'bytes'
+        flask_response.headers['X-Proxy-Status'] = 'Success'
+        flask_response.headers['Access-Control-Allow-Origin'] = '*'
+        
+        print(f"Успешно получен аудиофайл, размер: {len(audio_data)} байт, тип: {content_type}")
+        
+        return flask_response
         
     except requests.exceptions.RequestException as e:
         print(f"Ошибка при проксировании аудио: {str(e)}")
-        return f"Ошибка при получении аудио: {str(e)}", 500
+        error_message = f"Ошибка при получении аудио: {str(e)}"
+        return jsonify({'error': error_message}), 500
     except Exception as e:
-        print(f"Общая ошибка при проксировании аудио: {str(e)}")
-        return f"Общая ошибка: {str(e)}", 500
+        print(f"Неизвестная ошибка при проксировании аудио: {str(e)}")
+        return jsonify({'error': f"Неизвестная ошибка: {str(e)}"}), 500
 
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")

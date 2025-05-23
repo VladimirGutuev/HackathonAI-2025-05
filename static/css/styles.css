@@ -304,7 +304,44 @@ a {
 }
 
 .music-section {
-    animation-delay: 0.6s;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#generated-music-container {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+audio {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    margin-bottom: 10px;
+}
+
+.audio-player-container {
+    border: 2px solid #f0ad4e;
+    border-radius: 8px;
+    background-color: #fffaf0;
+    padding: 15px !important;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Стили для альтернативного плеера */
+.alternative-player {
+    border: 2px solid #5bc0de;
+    border-radius: 8px;
+    background-color: #f0f8ff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-top: 20px;
 }
 
 #literary-results {

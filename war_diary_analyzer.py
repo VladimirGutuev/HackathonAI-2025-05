@@ -831,162 +831,95 @@ class WarDiaryAnalyzer:
         
         return prompt
 
-    def generate_music(self, text, emotion_analysis=None):
+    def generate_music(self, text, emotion_analysis=None, base_url=None, wait_for_result=False):
         """
         Генерирует музыкальное произведение на основе текста дневника и эмоционального анализа.
-        Использует Suno API для создания музыкального фрагмента.
-        
-        Args:
-            text (str): Текст дневника
-            emotion_analysis (dict, optional): Результаты эмоционального анализа
-            
-        Returns:
-            dict: Результат генерации музыки
+        Если wait_for_result=False, только отправляет запрос и возвращает task_id.
         """
         try:
             print(f"Генерация музыки на основе текста длиной {len(text)} символов")
-            
-            # Проверяем наличие API ключа Suno
             if not self.suno_api_key:
                 print("API ключ Suno не найден. Используем запасной метод.")
-                return self._fallback_music_generation(text, emotion_analysis)
-            
-            # Если текст слишком длинный, обрезаем его
+                return self._fallback_music_generation(text, emotion_analysis, base_url=base_url)
             if len(text) > 4000:
                 text = text[:4000]
-            
-            # Выбираем модель
-            model = "V4_5"  # Лучшая модель из доступных
-            
-            # Определяем стиль, настроение и тональность музыки на основе эмоционального анализа
+            model = "V4_5"
             style, mood, tempo, instruments = self._determine_music_params(emotion_analysis)
-            
-            # Проверяем длину стиля согласно ограничениям API
             style = self._validate_music_style(style, model)
-            
-            # Формируем музыкальный запрос на основе текста и эмоций
             if emotion_analysis and 'primary_emotions' in emotion_analysis:
-                # Определяем основные параметры на основе эмоций
                 emotions = [e['emotion'] for e in emotion_analysis['primary_emotions']]
                 tone = emotion_analysis.get('emotional_tone', 'reflective')
-                
-                # Используем вспомогательный метод для создания заголовка
                 music_title = self._create_music_title(tone, style, "War Diary")
-                
-                # Составляем более детальный промпт для Suno API, включая эмоциональный контекст
                 music_prompt = f"Create high-quality {mood} {style} music that captures the following emotions: {', '.join(emotions[:3])}. "
                 music_prompt += f"The music should reflect a {tone} tone of wartime experiences. "
                 music_prompt += f"{tempo} rhythm with {instruments} as primary instruments. "
                 music_prompt += f"Based on a war diary that describes: {text[:300]}..."
-                
-                # Проверяем длину промпта согласно ограничениям API
                 music_prompt = self._validate_music_prompt(music_prompt, model)
-                
-                # Негативные теги (то, что мы хотим исключить из генерации)
                 negative_tags = "lyrics, vocals, singing, spoken words, voice"
-                
             else:
-                # Базовый запрос, если нет эмоционального анализа
                 music_title = "War Diary Reflection"
-                
                 music_prompt = f"Create high-quality emotional {style} music that captures the mood of a war diary. "
                 music_prompt += f"The music should be {mood} and reflect the atmosphere of wartime experiences. "
                 music_prompt += f"{tempo} with {instruments} as primary instruments. "
                 music_prompt += f"Context from the diary: {text[:300]}..."
-                
-                # Проверяем длину промпта согласно ограничениям API
                 music_prompt = self._validate_music_prompt(music_prompt, model)
-                
                 negative_tags = "lyrics, vocals, singing, spoken words, voice"
-            
             print(f"Формирование запроса к Suno API: {music_prompt[:150]}...")
-            
-            # Подготовка JSON запроса для Suno API
+            if base_url:
+                base_url = base_url.rstrip('/')
+                callback_url = f"{base_url}/music_callback"
+            else:
+                callback_url = None
             request_data = {
                 "prompt": music_prompt,
                 "style": style,
                 "title": music_title,
                 "customMode": True,
-                "instrumental": True,  # Только инструментальная музыка
+                "instrumental": True,
                 "model": model,
                 "negativeTags": negative_tags,
-                # Оставляем callBackUrl пустым, так как для работы в локальной сети API не сможет отправить колбэк на localhost
-                # Будем проверять статус через регулярные запросы
+                "callBackUrl": callback_url  # только здесь ссылка!
             }
-            
-            # Формируем заголовки API запроса
+            if callback_url:
+                request_data["callBackUrl"] = callback_url
             headers = {
                 "Authorization": f"Bearer {self.suno_api_key}",
                 "Content-Type": "application/json",
                 "Accept": "application/json"
             }
-            
-            # Отправляем запрос к Suno API
             print(f"Отправка запроса к Suno API с данными: {json.dumps(request_data, ensure_ascii=False)[:200]}...")
             response = requests.post(
                 "https://apibox.erweima.ai/api/v1/generate",
                 json=request_data,
                 headers=headers
             )
-            
             print(f"Получен ответ от Suno API, код: {response.status_code}")
-            
             if response.status_code == 200:
                 try:
                     response_data = response.json()
                     print(f"Ответ API: {json.dumps(response_data, ensure_ascii=False)[:500]}")
                 except Exception as e:
                     print(f"Ошибка при разборе JSON ответа: {str(e)}")
-                    return self._fallback_music_generation(text, emotion_analysis, error=f"Ошибка разбора ответа: {str(e)}")
-                
-                # Проверяем код ответа от API
+                    return self._fallback_music_generation(text, emotion_analysis, error=f"Ошибка разбора ответа: {str(e)}", base_url=base_url)
                 if response_data.get('code') != 200:
                     error_msg = f"API вернул ошибку: {response_data.get('msg', 'Неизвестная ошибка')}"
                     print(error_msg)
-                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
-                
-                # Проверяем наличие data
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg, base_url=base_url)
                 if 'data' not in response_data:
                     error_msg = "В ответе API отсутствует поле 'data'"
                     print(error_msg)
-                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
-                
-                # Получаем данные из ответа API
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg, base_url=base_url)
                 data = response_data.get('data')
                 if not isinstance(data, dict):
                     error_msg = f"Поле 'data' не является словарем: {type(data)}"
                     print(error_msg)
-                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
-                
-                # Получаем task_id для отслеживания статуса
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg, base_url=base_url)
                 task_id = data.get('taskId')
                 if not task_id:
                     error_msg = "Не удалось получить task_id от Suno API"
                     print(error_msg)
-                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
-                
+                    return self._fallback_music_generation(text, emotion_analysis, error=error_msg, base_url=base_url)
                 print(f"Запрос к Suno API успешно отправлен, task_id: {task_id}")
-                
-                # Проверяем статус генерации музыки
-                # Делаем несколько попыток с интервалом
-                max_retries = 3
-                for retry in range(max_retries):
-                    print(f"Проверка статуса задачи {task_id}, попытка {retry+1}/{max_retries}...")
-                    
-                    # Делаем небольшую паузу перед проверкой статуса
-                    time.sleep(2)
-                    
-                    # Запрос статуса задачи
-                    status_response = self._check_music_generation_status(task_id)
-                    
-                    if status_response.get('success', False):
-                        # Если генерация завершена, возвращаем результат
-                        if status_response.get('status') == 'complete':
-                            print(f"Задача {task_id} завершена успешно!")
-                            return status_response
-                        else:
-                            print(f"Задача {task_id} в процессе выполнения, статус: {status_response.get('status')}")
-                
                 # Сохраняем метаданные о задаче в файл
                 music_metadata = {
                     'task_id': task_id,
@@ -999,62 +932,44 @@ class WarDiaryAnalyzer:
                     'emotions': [e['emotion'] for e in emotion_analysis['primary_emotions']][:3] if emotion_analysis and 'primary_emotions' in emotion_analysis else [],
                     'emotional_tone': emotion_analysis.get('emotional_tone', '') if emotion_analysis else '',
                     'status': 'processing',
-                    'created_at': datetime.now().isoformat()
+                    'created_at': datetime.now().isoformat(),
+                    'callback_url': callback_url,
                 }
-                
-                # Создаем директорию, если не существует
                 os.makedirs(os.path.join('static', 'generated_music'), exist_ok=True)
-                
-                # Формируем имя файла и пути
                 metadata_filename = f"music_metadata_{task_id}.json"
                 metadata_path = os.path.join('static', 'generated_music', metadata_filename)
-                
-                # Сохраняем метаданные
                 with open(metadata_path, 'w', encoding='utf-8') as f:
                     json.dump(music_metadata, f, ensure_ascii=False, indent=2)
-                
-                # Возвращаем информацию о музыке с прямым аудио URL, если он доступен
                 music_description = f"Сгенерирована {mood} {style} музыка, отражающая "
                 music_description += f"{', '.join(music_metadata['emotions'] if music_metadata['emotions'] else ['различные'])} эмоции. "
                 music_description += f"Использует {instruments}."
-                
                 return {
                     'success': True,
                     'status': 'processing',
                     'task_id': task_id,
                     'music_description': music_description,
-                    'audio_url': None,  # Будет заполнено, когда музыка будет готова
+                    'audio_url': None,
                     'metadata': music_metadata,
                     'metadata_path': metadata_path
                 }
             else:
-                # В случае ошибки API
                 error_msg = f"Ошибка Suno API: {response.status_code}"
                 try:
                     error_msg += f" - {response.text}"
                 except:
                     pass
                 print(error_msg)
-                # Переходим к запасному варианту
-                return self._fallback_music_generation(text, emotion_analysis, error=error_msg)
-                
+                return self._fallback_music_generation(text, emotion_analysis, error=error_msg, base_url=base_url)
         except Exception as e:
             print(f"Ошибка при генерации музыки: {str(e)}")
             import traceback
             traceback.print_exc()
-            
-            # Переходим к запасному варианту
-            return self._fallback_music_generation(text, emotion_analysis, error=str(e))
+            return self._fallback_music_generation(text, emotion_analysis, error=str(e), base_url=base_url)
     
     def _check_music_status_via_api(self, task_id):
         """
         Выполняет прямой запрос к Suno API для проверки статуса задачи.
-        
-        Args:
-            task_id (str): Идентификатор задачи
-            
-        Returns:
-            dict: Ответ от API или информация об ошибке
+        Добавляет задержку перед первой проверкой и пробует альтернативные endpoint'ы.
         """
         if not self.suno_api_key or not task_id:
             return {
@@ -1062,162 +977,135 @@ class WarDiaryAnalyzer:
                 'error': 'Отсутствует API ключ или ID задачи',
                 'api_status': 'error'
             }
-            
+        
         try:
-            # Формируем запрос к API для проверки статуса
             headers = {
                 "Authorization": f"Bearer {self.suno_api_key}",
                 "Content-Type": "application/json",
                 "Accept": "application/json"
             }
             
-            # Правильный URL для проверки статуса задачи
-            # Используем актуальный endpoint API для проверки статуса
-            status_url = f"https://apibox.erweima.ai/api/v1/tasks/{task_id}"
+            # Задержка перед первой проверкой (важно для Suno)
+            print(f"Жду 10 секунд перед первой проверкой статуса задачи {task_id}...")
+            time.sleep(10)
             
-            print(f"Запрос статуса задачи {task_id} через API...")
+            # Список endpoint'ов для проверки статуса
+            endpoints = [
+                f"https://apibox.erweima.ai/api/v1/tasks/{task_id}",
+                f"https://apibox.erweima.ai/api/v1/get?taskId={task_id}",
+                f"https://apibox.erweima.ai/api/v1/music/{task_id}"
+            ]
             
-            # Выполняем GET-запрос с увеличенным таймаутом
-            response = requests.get(status_url, headers=headers, timeout=30)
-            
-            # Анализируем ответ в зависимости от кода состояния
-            if response.status_code == 200:
-                try:
-                    result = response.json()
-                    print(f"Ответ API статуса: {json.dumps(result, ensure_ascii=False)[:300]}...")
-                    
-                    # Получаем код состояния из ответа API
-                    api_code = result.get('code')
-                    
-                    # Обрабатываем различные коды состояний
-                    if api_code == 200:
-                        # Успешный ответ, анализируем данные
-                        data = result.get('data', {})
-                        status = data.get('status', 'unknown')
-                        
-                        # Проверяем, завершена ли задача
-                        is_complete = status == 'complete' or data.get('isFinish', False)
-                        
-                        # Проверяем наличие треков
-                        tracks = data.get('tracks', [])
-                        
-                        # Получаем данные о треке
-                        audio_url = ""
-                        stream_url = ""
-                        
-                        # Проверяем разные варианты структуры ответа
-                        if tracks and isinstance(tracks, list) and len(tracks) > 0:
-                            # Вариант 1: Треки в массиве tracks
-                            first_track = tracks[0]
-                            audio_url = (first_track.get('audio_url') or 
-                                         first_track.get('audioUrl') or 
-                                         first_track.get('url') or 
-                                         '')
-                            
-                            stream_url = (first_track.get('stream_audio_url') or 
-                                         first_track.get('streamAudioUrl') or 
-                                         first_track.get('streamUrl') or 
-                                         first_track.get('stream_url') or 
-                                         '')
+            delays = [0, 5, 10, 15, 20, 30]  # Интервалы между попытками
+            last_error = None
+            for attempt in range(len(delays)):
+                if attempt > 0:
+                    print(f"Повторная попытка проверки статуса через {delays[attempt]} секунд...")
+                    time.sleep(delays[attempt])
+                for url in endpoints:
+                    print(f"Проверяю статус задачи через endpoint: {url}")
+                    try:
+                        response = requests.get(url, headers=headers, timeout=30)
+                        print(f"Ответ [{response.status_code}] от {url}: {response.text[:300]}")
+                        if response.status_code == 200:
+                            try:
+                                result = response.json()
+                                print(f"JSON-ответ: {json.dumps(result, ensure_ascii=False)[:300]}")
+                                api_code = result.get('code')
+                                if api_code == 200:
+                                    data = result.get('data', {})
+                                    status = data.get('status', 'unknown')
+                                    is_complete = status == 'complete' or data.get('isFinish', False)
+                                    tracks = data.get('tracks', [])
+                                    audio_url = ""
+                                    stream_url = ""
+                                    if tracks and isinstance(tracks, list) and len(tracks) > 0:
+                                        first_track = tracks[0]
+                                        audio_url = (first_track.get('audio_url') or 
+                                                     first_track.get('audioUrl') or 
+                                                     first_track.get('url') or 
+                                                     '')
+                                        stream_url = (first_track.get('stream_audio_url') or 
+                                                     first_track.get('streamAudioUrl') or 
+                                                     first_track.get('streamUrl') or 
+                                                     first_track.get('stream_url') or 
+                                                     '')
+                                    else:
+                                        audio_url = (data.get('audio_url') or 
+                                                    data.get('audioUrl') or 
+                                                    data.get('url') or 
+                                                    '')
+                                        stream_url = (data.get('stream_audio_url') or 
+                                                     data.get('streamAudioUrl') or 
+                                                     data.get('streamUrl') or 
+                                                     data.get('stream_url') or 
+                                                     '')
+                                    # Пробуем получить дополнительные данные
+                                    results = data.get('results', {})
+                                    if results and isinstance(results, dict):
+                                        if not audio_url:
+                                            audio_url = (results.get('audio_url') or 
+                                                        results.get('audioUrl') or 
+                                                        results.get('url') or 
+                                                        '')
+                                        if not stream_url:
+                                            stream_url = (results.get('stream_audio_url') or 
+                                                         results.get('streamAudioUrl') or 
+                                                         results.get('streamUrl') or 
+                                                         results.get('stream_url') or 
+                                                         '')
+                                    if is_complete and not audio_url and not stream_url:
+                                        print("Внимание: Задача отмечена как завершенная, но нет URL аудио")
+                                        is_complete = False
+                                    return {
+                                        'success': True,
+                                        'api_status': status,
+                                        'is_complete': is_complete,
+                                        'audio_url': audio_url,
+                                        'stream_url': stream_url,
+                                        'data': data
+                                    }
+                                else:
+                                    error_msg = result.get('msg', f"Код ошибки API: {api_code}")
+                                    print(f"API вернул ошибку {api_code}: {error_msg}")
+                                    last_error = error_msg
+                                    continue
+                            except Exception as e:
+                                print(f"Ошибка при обработке ответа API: {str(e)}")
+                                last_error = str(e)
+                                continue
+                        elif response.status_code == 404:
+                            print(f"Endpoint {url} вернул 404 (не найдено) — задача, возможно, ещё в очереди")
+                            # Возвращаем статус 'processing', если не истёк таймаут
+                            return {
+                                'success': True,
+                                'api_status': 'processing',
+                                'is_complete': False,
+                                'audio_url': '',
+                                'stream_url': '',
+                                'data': {},
+                                'message': 'Задача ещё в очереди на генерацию (Suno API вернул 404)'
+                            }
                         else:
-                            # Вариант 2: Аудио URL непосредственно в данных
-                            audio_url = (data.get('audio_url') or 
-                                        data.get('audioUrl') or 
-                                        data.get('url') or 
-                                        '')
-                            
-                            stream_url = (data.get('stream_audio_url') or 
-                                         data.get('streamAudioUrl') or 
-                                         data.get('streamUrl') or 
-                                         data.get('stream_url') or 
-                                         '')
-                        
-                        # Пробуем получить дополнительные данные
-                        results = data.get('results', {})
-                        if results and isinstance(results, dict):
-                            # Вариант 3: Данные в поле results
-                            if not audio_url:
-                                audio_url = (results.get('audio_url') or 
-                                            results.get('audioUrl') or 
-                                            results.get('url') or 
-                                            '')
-                            
-                            if not stream_url:
-                                stream_url = (results.get('stream_audio_url') or 
-                                             results.get('streamAudioUrl') or 
-                                             results.get('streamUrl') or 
-                                             results.get('stream_url') or 
-                                             '')
-                        
-                        # Если не нашли аудио URL, но задача завершена, возвращаем ошибку
-                        if is_complete and not audio_url and not stream_url:
-                            print("Внимание: Задача отмечена как завершенная, но нет URL аудио")
-                            is_complete = False
-                        
-                        return {
-                            'success': True,
-                            'api_status': status,
-                            'is_complete': is_complete,
-                            'audio_url': audio_url,
-                            'stream_url': stream_url,
-                            'data': data
-                        }
-                    # Любой другой код кроме 200 считаем ошибкой
-                    else:
-                        error_msg = result.get('msg', f"Код ошибки API: {api_code}")
-                        print(f"API вернул ошибку {api_code}: {error_msg}")
-                        
-                        return {
-                            'success': False,
-                            'error': f"Ошибка API {api_code}: {error_msg}",
-                            'code': api_code,
-                            'api_status': 'error'
-                        }
-                except Exception as e:
-                    print(f"Ошибка при обработке ответа API: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
-                    return {
-                        'success': False,
-                        'error': f"Ошибка при обработке ответа API: {str(e)}",
-                        'api_status': 'error'
-                    }
-            elif response.status_code == 404:
-                # Специальная обработка для 404 - задача не найдена
-                print(f"Задача {task_id} не найдена в API (404)")
-                return {
-                    'success': False,
-                    'error': f"Задача не найдена. Возможно, она была удалена или истек срок хранения.",
-                    'api_status': 'not_found'
-                }
-            # Обработка других ошибок HTTP
-            else:
-                error_msg = f"Ошибка запроса к API: {response.status_code}"
-                try:
-                    error_msg += f" - {response.text}"
-                except:
-                    pass
-                
-                print(error_msg)
-                return {
-                    'success': False,
-                    'error': error_msg,
-                    'api_status': 'error'
-                }
-        except requests.exceptions.RequestException as e:
+                            error_msg = f"Ошибка запроса к API: {response.status_code} - {response.text}"
+                            print(error_msg)
+                            last_error = error_msg
+                            continue
+                    except Exception as e:
+                        print(f"Ошибка при запросе к {url}: {str(e)}")
+                        last_error = str(e)
+                        continue
+            # Если все попытки не увенчались успехом
+            return {
+                'success': False,
+                'error': last_error or 'Не удалось получить статус задачи Suno',
+                'api_status': 'error'
+            }
+        except Exception as e:
             print(f"Ошибка подключения к API: {str(e)}")
             return {
                 'success': False,
                 'error': f"Ошибка подключения к API: {str(e)}",
-                'api_status': 'error'
-            }
-        except Exception as e:
-            print(f"Ошибка при запросе статуса через API: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return {
-                'success': False,
-                'error': f"Ошибка при запросе статуса: {str(e)}",
                 'api_status': 'error'
             }
     
@@ -1243,6 +1131,15 @@ class WarDiaryAnalyzer:
             
             # Сначала проверяем статус через API
             api_status = self._check_music_status_via_api(task_id)
+            
+            # Проверяем, что api_status не None
+            if api_status is None:
+                print(f"API вернул None для задачи {task_id}")
+                api_status = {
+                    'success': False,
+                    'error': 'API вернул пустой ответ',
+                    'api_status': 'error'
+                }
             
             # Если API вернул статус "error", считаем задачу неуспешной
             if api_status.get('api_status') == 'error' or (not api_status.get('success') and api_status.get('error')):
@@ -1307,91 +1204,11 @@ class WarDiaryAnalyzer:
                 local_audio_path = metadata.get('local_audio_path', '')
                 local_audio_url = metadata.get('local_audio_url', '')
                 
-                if audio_url and not local_audio_path:
-                    try:
-                        # Создаем директорию для аудио файлов, если не существует
-                        audio_dir = os.path.join('static', 'generated_music', 'audio')
-                        os.makedirs(audio_dir, exist_ok=True)
-                        
-                        # Формируем имя файла
-                        audio_filename = f"music_{task_id}.mp3"
-                        full_audio_path = os.path.join(audio_dir, audio_filename)
-                        
-                        # Скачиваем файл с увеличенным таймаутом и обработкой ошибок
-                        print(f"Скачивание MP3 с URL: {audio_url}")
-                        
-                        # Создаем сессию с повторными попытками
-                        session = requests.Session()
-                        session.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
-                        
-                        response = session.get(audio_url, stream=True, timeout=60)
-                        response.raise_for_status()
-                        
-                        # Сохраняем файл
-                        with open(full_audio_path, 'wb') as f:
-                            for chunk in response.iter_content(chunk_size=8192):
-                                if chunk:
-                                    f.write(chunk)
-                        
-                        # Проверяем, что файл создан и имеет размер
-                        if os.path.exists(full_audio_path) and os.path.getsize(full_audio_path) > 0:
-                            print(f"MP3 файл успешно скачан и сохранен: {full_audio_path}")
-                            local_audio_path = full_audio_path
-                            # Корректный URL для веб-доступа
-                            local_audio_url = f"/static/generated_music/audio/{audio_filename}"
-                            print(f"Сформирован URL для аудио: {local_audio_url}")
-                        else:
-                            print(f"Ошибка: файл не создан или пустой: {full_audio_path}")
-                            
-                            # Пробуем альтернативный способ скачивания
-                            print("Пробуем альтернативный способ скачивания...")
-                            import urllib.request
-                            
-                            try:
-                                urllib.request.urlretrieve(audio_url, full_audio_path)
-                                
-                                if os.path.exists(full_audio_path) and os.path.getsize(full_audio_path) > 0:
-                                    print(f"MP3 файл успешно скачан альтернативным способом: {full_audio_path}")
-                                    local_audio_path = full_audio_path
-                                    # Корректный URL для веб-доступа
-                                    local_audio_url = f"/static/generated_music/audio/{audio_filename}"
-                                else:
-                                    print("Альтернативное скачивание тоже не удалось")
-                                    local_audio_url = ""
-                            except Exception as e:
-                                print(f"Ошибка при альтернативном скачивании MP3: {str(e)}")
-                                local_audio_url = ""
-                    except Exception as e:
-                        print(f"Ошибка при скачивании MP3 файла: {str(e)}")
-                        import traceback
-                        traceback.print_exc()
-                        local_audio_url = ""
-                else:
-                    # Если URL отсутствует или файл уже скачан, формируем URL на основе пути
-                    if local_audio_path:
-                        audio_filename = os.path.basename(local_audio_path)
-                        local_audio_url = f"/static/generated_music/audio/{audio_filename}"
-                    else:
-                        local_audio_url = ""
-                
-                # Обновляем метаданные с данными из API
-                metadata['status'] = 'complete'
-                metadata['last_update'] = datetime.now().isoformat()
-                metadata['audio_url'] = audio_url
-                metadata['stream_url'] = stream_url
-                metadata['api_data'] = api_status.get('data')
-                metadata['local_audio_path'] = local_audio_path
-                metadata['local_audio_url'] = local_audio_url
-                metadata['is_music_ready'] = True if local_audio_path or audio_url else False
-                
-                # Сохраняем обновленные метаданные
-                try:
-                    os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
-                    with open(metadata_path, 'w', encoding='utf-8') as f:
-                        json.dump(metadata, f, ensure_ascii=False, indent=2)
-                    print(f"Метаданные обновлены: {metadata_path}")
-                except Exception as e:
-                    print(f"Ошибка при сохранении метаданных: {str(e)}")
+                # Если локальный аудиофайл указан, но не существует, очищаем путь
+                if local_audio_path and not os.path.exists(local_audio_path):
+                    print(f"Предупреждение: локальный аудиофайл {local_audio_path} не найден")
+                    local_audio_path = ''
+                    local_audio_url = ''
                 
                 # Формируем описание музыки
                 music_description = f"Сгенерирована музыка в стиле {metadata.get('style', 'инструментальный')}."
@@ -1400,16 +1217,15 @@ class WarDiaryAnalyzer:
                 if 'emotions' in metadata and metadata['emotions']:
                     music_description += f" Отражает эмоции: {', '.join(metadata['emotions'])}."
                 
-                # Возвращаем информацию о завершенной задаче
                 return {
                     'success': True,
                     'status': 'complete',
-                    'audio_url': metadata.get('audio_url', ''),
-                    'stream_url': metadata.get('stream_url', ''),
+                    'audio_url': audio_url,
+                    'stream_url': stream_url,
                     'image_url': metadata.get('image_url', ''),
-                    'local_audio_path': metadata.get('local_audio_path', ''),
+                    'local_audio_path': local_audio_path,
+                    'local_audio_url': local_audio_url,
                     'local_image_path': metadata.get('local_image_path', ''),
-                    'local_audio_url': metadata.get('local_audio_url', ''),
                     'local_image_url': metadata.get('local_image_url', ''),
                     'title': metadata.get('title', ''),
                     'task_id': task_id,
@@ -1420,7 +1236,7 @@ class WarDiaryAnalyzer:
                     'emotional_tone': metadata.get('emotional_tone', ''),
                     'is_music_ready': True if local_audio_path or audio_url else False
                 }
-                
+            
             # Если API вернул ошибку, но не завершил задачу, используем локальные метаданные
             if not api_status.get('success') and api_status.get('error'):
                 print(f"Ошибка API при проверке статуса задачи {task_id}: {api_status.get('error')}")
@@ -1468,24 +1284,24 @@ class WarDiaryAnalyzer:
                     local_audio_path = ''
                     local_audio_url = ''
                 
-                    return {
-                        'success': True,
-                        'status': 'complete',
-                        'audio_url': metadata.get('audio_url', ''),
-                        'stream_url': metadata.get('stream_url', ''),
-                        'image_url': metadata.get('image_url', ''),
-                        'embed_url': metadata.get('embed_url', ''),
-                        'local_audio_path': local_audio_path,
-                        'local_image_path': metadata.get('local_image_path', ''),
-                        'local_audio_url': local_audio_url,
-                        'local_image_url': metadata.get('local_image_url', ''),
-                        'proxy_url': metadata.get('proxy_url', ''),
-                        'title': metadata.get('title', ''),
-                        'task_id': task_id,
-                        'music_description': music_description,
-                        'is_music_ready': metadata.get('is_music_ready', False)
-                    }
-                
+                return {
+                    'success': True,
+                    'status': 'complete',
+                    'audio_url': metadata.get('audio_url', ''),
+                    'stream_url': metadata.get('stream_url', ''),
+                    'image_url': metadata.get('image_url', ''),
+                    'embed_url': metadata.get('embed_url', ''),
+                    'local_audio_path': local_audio_path,
+                    'local_image_path': metadata.get('local_image_path', ''),
+                    'local_audio_url': local_audio_url,
+                    'local_image_url': metadata.get('local_image_url', ''),
+                    'proxy_url': metadata.get('proxy_url', ''),
+                    'title': metadata.get('title', ''),
+                    'task_id': task_id,
+                    'music_description': music_description,
+                    'is_music_ready': True if local_audio_path or audio_url else False
+                }
+            
             # Если в метаданных статус ошибки, возвращаем ошибку
             if metadata.get('status') == 'error':
                 print(f"Задача {task_id} завершилась с ошибкой по локальным метаданным")
@@ -1519,8 +1335,8 @@ class WarDiaryAnalyzer:
                 with open(metadata_path, 'w', encoding='utf-8') as f:
                     json.dump(metadata, f, ensure_ascii=False, indent=2)
                 
-                    return {
-                        'success': False,
+                return {
+                    'success': False,
                     'status': 'timeout',
                     'message': f"Превышено время ожидания ({max_wait_time//60} мин). Музыка не была сгенерирована.",
                     'task_id': task_id,
@@ -1534,7 +1350,9 @@ class WarDiaryAnalyzer:
             progress = min(95, int(elapsed_seconds / max_wait_time * 100))
             
             # Проверяем, показывает ли API статус ошибки (но задача все еще обрабатывается)
-            api_status_value = api_status.get('api_status', 'unknown') if api_status.get('success') else 'error'
+            api_status_value = "unknown"
+            if api_status is not None:
+                api_status_value = api_status.get('api_status', 'unknown') if api_status.get('success') else 'error'
             
             # Если API статус показывает ошибку, но мы до сих пор считаем задачу в процессе, 
             # устанавливаем флаг ошибки
@@ -1547,6 +1365,16 @@ class WarDiaryAnalyzer:
                     'music_description': metadata.get('music_description', 'Музыка не была сгенерирована из-за ошибки API.')
                 }
             
+            # Если ни одно из условий не сработало, возвращаем статус "в процессе"
+            return {
+                'success': True,
+                'status': 'processing',
+                'message': f"Задача в процессе ({progress}% выполнено). Прошло {elapsed_seconds:.1f} сек.",
+                'progress': progress,
+                'task_id': task_id,
+                'elapsed_seconds': elapsed_seconds,
+                'music_description': metadata.get('music_description', 'Музыка генерируется...')
+            }
             
         except Exception as e:
             print(f"Ошибка при проверке статуса генерации музыки: {str(e)}")
@@ -1560,18 +1388,9 @@ class WarDiaryAnalyzer:
                 'task_id': task_id
             }
     
-    def _fallback_music_generation(self, text, emotion_analysis, error=None):
+    def _fallback_music_generation(self, text, emotion_analysis, error=None, base_url=None):
         """
-        Запасной метод генерации музыки, если основной метод недоступен.
-        Использует SUNA API для генерации музыки.
-        
-        Args:
-            text (str): Текст дневника
-            emotion_analysis (dict): Эмоциональный анализ
-            error (str, optional): Сообщение об ошибке
-            
-        Returns:
-            dict: Результат генерации музыки
+        Запасной метод генерации музыки (например, если нет ключа или ошибка API)
         """
         print("Использование запасного метода генерации музыки через SUNA...")
         
@@ -1976,6 +1795,62 @@ class WarDiaryAnalyzer:
                     'success': False,
                     'error': str(e)
                 }
+            }
+
+    def _process_callback_data(self, callback_data):
+        """
+        Обрабатывает данные из callback от Suno API.
+        Сохраняет метаданные и аудиофайл.
+        """
+        try:
+            task_id = callback_data.get('task_id')
+            data_items = callback_data.get('data', [])
+            
+            if not data_items or not isinstance(data_items, list) or len(data_items) == 0:
+                return {
+                    'success': False,
+                    'error': 'Отсутствуют данные о сгенерированной музыке в callback',
+                    'task_id': task_id
+                }
+            
+            # Берем первый элемент из списка (обычно генерируется только один трек)
+            item = data_items[0]
+            
+            audio_url = item.get('audio_url', '')
+            original_audio_url = item.get('source_audio_url', '') 
+            stream_url = item.get('stream_audio_url', '')
+            original_stream_url = item.get('source_stream_audio_url', '')
+            
+            # Создаем метаданные
+            metadata = {
+                'success': True,
+                'task_id': task_id,
+                'audio_url': audio_url,
+                'original_audio_url': original_audio_url,
+                'stream_url': stream_url,
+                'original_stream_url': original_stream_url,
+                'title': item.get('title', 'Untitled'),
+                'prompt': item.get('prompt', ''),
+                'duration': item.get('duration', 0),
+                'model': item.get('model_name', '')
+            }
+            
+            # Сохраняем метаданные
+            metadata_path = os.path.join('static', 'generated_music', f'music_metadata_{task_id}.json')
+            with open(metadata_path, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, ensure_ascii=False, indent=2)
+            
+            return {
+                'success': True,
+                'task_id': task_id,
+                'metadata_path': metadata_path
+            }
+        except Exception as e:
+            print(f"Ошибка при обработке данных из callback от Suno API: {str(e)}")
+            return {
+                'success': False,
+                'error': f"Ошибка при обработке данных из callback от Suno API: {str(e)}",
+                'task_id': task_id
             }
 
 def main():

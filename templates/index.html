@@ -1,3 +1,122 @@
+<style>
+/* КРИТИЧЕСКИ ВАЖНЫЕ СТИЛИ ДЛЯ ОТОБРАЖЕНИЯ АУДИОПЛЕЕРА */
+audio {
+    display: block !important;
+    width: 100% !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background-color: #f0f0f0 !important;
+    border: 3px solid #ff6600 !important;
+    margin: 15px 0 !important;
+    position: relative !important;
+    z-index: 9999 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.audio-player-container {
+    display: block !important;
+    position: relative !important;
+    background-color: #fff8e1 !important;
+    border: 2px solid #ff8c00 !important;
+    padding: 15px !important;
+    margin: 15px 0 !important;
+    z-index: 9998 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+.music-section {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 20px 0 !important;
+    padding: 15px !important;
+    background-color: #ffffe0 !important;
+    border: 1px solid #ffd700 !important;
+}
+
+#generated-music-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Обеспечение видимости контейнеров с музыкой */
+#music-results {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Стили для резервного плеера */
+.backup-player {
+    background-color: #fff0f0 !important;
+    border: 3px solid #ff0000 !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    margin: 20px 0 !important;
+    display: block !important;
+}
+
+.backup-player h4 {
+    color: #ff0000 !important;
+    margin-bottom: 15px !important;
+    font-weight: bold !important;
+}
+
+.backup-player audio {
+    border-color: #ff0000 !important;
+}
+
+/* Стили для кнопки скачивания */
+.download-audio-btn {
+    display: inline-block !important;
+    background-color: #28a745 !important;
+    color: white !important;
+    font-weight: bold !important;
+    padding: 10px 20px !important;
+    border-radius: 5px !important;
+    text-decoration: none !important;
+    margin-top: 10px !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+    transition: all 0.3s ease !important;
+}
+
+.download-audio-btn:hover {
+    background-color: #218838 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Стили для улучшения видимости плеера */
+.music-section {
+    display: block !important; /* Гарантированно отображать секцию */
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.audio-player-container {
+    border: 2px solid #f0ad4e;
+    border-radius: 8px;
+    background-color: #fffaf0;
+    padding: 15px !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+audio {
+    width: 100%;
+    max-width: 100%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-radius: 6px;
+    display: block !important;
+}
+
+#generated-music-container {
+    display: block !important;
+}
+</style>
+
 {% extends "base.html" %}
 
 {% block title %}Анализатор военных дневников{% endblock %}
@@ -92,12 +211,7 @@
                             </div>
                         </div>
                         
-                        <div class="card mb-4 border-0 shadow music-section" style="display: none;">
-                            <div class="card-header bg-warning text-dark">
-                                <h4 class="m-0"><i class="bi bi-music-note-beamed"></i> Музыкальное сопровождение</h4>
-                            </div>
-                            <div class="card-body" id="music-results">
-                                <div id="generated-music-container" class="text-center mb-3" style="display: none;">
+                        <div class="card mb-4 border-0 shadow music-section">                            <div class="card-header bg-warning text-dark">                                <h4 class="m-0"><i class="bi bi-music-note-beamed"></i> Музыкальное сопровождение</h4>                            </div>                            <div class="card-body" id="music-results">                                <div id="generated-music-container" class="text-center mb-3">
                                     <div class="ratio ratio-16x9 mb-3">
                                         <iframe id="music-iframe" src="" title="Сгенерированная музыка" allowfullscreen></iframe>
                                     </div>
@@ -765,6 +879,12 @@ function checkMusicGenerationStatus(taskId) {
     const errorElement = document.getElementById('music-error');
     const musicContainer = document.getElementById('generated-music-container');
     
+    // Убедимся, что секция музыки видима
+    const musicSection = document.querySelector('.music-section');
+    if (musicSection) {
+        musicSection.style.display = 'block';
+    }
+    
     if (loadingElement) {
         loadingElement.style.display = 'block';
         loadingElement.innerHTML = `
@@ -809,6 +929,12 @@ function checkMusicGenerationStatus(taskId) {
                     data.audio_url || data.stream_url || data.local_audio_url || 
                     data.proxy_url) {
                     console.log("Музыка готова! Отображаем плеер:", data);
+                    
+                    // Убедимся, что музыкальная секция видна
+                    const musicSection = document.querySelector('.music-section');
+                    if (musicSection && musicSection.style.display === 'none') {
+                        musicSection.style.display = 'block';
+                    }
                     
                     // Отображаем готовую музыку
                     displayGeneratedMusic(data);
@@ -1098,9 +1224,17 @@ function showMusicError(errorText, errorDetails = null, taskId = null) {
 
 // Функция для отображения сгенерированной музыки
 function displayGeneratedMusic(musicData) {
+    console.log("Запуск функции displayGeneratedMusic с данными:", musicData);
+    
+    // Сначала делаем секцию музыки видимой
+    const musicSection = document.querySelector('.music-section');
+    if (musicSection) {
+        musicSection.style.display = 'block';
+        musicSection.style.visibility = 'visible';
+        musicSection.style.opacity = '1';
+    }
+    
     const musicContainer = document.getElementById('generated-music-container');
-    const musicIframe = document.getElementById('music-iframe');
-    const musicDescription = document.getElementById('music-description');
     const loadingElement = document.getElementById('music-loading');
     const errorElement = document.getElementById('music-error');
     
@@ -1109,6 +1243,10 @@ function displayGeneratedMusic(musicData) {
         return;
     }
     
+    // Скрываем индикаторы загрузки и ошибок
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (errorElement) errorElement.style.display = 'none';
+    
     // Проверка на валидность musicData
     if (!musicData) {
         console.error("Ошибка: musicData отсутствует или null");
@@ -1116,323 +1254,222 @@ function displayGeneratedMusic(musicData) {
             errorElement.textContent = "Ошибка при генерации музыки: Неверные данные";
             errorElement.style.display = 'block';
         }
-        if (loadingElement) loadingElement.style.display = 'none';
         return;
     }
     
     console.log("Данные музыки:", musicData);
     
-    // Скрываем индикатор загрузки и сообщения об ошибках
-    if (loadingElement) loadingElement.style.display = 'none';
-    if (errorElement) errorElement.style.display = 'none';
+    // Получаем URL аудио в порядке приоритета
+    const localAudioUrl = musicData.local_audio_url || '';
+    const proxyUrl = musicData.proxy_url || '';
+    const audioUrl = musicData.audio_url || '';
+    const streamUrl = musicData.stream_url || '';
     
-    // Проверка на ошибки
-    if (!musicData.success) {
-        if (errorElement) {
-            errorElement.textContent = musicData.error || "Ошибка при генерации музыки";
-            errorElement.style.display = 'block';
+    // Используем первый доступный URL
+    const finalAudioUrl = localAudioUrl || proxyUrl || audioUrl || streamUrl;
+    console.log("Итоговый URL для аудио:", finalAudioUrl);
+    
+    if (finalAudioUrl) {
+        // Очищаем контейнер
+        musicContainer.innerHTML = '';
+        
+        // Создаем надежный контейнер для плеера
+        const audioPlayerWrapper = document.createElement('div');
+        audioPlayerWrapper.className = 'audio-player-wrapper';
+        audioPlayerWrapper.style.cssText = 'display:block !important; margin:20px 0 !important; background:#fff8e1 !important; padding:15px !important; border:2px solid #ff8c00 !important; border-radius:8px !important;';
+        
+        // Заголовок
+        const title = document.createElement('h4');
+        title.style.cssText = 'color:#d35400 !important; margin-bottom:15px !important; font-weight:bold !important;';
+        title.textContent = 'Музыкальное сопровождение';
+        audioPlayerWrapper.appendChild(title);
+        
+        // Описание музыки, если есть
+        if (musicData.music_description) {
+            const description = document.createElement('p');
+            description.style.cssText = 'margin-bottom:15px !important; font-style:italic !important;';
+            description.textContent = musicData.music_description;
+            audioPlayerWrapper.appendChild(description);
         }
-        return;
-    }
-    
-    // Проверяем, какой тип ответа мы получили
-    if ((musicData.status === 'processing' || musicData.status === 'updated') && musicData.task_id) {
-        // Музыка всё еще генерируется, показываем индикатор загрузки
+        
+        // Создаем первый аудиоплеер
+        const audioPlayer = document.createElement('audio');
+        audioPlayer.controls = true;
+        audioPlayer.autoplay = false;
+        audioPlayer.preload = 'auto';
+        audioPlayer.className = 'primary-audio-player';
+        audioPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:3px solid #ff6600 !important; background:#f0f0f0 !important; margin:10px 0 !important;';
+        
+        // Добавляем источник
+        const source = document.createElement('source');
+        source.src = finalAudioUrl;
+        source.type = 'audio/mpeg';
+        audioPlayer.appendChild(source);
+        
+        // Текст для браузеров, не поддерживающих аудио
+        audioPlayer.appendChild(document.createTextNode('Ваш браузер не поддерживает HTML5 аудио.'));
+        
+        // Добавляем плеер в контейнер
+        audioPlayerWrapper.appendChild(audioPlayer);
+        
+        // Добавляем кнопку для скачивания
+        const downloadLink = document.createElement('a');
+        downloadLink.href = finalAudioUrl;
+        downloadLink.download = 'music_download.mp3';
+        downloadLink.className = 'download-audio-btn';
+        downloadLink.style.cssText = 'display:inline-block !important; background:#28a745 !important; color:white !important; padding:10px 20px !important; text-decoration:none !important; border-radius:5px !important; margin-top:15px !important; font-weight:bold !important;';
+        downloadLink.innerHTML = '<i class="bi bi-download"></i> Скачать аудиофайл';
+        audioPlayerWrapper.appendChild(downloadLink);
+        
+        // Добавляем обертку в контейнер
+        musicContainer.appendChild(audioPlayerWrapper);
+        
+        // Принудительно отображаем контейнер
+        musicContainer.style.display = 'block';
+        musicContainer.style.visibility = 'visible';
+        musicContainer.style.opacity = '1';
+        
+        console.log("Создан основной аудиоплеер для URL:", finalAudioUrl);
+        
+        // Создаем резервный плеер с задержкой
+        setTimeout(() => {
+            createBackupPlayer(finalAudioUrl);
+        }, 1000);
+        
+    } else if (musicData.task_id) {
+        // Если есть task_id, показываем индикатор загрузки и запускаем проверку статуса
         if (loadingElement) {
             loadingElement.style.display = 'block';
-            
-            // Рассчитываем процент выполнения
-            let progressPercent = 0;
-            if (musicData.progress) {
-                progressPercent = musicData.progress;
-            } else if (musicData.elapsed_seconds) {
-                // Максимальное время ожидания - 15 минут (900 секунд)
-                progressPercent = Math.min(95, Math.round(musicData.elapsed_seconds / 900 * 100));
-            }
-            
-            // Добавляем информацию о задаче
             loadingElement.innerHTML = `
                 <p class="text-muted">Генерация музыки...</p>
                 <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
-                         style="width: ${progressPercent}%" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
-                         ${progressPercent}%
-                    </div>
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
                 </div>
                 <span class="badge bg-info">Идентификатор задачи: ${musicData.task_id}</span>
-                ${musicData.api_status ? `<span class="badge bg-secondary ms-2">API статус: ${musicData.api_status}</span>` : ''}
             `;
-            
-            // Устанавливаем периодическую проверку статуса
-            checkMusicGenerationStatus(musicData.task_id);
         }
         
-        if (musicDescription) {
-            musicDescription.textContent = musicData.music_description || 'Генерируется музыка на основе эмоций из дневника...';
-        }
-        
-        musicContainer.style.display = 'block';
-    } else if (musicData.status === 'complete' || musicData.audio_url || musicData.stream_url || 
-              musicData.embed_url || musicData.local_audio_url || musicData.proxy_url || 
-              (musicData.is_music_ready === true)) {
-        // Музыка готова, показываем плеер
-        console.log("Музыка готова к воспроизведению");
-        
-        // Очищаем контейнер от предыдущих элементов
-        while (musicContainer.firstChild) {
-            musicContainer.removeChild(musicContainer.firstChild);
-        }
-        
-        // Заголовок 
-        const musicTitle = document.createElement('h4');
-        musicTitle.className = 'card-title';
-        musicTitle.textContent = 'Музыкальное сопровождение';
-        musicContainer.appendChild(musicTitle);
-        
-        // Описание музыки
-        if (musicData.music_description) {
-            const descriptionElement = document.createElement('p');
-            descriptionElement.className = 'card-text mb-3';
-            descriptionElement.textContent = musicData.music_description;
-            musicContainer.appendChild(descriptionElement);
-        }
-        
-        // Создаем контейнер для управления аудио
-        const audioContainer = document.createElement('div');
-        audioContainer.className = 'audio-player-container card p-3 mb-3';
-        
-        // Заголовок
-        const audioTitle = document.createElement('h5');
-        audioTitle.className = 'mb-3';
-        audioTitle.textContent = 'Прослушать сгенерированную музыку';
-        audioContainer.appendChild(audioTitle);
-        
-        // Получаем URL аудио, проверяя разные возможные источники
-        // Приоритет: 1) локальный файл, 2) прокси URL, 3) обычный URL, 4) стрим URL
-        let localAudioUrl = musicData.local_audio_url || '';
-        const audioUrl = musicData.audio_url || '';
-        const streamUrl = musicData.stream_url || '';
-        const embedUrl = musicData.embed_url || '';
-        const proxyUrl = musicData.proxy_url || (audioUrl ? `/proxy_audio?url=${encodeURIComponent(audioUrl)}` : '');
-        
-        // Если localAudioUrl не начинается с /, добавляем
-        if (localAudioUrl && !localAudioUrl.startsWith('/')) {
-            localAudioUrl = '/' + localAudioUrl;
-        }
-        
-        // Флаг для отслеживания, был ли хотя бы один успешно загруженный плеер
-        let playerSuccessful = false;
-        
-        // Сначала пробуем встроенный плеер, если он доступен
-        if (embedUrl) {
-            // Создаем iframe для встроенного плеера
-            const embedIframe = document.createElement('iframe');
-            embedIframe.src = embedUrl;
-            embedIframe.frameBorder = "0";
-            embedIframe.allowFullscreen = true;
-            embedIframe.className = 'w-100 mb-3';
-            embedIframe.style.height = '150px';
-            embedIframe.onload = () => {
-                playerSuccessful = true;
-                console.log("Встроенный плеер успешно загружен");
-            };
-            
-            // Оберточный div для iframe
-            const embedContainer = document.createElement('div');
-            embedContainer.className = 'embed-responsive mb-3';
-            embedContainer.appendChild(embedIframe);
-            audioContainer.appendChild(embedContainer);
-        }
-        
-        // Создаем аудио-плеер
-        if (localAudioUrl || audioUrl || streamUrl || proxyUrl) {
-            const audioPlayer = document.createElement('audio');
-            audioPlayer.controls = true;
-            audioPlayer.className = 'w-100 mb-3';
-            audioPlayer.preload = 'auto'; // Предзагрузка аудио
-            audioPlayer.volume = 0.8; // Устанавливаем громкость
-            
-            // Добавляем обработчик для автоматического перехода к альтернативному источнику при ошибке
-            // Приоритет источников
-            let audioSources = [];
-            
-            // 1. Локальный файл
-            if (localAudioUrl) {
-                audioSources.push({
-                    url: localAudioUrl,
-                    type: 'audio/mpeg',
-                    description: 'Локальный файл'
-                });
-            }
-            
-            // 2. Прокси URL
-            if (proxyUrl) {
-                audioSources.push({
-                    url: proxyUrl,
-                    type: 'audio/mpeg',
-                    description: 'Через прокси-сервер'
-                });
-            }
-            
-            // 3. Обычный URL
-            if (audioUrl) {
-                audioSources.push({
-                    url: audioUrl,
-                    type: 'audio/mpeg',
-                    description: 'Прямой URL аудио'
-                });
-            }
-            
-            // 4. Стрим URL
-            if (streamUrl) {
-                audioSources.push({
-                    url: streamUrl,
-                    type: 'audio/mpeg',
-                    description: 'Стрим URL'
-                });
-            }
-            
-            // Добавляем все источники к аудиоплееру
-            audioSources.forEach((source, index) => {
-                const sourceElement = document.createElement('source');
-                sourceElement.src = source.url;
-                sourceElement.type = source.type;
-                audioPlayer.appendChild(sourceElement);
-            });
-            
-            // Добавляем плеер в контейнер
-            audioContainer.appendChild(audioPlayer);
-            
-            // Информация о текущем источнике
-            const audioSourceInfo = document.createElement('div');
-            audioSourceInfo.className = 'alert alert-info small mb-2';
-            audioSourceInfo.innerHTML = 'Загрузка аудио...';
-            audioContainer.appendChild(audioSourceInfo);
-            
-            // Отслеживаем успешную загрузку аудио
-            audioPlayer.oncanplay = () => {
-                const currentSource = audioPlayer.currentSrc || audioPlayer.src;
-                let sourceType = "неизвестный";
-                
-                for (const source of audioSources) {
-                    if (currentSource.includes(new URL(source.url, window.location.href).pathname)) {
-                        sourceType = source.description;
-                        break;
-                    }
-                }
-                
-                audioSourceInfo.innerHTML = `Используется источник: <strong>${sourceType}</strong>`;
-                audioSourceInfo.className = 'alert alert-success small mb-2';
-                playerSuccessful = true;
-                console.log(`Аудио успешно загружено из источника: ${sourceType}`);
-            };
-            
-            // Отслеживаем общую ошибку загрузки аудио
-            audioPlayer.onerror = () => {
-                console.error("Не удалось загрузить аудио ни из одного источника");
-                audioSourceInfo.innerHTML = `
-                    <strong>Ошибка загрузки аудио из всех источников.</strong><br>
-                    Попробуйте вручную скачать аудиофайл ниже.
-                `;
-                audioSourceInfo.className = 'alert alert-danger small mb-2';
-                
-                // Добавляем ссылки для скачивания всех источников
-                const downloadContainer = document.createElement('div');
-                downloadContainer.className = 'mt-3';
-                
-                let hasAnyValidSource = false;
-                
-                audioSources.forEach((source, index) => {
-                    if (source.url) {
-                        hasAnyValidSource = true;
-                        const downloadLink = document.createElement('a');
-                        downloadLink.href = source.url;
-                        downloadLink.target = '_blank';
-                        downloadLink.className = 'btn btn-sm btn-outline-primary mr-2 mb-2';
-                        downloadLink.innerHTML = `Скачать (источник ${index + 1}: ${source.description})`;
-                        downloadLink.download = `music_${index + 1}.mp3`;
-                        downloadContainer.appendChild(downloadLink);
-                        
-                        // Добавляем пробел после каждой кнопки
-                        downloadContainer.appendChild(document.createTextNode(' '));
-                    }
-                });
-                
-                if (hasAnyValidSource) {
-                    audioContainer.appendChild(downloadContainer);
-                }
-            };
-            
-            // Устанавливаем первый источник по умолчанию
-            if (audioSources.length > 0) {
-                audioPlayer.src = audioSources[0].url;
-            }
-            
-            // Пробуем начать предзагрузку
-            try {
-                audioPlayer.load();
-            } catch (e) {
-                console.error("Ошибка при предзагрузке аудио:", e);
-            }
-        }
-        
-        // Добавляем аудио-контейнер в основной контейнер
-        musicContainer.appendChild(audioContainer);
-        musicContainer.style.display = 'block';
-        
-        // Добавляем сообщение, если не удалось загрузить ни один плеер
-        setTimeout(() => {
-            if (!playerSuccessful) {
-                console.log("Ни один из плееров не был успешно загружен, показываем сообщение с инструкциями");
-                
-                const fallbackMessage = document.createElement('div');
-                fallbackMessage.className = 'alert alert-warning mt-3';
-                fallbackMessage.innerHTML = `
-                    <h5>Не удалось воспроизвести музыку</h5>
-                    <p>Возможно, ваш браузер не поддерживает формат аудио или возникли проблемы с загрузкой файла.</p>
-                    <p>Попробуйте обновить страницу или воспользуйтесь ссылками ниже для скачивания:</p>
-                    <div class="mt-2">
-                        ${localAudioUrl ? `<a href="${localAudioUrl}" class="btn btn-outline-primary btn-sm mr-2" download>Скачать локальный файл</a> ` : ''}
-                        ${proxyUrl ? `<a href="${proxyUrl}" class="btn btn-outline-primary btn-sm mr-2" download>Скачать через прокси</a> ` : ''}
-                        ${audioUrl ? `<a href="${audioUrl}" class="btn btn-outline-primary btn-sm mr-2" target="_blank">Открыть аудио URL</a> ` : ''}
-                        ${streamUrl ? `<a href="${streamUrl}" class="btn btn-outline-primary btn-sm" target="_blank">Открыть стрим URL</a> ` : ''}
-                    </div>
-                `;
-                musicContainer.appendChild(fallbackMessage);
-            }
-        }, 5000); // Проверяем через 5 секунд
-    } else if (musicData.status === 'error') {
-        // Ошибка при генерации музыки
-        console.log("Ошибка при генерации музыки:", musicData);
-        
-        if (errorElement) {
-            errorElement.innerHTML = `
-                <div class="alert alert-danger">
-                    <h5>Ошибка при генерации музыки</h5>
-                    <p>${musicData.message || musicData.error || "Неизвестная ошибка"}</p>
-                </div>
-            `;
-            errorElement.style.display = 'block';
-        }
-        
-        if (loadingElement) loadingElement.style.display = 'none';
+        // Запускаем проверку статуса
+        checkMusicGenerationStatus(musicData.task_id);
     } else {
-        // Неизвестный статус, показываем сообщение
-        console.log("Неизвестный статус музыки:", musicData);
-        
+        // Нет данных для отображения музыки
         if (errorElement) {
             errorElement.innerHTML = `
                 <div class="alert alert-warning">
-                    <h5>Неизвестный статус музыки</h5>
-                    <p>Полученные данные о музыке имеют неизвестный формат. Попробуйте обновить страницу.</p>
-                    <pre class="small">${JSON.stringify(musicData, null, 2)}</pre>
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    <strong>Нет данных для воспроизведения музыки</strong>
+                    <p>Не удалось найти источник аудио. Пожалуйста, повторите попытку.</p>
                 </div>
             `;
             errorElement.style.display = 'block';
         }
-        
-        if (loadingElement) loadingElement.style.display = 'none';
     }
+}
+
+// Функция для создания резервного плеера
+function createBackupPlayer(audioUrl) {
+    console.log("Создание резервного плеера для URL:", audioUrl);
+    
+    if (!audioUrl) {
+        console.error("Ошибка: пустой URL для резервного плеера");
+        return;
+    }
+    
+    const parentContainer = document.getElementById('music-results');
+    if (!parentContainer) {
+        console.error("Не найден родительский контейнер #music-results");
+        return;
+    }
+    
+    // Создаем контейнер для резервного плеера
+    const backupContainer = document.createElement('div');
+    backupContainer.className = 'backup-player';
+    backupContainer.style.cssText = 'background:#fff0f0 !important; border:3px solid #ff0000 !important; border-radius:8px !important; padding:15px !important; margin:20px 0 !important; display:block !important;';
+    
+    // Заголовок
+    const title = document.createElement('h4');
+    title.style.cssText = 'color:#ff0000 !important; margin-bottom:15px !important; font-weight:bold !important;';
+    title.textContent = 'Резервный аудиоплеер';
+    backupContainer.appendChild(title);
+    
+    // Информационное сообщение
+    const info = document.createElement('p');
+    info.style.cssText = 'margin-bottom:10px !important;';
+    info.textContent = 'Если основной плеер не отображается, используйте этот резервный плеер:';
+    backupContainer.appendChild(info);
+    
+    // Создаем аудиоплеер с яркими стилями
+    const backupPlayer = document.createElement('audio');
+    backupPlayer.controls = true;
+    backupPlayer.preload = 'auto';
+    backupPlayer.className = 'backup-audio-player';
+    backupPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:3px solid #ff0000 !important; background:#ffe6e6 !important; margin:10px 0 !important;';
+    
+    // Добавляем источник
+    const source = document.createElement('source');
+    source.src = audioUrl;
+    source.type = 'audio/mpeg';
+    backupPlayer.appendChild(source);
+    
+    // Текст для браузеров, не поддерживающих аудио
+    backupPlayer.appendChild(document.createTextNode('Ваш браузер не поддерживает HTML5 аудио.'));
+    
+    // Добавляем плеер в контейнер
+    backupContainer.appendChild(backupPlayer);
+    
+    // Добавляем кнопки для действий с аудио
+    const actionsDiv = document.createElement('div');
+    actionsDiv.style.cssText = 'display:flex !important; justify-content:center !important; gap:10px !important; margin-top:15px !important;';
+    
+    // Кнопка скачивания
+    const downloadLink = document.createElement('a');
+    downloadLink.href = audioUrl;
+    downloadLink.download = 'music_download.mp3';
+    downloadLink.className = 'btn btn-success';
+    downloadLink.style.cssText = 'font-weight:bold !important;';
+    downloadLink.innerHTML = '<i class="bi bi-download"></i> Скачать аудио';
+    actionsDiv.appendChild(downloadLink);
+    
+    // Кнопка открыть в новом окне
+    const openLink = document.createElement('a');
+    openLink.href = audioUrl;
+    openLink.target = '_blank';
+    openLink.className = 'btn btn-primary';
+    openLink.style.cssText = 'font-weight:bold !important;';
+    openLink.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> Открыть в новой вкладке';
+    actionsDiv.appendChild(openLink);
+    
+    backupContainer.appendChild(actionsDiv);
+    
+    // HTML5 плеер (третий вариант)
+    const rawHtmlPlayer = document.createElement('div');
+    rawHtmlPlayer.className = 'raw-html-player';
+    rawHtmlPlayer.style.cssText = 'margin-top:20px !important; border-top:1px dashed #ff0000 !important; padding-top:15px !important;';
+    
+    rawHtmlPlayer.innerHTML = `
+        <p style="margin-bottom:10px !important;"><strong style="color:#ff0000 !important;">Вариант 3:</strong> HTML5 плеер без оформления</p>
+        <audio controls preload="auto" style="display:block !important; width:100% !important; height:50px !important;">
+            <source src="${audioUrl}" type="audio/mpeg">
+            Ваш браузер не поддерживает HTML5 аудио.
+        </audio>
+    `;
+    
+    backupContainer.appendChild(rawHtmlPlayer);
+    
+    // Добавляем контейнер с резервным плеером на страницу
+    parentContainer.appendChild(backupContainer);
+    
+    console.log("Резервный плеер успешно создан");
+    
+    // Через 2 секунды форсированно пытаемся проиграть аудио, чтобы проверить его работоспособность
+    setTimeout(() => {
+        try {
+            backupPlayer.load();
+            console.log("Выполнена принудительная перезагрузка аудио");
+        } catch (e) {
+            console.error("Ошибка при перезагрузке аудио:", e);
+        }
+    }, 2000);
 }
 
 // Функция для обновления интерфейса в зависимости от выбранных типов генерации
@@ -2034,5 +2071,296 @@ document.addEventListener('DOMContentLoaded', function() {
         testContentPolicyViolation();
     });
 });
+
+// Функция для гарантированного отображения музыкального плеера
+document.addEventListener('DOMContentLoaded', function() {
+    // Устанавливаем таймер для проверки состояния музыкального плеера
+    setTimeout(function() {
+        // Находим музыкальную секцию и делаем ее видимой
+        const musicSection = document.querySelector('.music-section');
+        if (musicSection) {
+            console.log('Принудительное отображение музыкальной секции');
+            musicSection.style.display = 'block';
+            musicSection.style.opacity = '1';
+            musicSection.style.visibility = 'visible';
+        }
+        
+        // Находим контейнер музыки и делаем его видимым
+        const musicContainer = document.getElementById('generated-music-container');
+        if (musicContainer) {
+            console.log('Принудительное отображение контейнера музыки');
+            musicContainer.style.display = 'block';
+            musicContainer.style.opacity = '1';
+            musicContainer.style.visibility = 'visible';
+        }
+        
+        // Проверяем наличие аудио элементов и делаем их видимыми
+        const audioElements = document.querySelectorAll('audio');
+        if (audioElements.length > 0) {
+            console.log(`Обнаружено ${audioElements.length} аудио элементов`);
+            audioElements.forEach((audio, index) => {
+                console.log(`Принудительное отображение аудио элемента ${index + 1}`);
+                audio.style.display = 'block';
+                audio.style.opacity = '1';
+                audio.style.visibility = 'visible';
+                audio.style.width = '100%';
+                
+                // Добавляем обработчик ошибок для отладки
+                audio.onerror = function(e) {
+                    console.error(`Ошибка в аудио элементе ${index + 1}:`, e);
+                };
+                
+                // Перезагружаем аудио для принудительной инициализации
+                try {
+                    audio.load();
+                } catch (e) {
+                    console.warn(`Не удалось перезагрузить аудио ${index + 1}:`, e);
+                }
+            });
+        } else {
+            console.log('Аудио элементы не найдены');
+        }
+        
+        // Создаем альтернативный плеер, если не обнаружено работающих плееров
+        const parentContainer = document.getElementById('music-results');
+        if (parentContainer && audioElements.length === 0) {
+            console.log('Создание альтернативного аудио плеера');
+            
+            // Ищем потенциальные источники аудио в метаданных
+            const metadataElements = document.querySelectorAll('pre');
+            let audioUrls = [];
+            
+            metadataElements.forEach(el => {
+                try {
+                    const text = el.textContent;
+                    if (text && text.includes('audio_url') || text.includes('local_audio_url')) {
+                        // Ищем URL-ы аудио с помощью регулярных выражений
+                        const urlMatches = text.match(/"(local_audio_url|audio_url|stream_url)"\s*:\s*"([^"]+)"/g);
+                        if (urlMatches) {
+                            urlMatches.forEach(match => {
+                                const url = match.split(':')[1].trim().replace(/"/g, '');
+                                if (url.startsWith('http') || url.startsWith('/')) {
+                                    audioUrls.push(url);
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Ошибка при поиске URL-ов аудио:', e);
+                }
+            });
+            
+            // Создаем альтернативный плеер
+            const alternativePlayer = document.createElement('div');
+            alternativePlayer.className = 'card p-3 mt-3 alternative-player';
+            alternativePlayer.innerHTML = `
+                <h5>Альтернативный аудио плеер</h5>
+                <p class="text-muted small">Используйте этот плеер, если основной не отображается</p>
+                <audio controls style="width: 100%; display: block;">
+                    ${audioUrls.map(url => `<source src="${url}" type="audio/mpeg">`).join('')}
+                    Ваш браузер не поддерживает аудио элемент.
+                </audio>
+            `;
+            parentContainer.appendChild(alternativePlayer);
+        }
+    }, 2000); // Проверяем через 2 секунды после загрузки страницы
+});
+
+// Функция, которая запускается после загрузки страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Через 3 секунды запускаем проверку и восстановление всех аудиоплееров
+    setTimeout(ensureAudioPlayersVisible, 3000);
+});
+
+// Функция для принудительного отображения всех аудиоплееров
+function ensureAudioPlayersVisible() {
+    console.log("Запуск функции проверки видимости аудиоплееров");
+    
+    // Показываем секцию с музыкой, если она есть
+    const musicSection = document.querySelector('.music-section');
+    if (musicSection) {
+        console.log("Делаем секцию музыки видимой");
+        musicSection.style.display = 'block';
+        musicSection.style.visibility = 'visible';
+        musicSection.style.opacity = '1';
+    }
+    
+    // Делаем видимыми все контейнеры
+    const containers = [
+        '#generated-music-container',
+        '#music-results',
+        '.audio-player-container',
+        '.audio-player-wrapper'
+    ];
+    
+    containers.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length) {
+            console.log(`Найдено ${elements.length} элементов для селектора ${selector}`);
+            elements.forEach(el => {
+                el.style.display = 'block';
+                el.style.visibility = 'visible';
+                el.style.opacity = '1';
+                console.log(`Элемент с селектором ${selector} сделан видимым`);
+            });
+        } else {
+            console.log(`Не найдено элементов для селектора ${selector}`);
+        }
+    });
+    
+    // Делаем видимыми все аудиоплееры
+    const audioPlayers = document.querySelectorAll('audio');
+    if (audioPlayers.length) {
+        console.log(`Найдено ${audioPlayers.length} аудиоплееров`);
+        
+        audioPlayers.forEach(player => {
+            // Применяем стили напрямую к элементу
+            player.style.display = 'block';
+            player.style.visibility = 'visible';
+            player.style.opacity = '1';
+            player.style.width = '100%';
+            player.style.minHeight = '50px';
+            player.style.border = '3px solid #ff6600';
+            player.style.backgroundColor = '#f0f0f0';
+            player.style.margin = '15px 0';
+            player.style.zIndex = '9999';
+            
+            // Принудительно загружаем аудио
+            try {
+                player.load();
+                console.log("Перезагружен аудиоплеер");
+            } catch (e) {
+                console.error("Ошибка при перезагрузке аудиоплеера:", e);
+            }
+        });
+    } else {
+        console.log("Не найдено аудиоплееров на странице");
+        
+        // Проверяем, есть ли URL аудио в скрытых элементах
+        checkForHiddenAudioUrls();
+    }
+}
+
+// Проверяем наличие URL аудио в скрытых элементах и создаем дополнительный плеер
+function checkForHiddenAudioUrls() {
+    console.log("Поиск скрытых URL аудио");
+    
+    // Ищем все элементы с атрибутами, содержащими URL-адреса
+    const allElements = document.querySelectorAll('*');
+    let foundUrls = [];
+    
+    allElements.forEach(el => {
+        // Проверяем все атрибуты элемента
+        Array.from(el.attributes).forEach(attr => {
+            const value = attr.value || '';
+            
+            // Ищем строки, похожие на URL аудиофайлов
+            if ((value.includes('.mp3') || value.includes('/proxy_audio') || 
+                 value.includes('/audio/') || value.includes('music_file')) && 
+                !foundUrls.includes(value)) {
+                console.log("Найден возможный URL аудио в атрибуте:", value);
+                foundUrls.push(value);
+            }
+        });
+        
+        // Проверяем текстовое содержимое
+        const textContent = el.textContent || '';
+        if ((textContent.includes('.mp3') || textContent.includes('/proxy_audio')) && 
+            textContent.length < 300) { // Ограничиваем длину для исключения больших текстов
+            
+            // Извлекаем возможные URL из текста
+            const urlRegex = /(https?:\/\/[^\s"'<>]+\.mp3|\/proxy_audio\?[^\s"'<>]+)/g;
+            const matches = textContent.match(urlRegex);
+            
+            if (matches) {
+                matches.forEach(url => {
+                    if (!foundUrls.includes(url)) {
+                        console.log("Найден возможный URL аудио в тексте:", url);
+                        foundUrls.push(url);
+                    }
+                });
+            }
+        }
+    });
+    
+    // Если найдены URL, создаем плеер для каждого
+    if (foundUrls.length > 0) {
+        console.log(`Найдено ${foundUrls.length} скрытых URL аудио`);
+        
+        // Создаем контейнер для плееров
+        const container = document.createElement('div');
+        container.className = 'emergency-audio-players';
+        container.style.cssText = 'background:#ffe0e0 !important; border:5px solid #ff0000 !important; padding:20px !important; margin:20px 0 !important; border-radius:10px !important;';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'Обнаружены скрытые аудио файлы';
+        title.style.cssText = 'color:#ff0000 !important; margin-bottom:20px !important; text-align:center !important; font-weight:bold !important;';
+        container.appendChild(title);
+        
+        const description = document.createElement('p');
+        description.textContent = 'Найдены ссылки на аудиофайлы, которые могут не отображаться в стандартном плеере. Попробуйте воспользоваться одним из этих плееров:';
+        description.style.cssText = 'margin-bottom:20px !important; font-style:italic !important;';
+        container.appendChild(description);
+        
+        // Создаем плееры для каждого URL
+        foundUrls.forEach((url, index) => {
+            const playerWrapper = document.createElement('div');
+            playerWrapper.className = 'emergency-player-item';
+            playerWrapper.style.cssText = 'background:#fff !important; border:2px solid #ff0000 !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
+            
+            const playerTitle = document.createElement('h4');
+            playerTitle.textContent = `Резервный плеер #${index + 1}`;
+            playerTitle.style.cssText = 'color:#d32f2f !important; margin-bottom:10px !important;';
+            playerWrapper.appendChild(playerTitle);
+            
+            const urlDisplay = document.createElement('p');
+            urlDisplay.textContent = `Источник аудио: ${url}`;
+            urlDisplay.style.cssText = 'font-size:12px !important; color:#666 !important; margin-bottom:10px !important; word-break:break-all !important;';
+            playerWrapper.appendChild(urlDisplay);
+            
+            // Создаем аудиоплеер
+            const player = document.createElement('audio');
+            player.controls = true;
+            player.preload = 'auto';
+            player.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; border:3px solid #ff0000 !important;';
+            
+            const source = document.createElement('source');
+            source.src = url;
+            source.type = 'audio/mpeg';
+            player.appendChild(source);
+            
+            playerWrapper.appendChild(player);
+            
+            // Добавляем кнопки для скачивания и открытия в новом окне
+            const buttons = document.createElement('div');
+            buttons.style.cssText = 'display:flex !important; justify-content:center !important; gap:10px !important; margin-top:10px !important;';
+            
+            const downloadBtn = document.createElement('a');
+            downloadBtn.href = url;
+            downloadBtn.download = `audio_file_${index + 1}.mp3`;
+            downloadBtn.className = 'btn btn-success btn-sm';
+            downloadBtn.innerHTML = '<i class="bi bi-download"></i> Скачать';
+            buttons.appendChild(downloadBtn);
+            
+            const openBtn = document.createElement('a');
+            openBtn.href = url;
+            openBtn.target = '_blank';
+            openBtn.className = 'btn btn-primary btn-sm';
+            openBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> Открыть в новом окне';
+            buttons.appendChild(openBtn);
+            
+            playerWrapper.appendChild(buttons);
+            container.appendChild(playerWrapper);
+        });
+        
+        // Добавляем контейнер на страницу
+        const targetContainer = document.getElementById('music-results') || document.querySelector('.music-section') || document.body;
+        targetContainer.appendChild(container);
+        
+        console.log("Создан контейнер с резервными плеерами для скрытых URL");
+    } else {
+        console.log("Не найдено скрытых URL аудио");
+    }
+}
 </script>
-{% endblock %} 
+{% endblock %}
