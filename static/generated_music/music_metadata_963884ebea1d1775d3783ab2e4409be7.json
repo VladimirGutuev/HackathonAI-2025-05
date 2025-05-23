@@ -1,0 +1,89 @@
+{
+  "task_id": "963884ebea1d1775d3783ab2e4409be7",
+  "title": "War Diary: Положительный и р... Cinematic Suspense",
+  "prompt": "Create high-quality tense Cinematic Suspense music that captures the following emotions: надежда, решимость, тревога. The music should reflect a Положительный и решительный tone of wartime experiences. moderate with emotional depth rhythm with low strings and percussion as primary instruments. Based on a war diary that describes: Мамочка, я прошу тебя, хоть не волнуйся за меня.\nУ меня всё хорошо. Дело простое, солдатское – воюем.\nСтараемся поскорее добить фашистов. Когда окончится война\nи мы соберёмся все вместе, я расскажу тебе о себе много-много,\nкак я здесь жил, как мы воевали…...",
+  "style": "Cinematic Suspense",
+  "mood": "tense",
+  "tempo": "moderate with emotional depth",
+  "instruments": "low strings and percussion",
+  "emotions": [
+    "надежда",
+    "решимость",
+    "тревога"
+  ],
+  "emotional_tone": "Положительный и решительный",
+  "status": "complete",
+  "created_at": "2025-05-23T12:08:28.557435",
+  "callback_url": "https://abeb-79-127-211-217.ngrok-free.app/music_callback",
+  "last_update": "2025-05-23T12:10:24.847015",
+  "callback_received": true,
+  "last_callback": {
+    "code": 200,
+    "data": {
+      "callbackType": "complete",
+      "data": [
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0.mp3",
+          "createTime": 1747991424845,
+          "duration": 129.96,
+          "id": "3f7c2aca-9892-46fe-825e-a9cce43eb9a4",
+          "image_url": "https://apiboxfiles.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/3f7c2aca-9892-46fe-825e-a9cce43eb9a4.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_3f7c2aca-9892-46fe-825e-a9cce43eb9a4.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/3f7c2aca-9892-46fe-825e-a9cce43eb9a4.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Положительный и р... Cinematic Suspense"
+        },
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/MmMyMGFjNmMtNDFmOS00MTBhLWI4NzAtMzJmZTU0MzdjOWI1.mp3",
+          "createTime": 1747991424845,
+          "duration": 216.88,
+          "id": "2c20ac6c-41f9-410a-b870-32fe5437c9b5",
+          "image_url": "https://apiboxfiles.erweima.ai/MmMyMGFjNmMtNDFmOS00MTBhLWI4NzAtMzJmZTU0MzdjOWI1.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/2c20ac6c-41f9-410a-b870-32fe5437c9b5.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_2c20ac6c-41f9-410a-b870-32fe5437c9b5.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/2c20ac6c-41f9-410a-b870-32fe5437c9b5.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/MmMyMGFjNmMtNDFmOS00MTBhLWI4NzAtMzJmZTU0MzdjOWI1",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Положительный и р... Cinematic Suspense"
+        }
+      ],
+      "task_id": "963884ebea1d1775d3783ab2e4409be7"
+    },
+    "msg": "All generated successfully."
+  },
+  "completed_at": "2025-05-23T12:10:31.160335",
+  "audio_url": "https://apiboxfiles.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0.mp3",
+  "stream_url": "https://mfile.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0",
+  "image_url": "https://apiboxfiles.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0.jpeg",
+  "embed_url": "",
+  "proxy_url": "/proxy_audio?url=https%3A//apiboxfiles.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0.mp3",
+  "local_audio_path": "static\\generated_music\\audio\\music_963884ebea1d1775d3783ab2e4409be7.mp3",
+  "local_image_path": "static\\generated_music\\covers\\cover_963884ebea1d1775d3783ab2e4409be7.jpg",
+  "local_audio_url": "/static/generated_music/audio/music_963884ebea1d1775d3783ab2e4409be7.mp3",
+  "local_image_url": "/static/generated_music/covers/cover_963884ebea1d1775d3783ab2e4409be7.jpg",
+  "duration": 129.96,
+  "tags": "Cinematic Suspense",
+  "track_data": {
+    "audio_url": "https://apiboxfiles.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0.mp3",
+    "createTime": 1747991424845,
+    "duration": 129.96,
+    "id": "3f7c2aca-9892-46fe-825e-a9cce43eb9a4",
+    "image_url": "https://apiboxfiles.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0.jpeg",
+    "model_name": "chirp-auk",
+    "prompt": "",
+    "source_audio_url": "https://cdn1.suno.ai/3f7c2aca-9892-46fe-825e-a9cce43eb9a4.mp3",
+    "source_image_url": "https://cdn2.suno.ai/image_3f7c2aca-9892-46fe-825e-a9cce43eb9a4.jpeg",
+    "source_stream_audio_url": "https://cdn1.suno.ai/3f7c2aca-9892-46fe-825e-a9cce43eb9a4.mp3",
+    "stream_audio_url": "https://mfile.erweima.ai/M2Y3YzJhY2EtOTg5Mi00NmZlLTgyNWUtYTljY2U0M2ViOWE0",
+    "tags": "Cinematic Suspense",
+    "title": "War Diary: Положительный и р... Cinematic Suspense"
+  },
+  "music_description": "Сгенерирована музыка в стиле Cinematic Suspense, настроение: tense. Отражает эмоции: надежда, решимость, тревога",
+  "is_music_ready": true
+}

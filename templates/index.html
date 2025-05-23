@@ -50,8 +50,8 @@
                     </div>
                     
                     <!-- Согласие с этическими нормами -->
-                    <div class="card mb-3 border-warning">
-                        <div class="card-header bg-warning text-dark">
+                    <div class="card mb-3 ethics-agreement" id="ethics-agreement-card">
+                        <div class="card-header">
                             <h6 class="mb-0"><i class="bi bi-shield-check"></i> Этические нормы и правила использования</h6>
                         </div>
                         <div class="card-body">
@@ -90,6 +90,14 @@
                                 <!-- Здесь будет содержимое эмоционального анализа -->
                             </div>
                         </div>
+                        <div class="card-footer bg-light" id="emotion-feedback" style="display: none;">
+                            <div class="feedback-section" data-type="emotion">
+                                <span class="text-muted me-3">Оцените качество анализа:</span>
+                                <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="emotion_analysis" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                    <i class="bi bi-star"></i> Оценить анализ
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Контейнеры для результатов генерации -->
@@ -102,11 +110,8 @@
                             <div class="card-footer bg-light">
                                 <div class="feedback-section" data-type="text">
                                     <span class="text-muted me-3">Оцените качество текста:</span>
-                                    <button class="btn btn-outline-success btn-sm feedback-btn" data-feedback="like" data-content-type="literary_work">
-                                        <i class="bi bi-hand-thumbs-up"></i> Нравится <span class="feedback-count">0</span>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm ms-2 feedback-btn" data-feedback="dislike" data-content-type="literary_work">
-                                        <i class="bi bi-hand-thumbs-down"></i> Не нравится <span class="feedback-count">0</span>
+                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="literary_work" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                        <i class="bi bi-star"></i> Оценить произведение
                                     </button>
                                 </div>
                             </div>
@@ -131,11 +136,8 @@
                             <div class="card-footer bg-light" id="image-feedback" style="display: none;">
                                 <div class="feedback-section" data-type="image">
                                     <span class="text-muted me-3">Оцените качество изображения:</span>
-                                    <button class="btn btn-outline-success btn-sm feedback-btn" data-feedback="like" data-content-type="generated_image">
-                                        <i class="bi bi-hand-thumbs-up"></i> Нравится <span class="feedback-count">0</span>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm ms-2 feedback-btn" data-feedback="dislike" data-content-type="generated_image">
-                                        <i class="bi bi-hand-thumbs-down"></i> Не нравится <span class="feedback-count">0</span>
+                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="generated_image" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                        <i class="bi bi-star"></i> Оценить изображение
                                     </button>
                                 </div>
                             </div>
@@ -168,11 +170,8 @@
                             <div class="card-footer bg-light" id="music-feedback" style="display: none;">
                                 <div class="feedback-section" data-type="music">
                                     <span class="text-muted me-3">Оцените качество музыки:</span>
-                                    <button class="btn btn-outline-success btn-sm feedback-btn" data-feedback="like" data-content-type="generated_music">
-                                        <i class="bi bi-hand-thumbs-up"></i> Нравится <span class="feedback-count">0</span>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm ms-2 feedback-btn" data-feedback="dislike" data-content-type="generated_music">
-                                        <i class="bi bi-hand-thumbs-down"></i> Не нравится <span class="feedback-count">0</span>
+                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="generated_music" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                        <i class="bi bi-star"></i> Оценить музыку
                                     </button>
                                 </div>
                             </div>
@@ -238,6 +237,74 @@
         </div>
     </div>
 </div>
+
+<!-- Модальное окно для детальной оценки -->
+<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="feedbackModalLabel">
+                    <i class="bi bi-star-fill text-warning"></i> Оценка качества
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="detailedFeedbackForm">
+                    <!-- Название оцениваемого контента -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold" id="contentTypeName">Оценка контента</h6>
+                        <p class="text-muted small" id="contentTypeDescription">Ваша оценка поможет улучшить качество генерации</p>
+                    </div>
+                    
+                    <!-- Звёздная оценка -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Общая оценка:</label>
+                        <div class="star-rating d-flex align-items-center">
+                            <div class="stars me-3">
+                                <i class="bi bi-star star" data-rating="1"></i>
+                                <i class="bi bi-star star" data-rating="2"></i>
+                                <i class="bi bi-star star" data-rating="3"></i>
+                                <i class="bi bi-star star" data-rating="4"></i>
+                                <i class="bi bi-star star" data-rating="5"></i>
+                            </div>
+                            <span class="rating-text text-muted">Выберите оценку</span>
+                        </div>
+                        <input type="hidden" id="starRating" name="rating" value="0">
+                    </div>
+                    
+                    <!-- Детальные критерии оценки -->
+                    <div class="mb-4" id="detailedCriteria">
+                        <label class="form-label fw-bold">Детальная оценка по критериям:</label>
+                        
+                        <!-- Критерии будут добавляться динамически в зависимости от типа контента -->
+                        <div id="criteriaContainer"></div>
+                    </div>
+                    
+                    <!-- Текстовая обратная связь -->
+                    <div class="mb-4">
+                        <label for="feedbackText" class="form-label fw-bold">Комментарий (необязательно):</label>
+                        <textarea class="form-control" id="feedbackText" name="feedback_text" rows="4" 
+                                  placeholder="Поделитесь своими впечатлениями, предложениями по улучшению или конкретными замечаниями..."></textarea>
+                        <div class="form-text">Ваши комментарии помогают нам понять, что работает хорошо, а что можно улучшить</div>
+                    </div>
+                    
+                    <!-- Скрытые поля -->
+                    <input type="hidden" id="contentType" name="content_type" value="">
+                    <input type="hidden" id="sessionId" name="session_id" value="">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Отмена
+                </button>
+                <button type="button" class="btn btn-primary" id="submitFeedback">
+                    <i class="bi bi-check-circle"></i> Отправить оценку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -253,6 +320,36 @@ document.addEventListener('DOMContentLoaded', function() {
             const feedbackType = button.getAttribute('data-feedback'); // 'like' или 'dislike'
             const contentType = button.getAttribute('data-content-type'); // 'literary_work', 'generated_image', 'generated_music'
             
+            // Получаем секцию обратной связи для взаимоисключения
+            const feedbackSection = button.closest('.feedback-section');
+            if (feedbackSection) {
+                // Находим все кнопки в этой секции
+                const allButtons = feedbackSection.querySelectorAll('.feedback-btn');
+                
+                // Сбрасываем состояние всех кнопок в секции
+                allButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('active', 'btn-success', 'btn-danger');
+                    
+                    // Восстанавливаем исходные классы
+                    if (btn.getAttribute('data-feedback') === 'like') {
+                        btn.className = 'btn btn-outline-success btn-sm feedback-btn';
+                    } else {
+                        btn.className = 'btn btn-outline-danger btn-sm ms-2 feedback-btn';
+                    }
+                });
+                
+                // Активируем нажатую кнопку
+                button.classList.add('active');
+                if (feedbackType === 'like') {
+                    button.classList.remove('btn-outline-success');
+                    button.classList.add('btn-success');
+                } else {
+                    button.classList.remove('btn-outline-danger');
+                    button.classList.add('btn-danger');
+                }
+            }
+            
             // Отправляем обратную связь на сервер
             submitFeedback(contentType, feedbackType, button);
         }
@@ -260,9 +357,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Проверка согласия с этическими нормами
     const ethicsAgreement = document.getElementById('ethicsAgreement');
+    const ethicsCard = document.getElementById('ethics-agreement-card');
     const submitButton = document.querySelector('#diary-form button[type="submit"]');
     
     if (ethicsAgreement && submitButton) {
+        // Проверяем, было ли ранее дано согласие (сохраняем в localStorage)
+        const previousAgreement = localStorage.getItem('ethicsAgreementAccepted');
+        
+        if (previousAgreement === 'true') {
+            // Если согласие уже было дано, скрываем плашку и разблокируем форму
+            if (ethicsCard) {
+                ethicsCard.style.display = 'none';
+            }
+            ethicsAgreement.checked = true;
+            updateSubmitButton();
+        } else {
+            // Если согласие не было дано, показываем плашку и блокируем форму
+            updateSubmitButton();
+        }
+        
         function updateSubmitButton() {
             if (ethicsAgreement.checked) {
                 submitButton.disabled = false;
@@ -275,11 +388,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Изначально отключаем кнопку
-        updateSubmitButton();
-        
         // Обновляем состояние при изменении чекбокса
-        ethicsAgreement.addEventListener('change', updateSubmitButton);
+        ethicsAgreement.addEventListener('change', function() {
+            updateSubmitButton();
+            
+            if (this.checked) {
+                // Сохраняем согласие в localStorage
+                localStorage.setItem('ethicsAgreementAccepted', 'true');
+                
+                // Анимируем скрытие плашки
+                if (ethicsCard) {
+                    ethicsCard.classList.add('fade-out');
+                    
+                    // Полностью скрываем плашку через 300ms
+                    setTimeout(() => {
+                        ethicsCard.style.display = 'none';
+                        ethicsCard.classList.remove('fade-out');
+                        
+                        // Показываем небольшое уведомление о принятии
+                        showNotification('Спасибо за принятие этических норм! Теперь вы можете анализировать дневники.', 'success');
+                    }, 300);
+                }
+            } else {
+                // Если пользователь снял галочку, удаляем согласие и показываем плашку
+                localStorage.removeItem('ethicsAgreementAccepted');
+                if (ethicsCard && ethicsCard.style.display === 'none') {
+                    ethicsCard.style.display = 'block';
+                    ethicsCard.classList.add('fadeIn');
+                }
+            }
+        });
     }
 });
 
@@ -357,6 +495,47 @@ function showFeedbackNotification(message, type) {
             notification.remove();
         }
     }, 3000);
+}
+
+// Универсальная функция показа уведомлений
+function showNotification(message, type = 'info', duration = 3000) {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'error' ? 'alert-danger' : 
+                      type === 'warning' ? 'alert-warning' : 'alert-info';
+    
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1055; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+    
+    // Определяем иконку в зависимости от типа
+    const icon = type === 'success' ? 'bi bi-check-circle' : 
+                 type === 'error' ? 'bi bi-exclamation-triangle' : 
+                 type === 'warning' ? 'bi bi-exclamation-triangle' : 'bi bi-info-circle';
+    
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icon} me-2"></i>
+            <div>${message}</div>
+        </div>
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    // Добавляем на страницу
+    document.body.appendChild(notification);
+    
+    // Автоматически убираем через указанное время
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.remove('show');
+            notification.classList.add('fade');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 150);
+        }
+    }, duration);
 }
 
 // Функция обработки отправки формы
@@ -459,6 +638,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.warn('Не удалось удалить статусный элемент:', e);
                     }
                     
+                    // ОТЛАДКА: Логируем полученные данные
+                    console.log('DEBUG: Полученные данные от сервера:', data);
+                    console.log('DEBUG: generated_literary_work:', data.generated_literary_work);
+                    console.log('DEBUG: generated_image:', data.generated_image);
+                    console.log('DEBUG: generated_music:', data.generated_music);
+                    
                     // Сохраняем результаты для возможной публикации
                     const diaryText = document.getElementById('diary_text');
                     lastAnalysisResults = {
@@ -468,10 +653,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         generation_types: Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value)
                     };
                     
+                    // ОТЛАДКА: Логируем выбранные типы
+                    console.log('DEBUG: selectedTypes на начало:', selectedTypes);
+                    
                     // Безопасно обращаемся к элементам DOM
                     const resultsElement = document.getElementById('results');
                     if (resultsElement) {
                         resultsElement.style.display = 'block';
+                        console.log('DEBUG: Показали секцию results');
                     }
                     
                     const shareElement = document.getElementById('share-results');
@@ -486,6 +675,54 @@ document.addEventListener('DOMContentLoaded', function() {
                     const generatedContentElement = document.getElementById('generated-content');
                     if (generatedContentElement) {
                         generatedContentElement.style.display = 'block';
+                        console.log('DEBUG: Показали секцию generated-content');
+                    }
+                    
+                    // ПРИНУДИТЕЛЬНОЕ ОТОБРАЖЕНИЕ ДЛЯ ДИАГНОСТИКИ
+                    // Принудительно показываем все секции результатов
+                    const allSections = document.querySelectorAll('.literary-section, .image-section, .music-section');
+                    console.log('DEBUG: Найдено секций:', allSections.length);
+                    allSections.forEach(section => {
+                        if (section) {
+                            section.style.display = 'block';
+                            section.style.visibility = 'visible';
+                            section.style.opacity = '1';
+                            console.log('DEBUG: Принудительно показали секцию:', section.className);
+                        }
+                    });
+                    
+                    // Дополнительная диагностика элементов
+                    const literarySection = document.querySelector('.literary-section');
+                    const imageSection = document.querySelector('.image-section');
+                    const musicSection = document.querySelector('.music-section');
+                    const literaryResults = document.getElementById('literary-results');
+                    const imageResults = document.getElementById('image-results');
+                    const musicResults = document.getElementById('music-results');
+                    
+                    console.log('DEBUG: Элементы DOM:');
+                    console.log('  literarySection:', !!literarySection);
+                    console.log('  imageSection:', !!imageSection);
+                    console.log('  musicSection:', !!musicSection);
+                    console.log('  literaryResults:', !!literaryResults);
+                    console.log('  imageResults:', !!imageResults);
+                    console.log('  musicResults:', !!musicResults);
+                    
+                    // Принудительно заполняем текстовый контент если он есть
+                    if (data.generated_literary_work) {
+                        console.log('DEBUG: Принудительно заполняем литературный результат');
+                        const literaryResults = document.getElementById('literary-results');
+                        if (literaryResults) {
+                            literaryResults.innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
+                            literaryResults.style.display = 'block';
+                            literaryResults.style.visibility = 'visible';
+                            console.log('DEBUG: Заполнили literary-results');
+                        }
+                    }
+                    
+                    // Принудительно показываем изображение если оно есть
+                    if (data.generated_image && data.generated_image.success && data.generated_image.image_url) {
+                        console.log('DEBUG: Принудительно отображаем изображение');
+                        displayGeneratedImage(data.generated_image.image_url);
                     }
                     
                     // Отображаем результаты эмоционального анализа
@@ -574,6 +811,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         emotionHtml += '</div>';
                         emotionResults.innerHTML = emotionHtml;
+                        
+                        // Показываем кнопку оценки для эмоционального анализа
+                        showFeedbackButtons();
                     }
                     
                     // Активируем все выбранные контейнеры контента независимо от того, 
@@ -581,16 +821,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Показываем все выбранные секции с анимацией
                     selectedTypes.forEach((contentType, index) => {
+                        console.log(`DEBUG: Обработка contentType: ${contentType}, index: ${index}`);
                         const delay = index * 200; // Последовательная анимация с задержкой
                         
                         if (contentType === 'text') {
+                            console.log('DEBUG: Обработка текста...');
                             const literarySection = document.querySelector('.literary-section');
+                            console.log('DEBUG: literarySection найден:', !!literarySection);
                             if (literarySection) {
                                 literarySection.style.display = 'block';
+                                console.log('DEBUG: Показали literarySection');
                                 setTimeout(() => literarySection.classList.add('fadeIn'), delay);
                                 
                                 // Заполняем контент, если он есть
                                 if (data.generated_literary_work) {
+                                    console.log('DEBUG: Заполняем текстовый контент:', data.generated_literary_work.substring(0, 100) + '...');
                                     document.getElementById('literary-results').innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
                                     document.querySelector('.literary-section').style.display = 'block';
                                     // Показываем секцию обратной связи для текста
@@ -598,20 +843,28 @@ document.addEventListener('DOMContentLoaded', function() {
                                     if (literarySection) {
                                         literarySection.style.display = 'block';
                                     }
-                                    generatedContent.style.display = 'block';
+                                    const generatedContentElement = document.getElementById('generated-content');
+                                    if (generatedContentElement) {
+                                        generatedContentElement.style.display = 'block';
+                                    }
+                                } else {
+                                    console.log('DEBUG: Нет данных для generated_literary_work');
                                 }
                             }
                         }
                         
                         if (contentType === 'image') {
+                            console.log('DEBUG: Обработка изображения...');
                             const imageSection = document.querySelector('.image-section');
+                            console.log('DEBUG: imageSection найден:', !!imageSection);
                             if (imageSection) {
                                 imageSection.style.display = 'block';
+                                console.log('DEBUG: Показали imageSection');
                                 setTimeout(() => imageSection.classList.add('fadeIn'), delay);
                                 
                                 // Если изображение готово, показываем его
                                 if (data.generated_image && data.generated_image.success) {
-                                    console.log("Отображение изображения из результатов API...");
+                                    console.log("DEBUG: Отображение изображения из результатов API...", data.generated_image.image_url);
                                     
                                     // Сохраняем внешний URL для возможного использования при ошибке локального URL
                                     if (data.generated_image.external_url) {
@@ -2628,5 +2881,441 @@ function checkForHiddenAudioUrls() {
         console.log("Не найдено скрытых URL аудио");
     }
 }
+
+// Новая система оценки с модальными окнами
+document.addEventListener('DOMContentLoaded', function() {
+    let currentContentType = '';
+    let currentSessionId = '';
+    
+    // Обработчик для кнопок открытия модального окна оценки
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('feedback-modal-btn') || e.target.closest('.feedback-modal-btn')) {
+            const button = e.target.classList.contains('feedback-modal-btn') ? e.target : e.target.closest('.feedback-modal-btn');
+            currentContentType = button.getAttribute('data-content-type');
+            currentSessionId = Date.now().toString();
+            
+            setupFeedbackModal(currentContentType);
+        }
+    });
+    
+    // Проверка согласия с этическими нормами
+    const ethicsAgreement = document.getElementById('ethicsAgreement');
+    const ethicsCard = document.getElementById('ethics-agreement-card');
+    const submitButton = document.querySelector('#diary-form button[type="submit"]');
+    
+    if (ethicsAgreement && submitButton) {
+        // Проверяем, было ли ранее дано согласие (сохраняем в localStorage)
+        const previousAgreement = localStorage.getItem('ethicsAgreementAccepted');
+        
+        if (previousAgreement === 'true') {
+            // Если согласие уже было дано, скрываем плашку и разблокируем форму
+            if (ethicsCard) {
+                ethicsCard.style.display = 'none';
+            }
+            ethicsAgreement.checked = true;
+            updateSubmitButton();
+        } else {
+            // Если согласие не было дано, показываем плашку и блокируем форму
+            updateSubmitButton();
+        }
+        
+        function updateSubmitButton() {
+            if (ethicsAgreement.checked) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('btn-secondary');
+                submitButton.classList.add('btn-primary');
+            } else {
+                submitButton.disabled = true;
+                submitButton.classList.add('btn-secondary');
+                submitButton.classList.remove('btn-primary');
+            }
+        }
+        
+        // Обновляем состояние при изменении чекбокса
+        ethicsAgreement.addEventListener('change', function() {
+            updateSubmitButton();
+            
+            if (this.checked) {
+                // Сохраняем согласие в localStorage
+                localStorage.setItem('ethicsAgreementAccepted', 'true');
+                
+                // Анимируем скрытие плашки
+                if (ethicsCard) {
+                    ethicsCard.classList.add('fade-out');
+                    
+                    // Полностью скрываем плашку через 300ms
+                    setTimeout(() => {
+                        ethicsCard.style.display = 'none';
+                        ethicsCard.classList.remove('fade-out');
+                        
+                        // Показываем небольшое уведомление о принятии
+                        showNotification('Спасибо за принятие этических норм! Теперь вы можете анализировать дневники.', 'success');
+                    }, 300);
+                }
+            } else {
+                // Если пользователь снял галочку, удаляем согласие и показываем плашку
+                localStorage.removeItem('ethicsAgreementAccepted');
+                if (ethicsCard && ethicsCard.style.display === 'none') {
+                    ethicsCard.style.display = 'block';
+                    ethicsCard.classList.add('fadeIn');
+                }
+            }
+        });
+    }
+});
+
+// Настройка модального окна в зависимости от типа контента
+function setupFeedbackModal(contentType) {
+    const nameElement = document.getElementById('contentTypeName');
+    const descriptionElement = document.getElementById('contentTypeDescription');
+    const criteriaContainer = document.getElementById('criteriaContainer');
+    const contentTypeInput = document.getElementById('contentType');
+    const sessionIdInput = document.getElementById('sessionId');
+    
+    // Устанавливаем тип контента и ID сессии
+    contentTypeInput.value = contentType;
+    sessionIdInput.value = Date.now().toString();
+    
+    // Сбрасываем звёзды
+    resetStars();
+    
+    // Очищаем текстовое поле
+    document.getElementById('feedbackText').value = '';
+    
+    // Настраиваем заголовок и описание
+    switch(contentType) {
+        case 'emotion_analysis':
+            nameElement.textContent = 'Эмоциональный анализ';
+            descriptionElement.textContent = 'Оцените качество анализа эмоций и настроения текста дневника';
+            setupEmotionCriteria(criteriaContainer);
+            break;
+        case 'literary_work':
+            nameElement.textContent = 'Художественное произведение';
+            descriptionElement.textContent = 'Оцените качество сгенерированного литературного текста';
+            setupLiteraryCriteria(criteriaContainer);
+            break;
+        case 'generated_image':
+            nameElement.textContent = 'Сгенерированное изображение';
+            descriptionElement.textContent = 'Оцените качество и соответствие иллюстрации тексту дневника';
+            setupImageCriteria(criteriaContainer);
+            break;
+        case 'generated_music':
+            nameElement.textContent = 'Музыкальное сопровождение';
+            descriptionElement.textContent = 'Оцените качество и атмосферность сгенерированной музыки';
+            setupMusicCriteria(criteriaContainer);
+            break;
+    }
+}
+
+// Критерии для эмоционального анализа
+function setupEmotionCriteria(container) {
+    const criteria = [
+        {
+            name: 'Точность анализа',
+            description: 'Насколько точно определены эмоции и настроение',
+            id: 'emotion_accuracy'
+        },
+        {
+            name: 'Полнота анализа',
+            description: 'Охватывает ли анализ все важные аспекты текста',
+            id: 'emotion_completeness'
+        },
+        {
+            name: 'Понятность результатов',
+            description: 'Насколько понятно и структурировано представлен анализ',
+            id: 'emotion_clarity'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Критерии для литературного произведения
+function setupLiteraryCriteria(container) {
+    const criteria = [
+        {
+            name: 'Соответствие духу оригинала',
+            description: 'Насколько текст передаёт атмосферу военного дневника',
+            id: 'literary_authenticity'
+        },
+        {
+            name: 'Художественная ценность',
+            description: 'Качество языка, стиля и литературных приёмов',
+            id: 'literary_quality'
+        },
+        {
+            name: 'Эмоциональное воздействие',
+            description: 'Способность текста вызывать эмоциональный отклик',
+            id: 'literary_impact'
+        },
+        {
+            name: 'Историческая достоверность',
+            description: 'Соответствие исторической эпохе и реалиям войны',
+            id: 'literary_historical'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Критерии для изображения
+function setupImageCriteria(container) {
+    const criteria = [
+        {
+            name: 'Соответствие тексту',
+            description: 'Насколько изображение отражает содержание дневника',
+            id: 'image_relevance'
+        },
+        {
+            name: 'Художественное качество',
+            description: 'Композиция, цвета, общая эстетика изображения',
+            id: 'image_quality'
+        },
+        {
+            name: 'Историческая точность',
+            description: 'Соответствие деталей исторической эпохе',
+            id: 'image_historical'
+        },
+        {
+            name: 'Эмоциональная передача',
+            description: 'Способность изображения передать настроение текста',
+            id: 'image_emotion'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Критерии для музыки
+function setupMusicCriteria(container) {
+    const criteria = [
+        {
+            name: 'Соответствие настроению',
+            description: 'Насколько музыка передаёт эмоции из дневника',
+            id: 'music_mood'
+        },
+        {
+            name: 'Качество композиции',
+            description: 'Мелодия, гармония, аранжировка',
+            id: 'music_quality'
+        },
+        {
+            name: 'Историческая стилистика',
+            description: 'Соответствие музыкальному стилю эпохи',
+            id: 'music_period'
+        },
+        {
+            name: 'Техническое качество',
+            description: 'Чистота звука, баланс инструментов',
+            id: 'music_technical'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Отрисовка критериев
+function renderCriteria(container, criteria) {
+    container.innerHTML = '';
+    
+    criteria.forEach(criterion => {
+        const criteriaDiv = document.createElement('div');
+        criteriaDiv.className = 'criteria-item';
+        criteriaDiv.innerHTML = `
+            <div class="criteria-name">${criterion.name}</div>
+            <div class="criteria-description">${criterion.description}</div>
+            <div class="mini-stars" data-criteria="${criterion.id}">
+                <i class="bi bi-star star" data-rating="1"></i>
+                <i class="bi bi-star star" data-rating="2"></i>
+                <i class="bi bi-star star" data-rating="3"></i>
+                <i class="bi bi-star star" data-rating="4"></i>
+                <i class="bi bi-star star" data-rating="5"></i>
+                <span class="rating-text text-muted ms-2">Не оценено</span>
+            </div>
+            <input type="hidden" name="criteria_${criterion.id}" value="0">
+        `;
+        container.appendChild(criteriaDiv);
+    });
+}
+
+// Обработка кликов по звёздам
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('star')) {
+        const rating = parseInt(e.target.getAttribute('data-rating'));
+        const starsContainer = e.target.closest('.stars') || e.target.closest('.mini-stars');
+        const isMainRating = starsContainer && starsContainer.classList.contains('stars');
+        
+        if (isMainRating) {
+            setMainRating(rating);
+        } else if (starsContainer) {
+            const criteriaId = starsContainer.getAttribute('data-criteria');
+            setCriteriaRating(starsContainer, criteriaId, rating);
+        }
+    }
+});
+
+// Установка основной оценки
+function setMainRating(rating) {
+    const stars = document.querySelectorAll('.stars .star');
+    const ratingText = document.querySelector('.rating-text');
+    const hiddenInput = document.getElementById('starRating');
+    
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('filled');
+            star.classList.remove('bi-star');
+            star.classList.add('bi-star-fill');
+        } else {
+            star.classList.remove('filled');
+            star.classList.remove('bi-star-fill');
+            star.classList.add('bi-star');
+        }
+    });
+    
+    const ratingTexts = ['', 'Очень плохо', 'Плохо', 'Удовлетворительно', 'Хорошо', 'Отлично'];
+    if (ratingText) ratingText.textContent = ratingTexts[rating];
+    if (hiddenInput) hiddenInput.value = rating;
+}
+
+// Установка оценки критерия
+function setCriteriaRating(container, criteriaId, rating) {
+    const stars = container.querySelectorAll('.star');
+    const ratingText = container.querySelector('.rating-text');
+    const hiddenInput = container.parentElement.querySelector(`input[name="criteria_${criteriaId}"]`);
+    
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('filled');
+            star.classList.remove('bi-star');
+            star.classList.add('bi-star-fill');
+        } else {
+            star.classList.remove('filled');
+            star.classList.remove('bi-star-fill');
+            star.classList.add('bi-star');
+        }
+    });
+    
+    const ratingTexts = ['', 'Очень плохо', 'Плохо', 'Удовлетворительно', 'Хорошо', 'Отлично'];
+    if (ratingText) ratingText.textContent = ratingTexts[rating];
+    if (hiddenInput) hiddenInput.value = rating;
+}
+
+// Сброс всех звёзд
+function resetStars() {
+    const allStars = document.querySelectorAll('#feedbackModal .star');
+    const allRatingTexts = document.querySelectorAll('#feedbackModal .rating-text');
+    const allHiddenInputs = document.querySelectorAll('#feedbackModal input[type="hidden"]');
+    
+    allStars.forEach(star => {
+        star.classList.remove('filled');
+        star.classList.remove('bi-star-fill');
+        star.classList.add('bi-star');
+    });
+    
+    allRatingTexts.forEach(text => {
+        text.textContent = text.closest('.stars') ? 'Выберите оценку' : 'Не оценено';
+    });
+    
+    allHiddenInputs.forEach(input => {
+        if (input.name && (input.name.startsWith('criteria_') || input.id === 'starRating')) {
+            input.value = '0';
+        }
+    });
+}
+
+// Отправка детальной оценки
+document.addEventListener('DOMContentLoaded', function() {
+    const submitBtn = document.getElementById('submitFeedback');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async function() {
+            const mainRating = document.getElementById('starRating').value;
+            const feedbackText = document.getElementById('feedbackText').value;
+            const contentType = document.getElementById('contentType').value;
+            const sessionId = document.getElementById('sessionId').value;
+            
+            if (mainRating === '0') {
+                showNotification('Пожалуйста, поставьте общую оценку', 'warning');
+                return;
+            }
+            
+            // Собираем оценки критериев
+            const criteriaRatings = {};
+            const criteriaInputs = document.querySelectorAll('#feedbackModal input[name^="criteria_"]');
+            criteriaInputs.forEach(input => {
+                const criteriaName = input.name.replace('criteria_', '');
+                criteriaRatings[criteriaName] = parseInt(input.value);
+            });
+            
+            // Подготавливаем данные для отправки
+            const feedbackData = {
+                content_type: contentType,
+                main_rating: parseInt(mainRating),
+                criteria_ratings: criteriaRatings,
+                feedback_text: feedbackText,
+                session_id: sessionId,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                // Блокируем кнопку
+                const originalText = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split"></i> Отправка...';
+                
+                const response = await fetch('/submit_detailed_feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(feedbackData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Показываем успешное уведомление
+                    showNotification('Спасибо за вашу оценку! Она поможет улучшить качество генерации.', 'success', 4000);
+                    
+                    // Анимация успеха для кнопки
+                    this.classList.add('feedback-submitted');
+                    this.innerHTML = '<i class="bi bi-check-circle-fill"></i> Отправлено!';
+                    
+                    // Закрываем модальное окно через 1 секунду
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackModal'));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        
+                        // Восстанавливаем кнопку
+                        this.disabled = false;
+                        this.innerHTML = originalText;
+                        this.classList.remove('feedback-submitted');
+                    }, 1000);
+                    
+                } else {
+                    throw new Error(result.error || 'Ошибка при отправке оценки');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка при отправке оценки:', error);
+                showNotification('Не удалось отправить оценку. Попробуйте позже.', 'error');
+                
+                // Восстанавливаем кнопку
+                this.disabled = false;
+                this.innerHTML = originalText;
+            }
+        });
+    }
+});
+
+// Показываем кнопки оценки после успешного анализа
+function showFeedbackButtons() {
+    const emotionFeedback = document.getElementById('emotion-feedback');
+    if (emotionFeedback) {
+        emotionFeedback.style.display = 'block';
+    }
+}
+
 </script>
 {% endblock %}

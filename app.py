@@ -1208,68 +1208,90 @@ def forum():
 
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
-    """Обработка обратной связи пользователей"""
     try:
         data = request.get_json()
-        content_type = data.get('content_type')  # 'literary_work', 'generated_image', 'generated_music'
-        feedback_type = data.get('feedback_type')  # 'like', 'dislike'
-        timestamp = data.get('timestamp')
         
-        # Валидация данных
-        if not content_type or not feedback_type:
-            return jsonify({'error': 'Отсутствуют обязательные параметры'}), 400
-            
-        if content_type not in ['literary_work', 'generated_image', 'generated_music']:
-            return jsonify({'error': 'Неверный тип контента'}), 400
-            
-        if feedback_type not in ['like', 'dislike']:
-            return jsonify({'error': 'Неверный тип обратной связи'}), 400
-        
-        # Получаем IP адрес для защиты от спама
-        user_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
-        user_id = current_user.id if current_user.is_authenticated else None
-        
-        # Создаем новую запись обратной связи
+        # Создаем запись обратной связи
         feedback = UserFeedback(
-            content_type=content_type,
-            feedback_type=feedback_type,
-            user_id=user_id,
-            user_ip=user_ip,
-            timestamp=datetime.now()
+            content_type=data.get('content_type'),
+            feedback_type=data.get('feedback_type'),
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent', ''),
+            timestamp=datetime.utcnow()
         )
         
         db.session.add(feedback)
         db.session.commit()
         
-        # Получаем общую статистику для данного типа контента
-        total_likes = UserFeedback.query.filter_by(
-            content_type=content_type, 
-            feedback_type='like'
+        # Возвращаем общее количество для этого типа контента
+        total_count = UserFeedback.query.filter_by(
+            content_type=data.get('content_type'),
+            feedback_type=data.get('feedback_type')
         ).count()
-        
-        total_dislikes = UserFeedback.query.filter_by(
-            content_type=content_type, 
-            feedback_type='dislike'
-        ).count()
-        
-        # Логируем для анализа
-        print(f"Получена обратная связь: {content_type} - {feedback_type} от {'пользователя' if user_id else 'анонима'}")
         
         return jsonify({
             'success': True,
-            'message': 'Обратная связь успешно сохранена',
-            'total_count': total_likes if feedback_type == 'like' else total_dislikes,
-            'statistics': {
-                'likes': total_likes,
-                'dislikes': total_dislikes
-            }
+            'message': 'Обратная связь сохранена',
+            'total_count': total_count
         })
         
     except Exception as e:
         print(f"Ошибка при сохранении обратной связи: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
+        return jsonify({
+            'success': False,
+            'error': 'Не удалось сохранить обратную связь'
+        }), 500
+
+@app.route('/submit_detailed_feedback', methods=['POST'])
+def submit_detailed_feedback():
+    try:
+        data = request.get_json()
+        
+        # Валидация данных
+        if not data.get('content_type') or not data.get('main_rating'):
+            return jsonify({
+                'success': False,
+                'error': 'Не хватает обязательных данных'
+            }), 400
+        
+        # Создаем запись детальной обратной связи
+        feedback_data = {
+            'content_type': data.get('content_type'),
+            'main_rating': int(data.get('main_rating')),
+            'criteria_ratings': data.get('criteria_ratings', {}),
+            'feedback_text': data.get('feedback_text', ''),
+            'session_id': data.get('session_id', ''),
+            'timestamp': data.get('timestamp'),
+            'ip_address': request.remote_addr,
+            'user_agent': request.headers.get('User-Agent', '')
+        }
+        
+        # Сохраняем в базу данных (можно создать отдельную таблицу для детальной обратной связи)
+        # Пока сохраним как JSON в существующей таблице
+        feedback = UserFeedback(
+            content_type=data.get('content_type'),
+            feedback_type='detailed_rating',
+            feedback_data=json.dumps(feedback_data, ensure_ascii=False),
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent', ''),
+            timestamp=datetime.utcnow()
+        )
+        
+        db.session.add(feedback)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Детальная оценка сохранена',
+            'feedback_id': feedback.id
+        })
+        
+    except Exception as e:
+        print(f"Ошибка при сохранении детальной оценки: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Не удалось сохранить оценку: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")

@@ -69,10 +69,13 @@ class MessageVote(db.Model):
 class UserFeedback(db.Model):
     """Модель для хранения обратной связи пользователей о генерируемом контенте"""
     id = db.Column(db.Integer, primary_key=True)
-    content_type = db.Column(db.String(50), nullable=False)  # 'literary_work', 'generated_image', 'generated_music'
-    feedback_type = db.Column(db.String(10), nullable=False)  # 'like', 'dislike'
+    content_type = db.Column(db.String(50), nullable=False)  # 'literary_work', 'generated_image', 'generated_music', 'emotion_analysis'
+    feedback_type = db.Column(db.String(20), nullable=False)  # 'like', 'dislike', 'detailed_rating'
+    feedback_data = db.Column(db.Text, nullable=True)  # JSON данные для детальной обратной связи
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # может быть анонимным
-    user_ip = db.Column(db.String(45), nullable=True)  # для защиты от спама
+    user_ip = db.Column(db.String(45), nullable=True)  # для защиты от спама (старое поле)
+    ip_address = db.Column(db.String(45), nullable=True)  # IP адрес (новое поле)
+    user_agent = db.Column(db.String(500), nullable=True)  # User Agent браузера
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Связи
