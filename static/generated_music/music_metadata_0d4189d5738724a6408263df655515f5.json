@@ -1,0 +1,22 @@
+{
+  "task_id": "0d4189d5738724a6408263df655515f5",
+  "title": "War Diary: Позитивный Cinematic Suspense",
+  "prompt": "Create high-quality tense Cinematic Suspense music that captures the following emotions: надежда, решимость, тревога. The music should reflect a позитивный tone of wartime experiences. moderate with emotional depth rhythm with low strings and percussion as primary instruments. Based on a war diary that describes: Мамочка, я прошу тебя, хоть не волнуйся за меня.\nУ меня всё хорошо. Дело простое, солдатское – воюем.\nСтараемся поскорее добить фашистов. Когда окончится война\nи мы соберёмся все вместе, я расскажу тебе о себе много-много,\nкак я здесь жил, как мы воевали…...",
+  "style": "Cinematic Suspense",
+  "mood": "tense",
+  "tempo": "moderate with emotional depth",
+  "instruments": "low strings and percussion",
+  "emotions": [
+    "надежда",
+    "решимость",
+    "тревога"
+  ],
+  "emotional_tone": "позитивный",
+  "status": "error",
+  "created_at": "2025-05-22T11:29:47.859156",
+  "callback_url": "http://localhost:5000/music_callback",
+  "last_update": "2025-05-22T11:30:33.771464",
+  "error_message": "Задача не найдена. Возможно, она была удалена или истек срок хранения.",
+  "api_status": "error",
+  "api_data": {}
+}

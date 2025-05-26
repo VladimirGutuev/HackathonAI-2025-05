@@ -1,3 +1,7 @@
+<style>
+/* Переместил все стили в static/css/styles.css для корректной работы ночного режима */
+</style>
+
 {% extends "base.html" %}
 
 {% block title %}Анализатор военных дневников{% endblock %}
@@ -16,22 +20,167 @@
                         <label for="diary_text" class="form-label">Введите текст дневника:</label>
                         <textarea class="form-control" id="diary_text" name="diary_text" rows="10" required></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">Анализировать</button>
+                    
+                    <!-- Добавляем выбор типов генерации -->
+                    <div class="mb-3">
+                        <label class="form-label">Что вы хотите сгенерировать?</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input generation-type" type="checkbox" name="generation_types[]" id="generation_text" value="text" checked>
+                                <label class="form-check-label" for="generation_text">
+                                    <i class="bi bi-file-text"></i> Художественный текст
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input generation-type" type="checkbox" name="generation_types[]" id="generation_image" value="image">
+                                <label class="form-check-label" for="generation_image">
+                                    <i class="bi bi-image"></i> Иллюстрация
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input generation-type" type="checkbox" name="generation_types[]" id="generation_music" value="music">
+                                <label class="form-check-label" for="generation_music">
+                                    <i class="bi bi-music-note-beamed"></i> Музыка
+                                </label>
+                            </div>
+                            <div class="ms-3">
+                                <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-secondary">Выбрать всё</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Согласие с этическими нормами -->
+                    <div class="card mb-3 ethics-agreement" id="ethics-agreement-card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-shield-check"></i> Этические нормы и правила использования</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="small text-muted mb-3">
+                                <p><strong>Правила использования сервиса:</strong></p>
+                                <ul class="mb-0">
+                                    <li>Генерируемый контент должен быть уважительным к исторической памяти</li>
+                                    <li>Запрещено искажение исторических фактов о Великой Отечественной войне</li>
+                                    <li>Недопустимо создание контента, разжигающего ненависть или вражду</li>
+                                    <li>Сгенерированные произведения проходят модерацию на соответствие этическим нормам</li>
+                                    <li>Вы обязуетесь использовать сервис исключительно в образовательных и художественных целях</li>
+                                </ul>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ethicsAgreement" required>
+                                <label class="form-check-label fw-bold" for="ethicsAgreement">
+                                    Я согласен(-на) с правилами использования и обязуюсь соблюдать этические нормы при работе с историческими материалами
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Анализировать текст</button>
                 </form>
 
                 <div id="results" class="mt-4" style="display: none;">
-                    <h3>Результаты анализа</h3>
-                    <div class="card mb-3">
-                        <div class="card-header">Эмоциональный анализ</div>
-                        <div class="card-body" id="emotion-results"></div>
+                    <h3 class="mb-4">Результаты анализа</h3>
+                    
+                    <!-- Эмоциональный анализ с улучшенным дизайном -->
+                    <div class="card mb-4 border-0 shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="m-0"><i class="bi bi-graph-up"></i> Эмоциональный анализ</h4>
+                        </div>
+                        <div class="card-body" id="emotion-results">
+                            <div class="emotion-analysis-container">
+                                <!-- Здесь будет содержимое эмоционального анализа -->
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light" id="emotion-feedback" style="display: none;">
+                            <div class="feedback-section" data-type="emotion">
+                                <span class="text-muted me-3">Оцените качество анализа:</span>
+                                <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="emotion_analysis" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                    <i class="bi bi-star"></i> Оценить анализ
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card">
-                        <div class="card-header">Художественное произведение</div>
-                        <div class="card-body" id="literary-results"></div>
+                    
+                    <!-- Контейнеры для результатов генерации -->
+                    <div id="generated-content" style="display: none;">
+                        <div class="card mb-4 border-0 shadow literary-section" style="display: none;">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="m-0"><i class="bi bi-file-text"></i> Художественное произведение</h4>
+                            </div>
+                            <div class="card-body" id="literary-results"></div>
+                            <div class="card-footer bg-light">
+                                <div class="feedback-section" data-type="text">
+                                    <span class="text-muted me-3">Оцените качество текста:</span>
+                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="literary_work" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                        <i class="bi bi-star"></i> Оценить произведение
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4 border-0 shadow image-section" style="display: none;">
+                            <div class="card-header bg-info text-white">
+                                <h4 class="m-0"><i class="bi bi-image"></i> Иллюстрация</h4>
+                            </div>
+                            <div class="card-body" id="image-results">
+                                <div id="generated-image-container" class="text-center mb-3" style="display: none;">
+                                    <img id="generated-image" class="img-fluid rounded shadow" alt="Сгенерированная иллюстрация" />
+                                </div>
+                                <div id="image-loading" style="display: none;">
+                                    <p class="text-muted">Генерация изображения...</p>
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div id="image-error" class="alert alert-danger" style="display: none;"></div>
+                            </div>
+                            <div class="card-footer bg-light" id="image-feedback" style="display: none;">
+                                <div class="feedback-section" data-type="image">
+                                    <span class="text-muted me-3">Оцените качество изображения:</span>
+                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="generated_image" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                        <i class="bi bi-star"></i> Оценить изображение
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4 border-0 shadow music-section">
+                            <div class="card-header" style="background-color: #6f42c1; color: white;">
+                                <h4 class="m-0"><i class="bi bi-music-note-beamed"></i> Музыкальное сопровождение</h4>
+                            </div>
+                            <div class="card-body" id="music-results">
+                                <div id="generated-music-container" class="text-center mb-3">
+                                    <div class="ratio ratio-16x9 mb-3">
+                                        <iframe id="music-iframe" src="" title="Сгенерированная музыка" allowfullscreen></iframe>
+                                    </div>
+                                    <div class="mb-3">
+                                        <h5>Описание музыки:</h5>
+                                        <p id="music-description" class="text-muted font-italic"></p>
+                                    </div>
+                                </div>
+                                <div id="music-loading" style="display: none;">
+                                    <p class="text-muted">Генерация музыки...</p>
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div id="music-error" class="alert alert-danger" style="display: none;">
+                                    <span id="music-error-text"></span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light" id="music-feedback" style="display: none;">
+                                <div class="feedback-section" data-type="music">
+                                    <span class="text-muted me-3">Оцените качество музыки:</span>
+                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="generated_music" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                        <i class="bi bi-star"></i> Оценить музыку
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    
                     {% if current_user.is_authenticated %}
-                    <button id="share-results" class="btn btn-success mt-3" style="display: none;">
-                        Поделиться на форуме
+                    <button id="share-results" class="btn btn-primary mt-3" style="display: none;">
+                        <i class="bi bi-share-fill"></i> Поделиться на форуме
                     </button>
                     {% endif %}
                 </div>
@@ -88,190 +237,827 @@
         </div>
     </div>
 </div>
+
+<!-- Модальное окно для детальной оценки -->
+<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="feedbackModalLabel">
+                    <i class="bi bi-star-fill text-warning"></i> Оценка качества
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="detailedFeedbackForm">
+                    <!-- Название оцениваемого контента -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold" id="contentTypeName">Оценка контента</h6>
+                        <p class="text-muted small" id="contentTypeDescription">Ваша оценка поможет улучшить качество генерации</p>
+                    </div>
+                    
+                    <!-- Звёздная оценка -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Общая оценка:</label>
+                        <div class="star-rating d-flex align-items-center">
+                            <div class="stars me-3">
+                                <i class="bi bi-star star" data-rating="1"></i>
+                                <i class="bi bi-star star" data-rating="2"></i>
+                                <i class="bi bi-star star" data-rating="3"></i>
+                                <i class="bi bi-star star" data-rating="4"></i>
+                                <i class="bi bi-star star" data-rating="5"></i>
+                            </div>
+                            <span class="rating-text text-muted">Выберите оценку</span>
+                        </div>
+                        <input type="hidden" id="starRating" name="rating" value="0">
+                    </div>
+                    
+                    <!-- Детальные критерии оценки -->
+                    <div class="mb-4" id="detailedCriteria">
+                        <label class="form-label fw-bold">Детальная оценка по критериям:</label>
+                        
+                        <!-- Критерии будут добавляться динамически в зависимости от типа контента -->
+                        <div id="criteriaContainer"></div>
+                    </div>
+                    
+                    <!-- Текстовая обратная связь -->
+                    <div class="mb-4">
+                        <label for="feedbackText" class="form-label fw-bold">Комментарий (необязательно):</label>
+                        <textarea class="form-control" id="feedbackText" name="feedback_text" rows="4" 
+                                  placeholder="Поделитесь своими впечатлениями, предложениями по улучшению или конкретными замечаниями..."></textarea>
+                        <div class="form-text">Ваши комментарии помогают нам понять, что работает хорошо, а что можно улучшить</div>
+                    </div>
+                    
+                    <!-- Скрытые поля -->
+                    <input type="hidden" id="contentType" name="content_type" value="">
+                    <input type="hidden" id="sessionId" name="session_id" value="">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Отмена
+                </button>
+                <button type="button" class="btn btn-primary" id="submitFeedback">
+                    <i class="bi bi-check-circle"></i> Отправить оценку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 let lastAnalysisResults = null;
 
-document.getElementById('diary-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
+// Обработка обратной связи (лайки/дизлайки)
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработчик для кнопок обратной связи
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('feedback-btn') || e.target.closest('.feedback-btn')) {
+            const button = e.target.classList.contains('feedback-btn') ? e.target : e.target.closest('.feedback-btn');
+            const feedbackType = button.getAttribute('data-feedback'); // 'like' или 'dislike'
+            const contentType = button.getAttribute('data-content-type'); // 'literary_work', 'generated_image', 'generated_music'
+            
+            // Получаем секцию обратной связи для взаимоисключения
+            const feedbackSection = button.closest('.feedback-section');
+            if (feedbackSection) {
+                // Находим все кнопки в этой секции
+                const allButtons = feedbackSection.querySelectorAll('.feedback-btn');
+                
+                // Сбрасываем состояние всех кнопок в секции
+                allButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('active', 'btn-success', 'btn-danger');
+                    
+                    // Восстанавливаем исходные классы
+                    if (btn.getAttribute('data-feedback') === 'like') {
+                        btn.className = 'btn btn-outline-success btn-sm feedback-btn';
+                    } else {
+                        btn.className = 'btn btn-outline-danger btn-sm ms-2 feedback-btn';
+                    }
+                });
+                
+                // Активируем нажатую кнопку
+                button.classList.add('active');
+                if (feedbackType === 'like') {
+                    button.classList.remove('btn-outline-success');
+                    button.classList.add('btn-success');
+                } else {
+                    button.classList.remove('btn-outline-danger');
+                    button.classList.add('btn-danger');
+                }
+            }
+            
+            // Отправляем обратную связь на сервер
+            submitFeedback(contentType, feedbackType, button);
+        }
+    });
     
-    // Защита от повторной отправки
-    if (this.classList.contains('processing')) {
-        console.log('Форма уже обрабатывается');
-        return;
-    }
+    // Проверка согласия с этическими нормами
+    const ethicsAgreement = document.getElementById('ethicsAgreement');
+    const ethicsCard = document.getElementById('ethics-agreement-card');
+    const submitButton = document.querySelector('#diary-form button[type="submit"]');
     
-    this.classList.add('processing');
-    
-    // Находим кнопку отправки
-    const submitButton = this.querySelector('button[type="submit"]');
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.innerHTML = 'Анализируем...';
-    }
-    
-    // Создаем элемент для отображения статуса
-    let statusElement = null;
-    try {
-        statusElement = document.createElement('div');
-        statusElement.className = 'alert alert-info mt-3';
-        statusElement.innerHTML = 'Запрос отправлен. Ожидайте ответа (это может занять до 30-60 секунд)...';
-        this.appendChild(statusElement);
-    } catch (err) {
-        console.warn('Не удалось создать элемент статуса:', err);
-    }
-    
-    try {
-        console.log('Отправка запроса на /analyze...');
+    if (ethicsAgreement && submitButton) {
+        // Проверяем, было ли ранее дано согласие (сохраняем в localStorage)
+        const previousAgreement = localStorage.getItem('ethicsAgreementAccepted');
         
-        // Устанавливаем таймаут для fetch с использованием AbortController
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 минуты таймаут
+        if (previousAgreement === 'true') {
+            // Если согласие уже было дано, скрываем плашку и разблокируем форму
+            if (ethicsCard) {
+                ethicsCard.style.display = 'none';
+            }
+            ethicsAgreement.checked = true;
+            updateSubmitButton();
+        } else {
+            // Если согласие не было дано, показываем плашку и блокируем форму
+            updateSubmitButton();
+        }
         
-        const response = await fetch('/analyze', {
+        function updateSubmitButton() {
+            if (ethicsAgreement.checked) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('btn-secondary');
+                submitButton.classList.add('btn-primary');
+            } else {
+                submitButton.disabled = true;
+                submitButton.classList.add('btn-secondary');
+                submitButton.classList.remove('btn-primary');
+            }
+        }
+        
+        // Обновляем состояние при изменении чекбокса
+        ethicsAgreement.addEventListener('change', function() {
+            updateSubmitButton();
+            
+            if (this.checked) {
+                // Сохраняем согласие в localStorage
+                localStorage.setItem('ethicsAgreementAccepted', 'true');
+                
+                // Анимируем скрытие плашки
+                if (ethicsCard) {
+                    ethicsCard.classList.add('fade-out');
+                    
+                    // Полностью скрываем плашку через 300ms
+                    setTimeout(() => {
+                        ethicsCard.style.display = 'none';
+                        ethicsCard.classList.remove('fade-out');
+                        
+                        // Показываем небольшое уведомление о принятии
+                        showNotification('Спасибо за принятие этических норм! Теперь вы можете анализировать дневники.', 'success');
+                    }, 300);
+                }
+            } else {
+                // Если пользователь снял галочку, удаляем согласие и показываем плашку
+                localStorage.removeItem('ethicsAgreementAccepted');
+                if (ethicsCard && ethicsCard.style.display === 'none') {
+                    ethicsCard.style.display = 'block';
+                    ethicsCard.classList.add('fadeIn');
+                }
+            }
+        });
+    }
+});
+
+// Функция отправки обратной связи
+async function submitFeedback(contentType, feedbackType, buttonElement) {
+    try {
+        // Визуальная обратная связь
+        const originalText = buttonElement.innerHTML;
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = '<i class="bi bi-check-circle"></i> Отправка...';
+        
+        const response = await fetch('/submit_feedback', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
             },
-            body: new URLSearchParams(new FormData(this)),
-            signal: controller.signal
+            body: JSON.stringify({
+                content_type: contentType,
+                feedback_type: feedbackType,
+                timestamp: new Date().toISOString()
+            })
         });
         
-        clearTimeout(timeoutId); // Отменяем таймаут, если ответ получен
-        
-        console.log('Получен ответ:', response.status, response.statusText);
-        
-        // Обновляем статус если элемент существует
-        if (statusElement && statusElement.parentNode) {
-            statusElement.className = 'alert alert-success mt-3';
-            statusElement.textContent = 'Ответ получен, обрабатываем результаты...';
-        }
-        
-        // Проверяем, что ответ можно преобразовать в JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            console.error('Ошибка: Сервер вернул не JSON:', contentType);
-            throw new Error('Сервер вернул не JSON ответ');
-        }
-        
-        const text = await response.text();
-        console.log('Текст ответа:', text.substring(0, 100) + '...'); // Логируем только начало
-        
-        let data;
-        try {
-            data = JSON.parse(text);
-            console.log('Данные получены успешно');
-        } catch (jsonError) {
-            console.error('Ошибка парсинга JSON:', jsonError);
-            throw new Error('Невозможно распарсить JSON');
-        }
+        const data = await response.json();
         
         if (response.ok) {
-            // Удаляем статусный элемент, если он существует и является дочерним
-            try {
-                if (statusElement && statusElement.parentNode === this) {
-                    this.removeChild(statusElement);
+            // Успешная отправка
+            buttonElement.innerHTML = feedbackType === 'like' ? 
+                '<i class="bi bi-hand-thumbs-up-fill"></i> Отправлено' : 
+                '<i class="bi bi-hand-thumbs-down-fill"></i> Отправлено';
+            
+            // Обновляем счетчик, если он есть в ответе
+            if (data.total_count !== undefined) {
+                const countElement = buttonElement.querySelector('.feedback-count');
+                if (countElement) {
+                    countElement.textContent = data.total_count;
                 }
-            } catch (e) {
-                console.warn('Не удалось удалить статусный элемент:', e);
             }
             
-            // Сохраняем результаты для возможной публикации
-            const diaryText = document.getElementById('diary_text');
-            lastAnalysisResults = {
-                diary_text: diaryText ? diaryText.value : '',
-                emotion_analysis: data.emotion_analysis || {},
-                generated_literary_work: data.generated_literary_work || ''
-            };
+            // Показываем благодарность
+            showFeedbackNotification('Спасибо за вашу оценку! Это поможет улучшить качество генерации.', 'success');
             
-            // Безопасно обращаемся к элементам DOM
-            const resultsElement = document.getElementById('results');
-            if (resultsElement) {
-                resultsElement.style.display = 'block';
+        } else {
+            // Ошибка при отправке
+            buttonElement.innerHTML = originalText;
+            buttonElement.disabled = false;
+            showFeedbackNotification('Не удалось отправить оценку. Попробуйте позже.', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Ошибка при отправке обратной связи:', error);
+        buttonElement.innerHTML = originalText;
+        buttonElement.disabled = false;
+        showFeedbackNotification('Не удалось отправить оценку. Проверьте подключение к интернету.', 'error');
+    }
+}
+
+// Функция показа уведомлений об обратной связи
+function showFeedbackNotification(message, type) {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Добавляем на страницу
+    document.body.appendChild(notification);
+    
+    // Автоматически убираем через 3 секунды
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// Универсальная функция показа уведомлений
+function showNotification(message, type = 'info', duration = 3000) {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'error' ? 'alert-danger' : 
+                      type === 'warning' ? 'alert-warning' : 'alert-info';
+    
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1055; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+    
+    // Определяем иконку в зависимости от типа
+    const icon = type === 'success' ? 'bi bi-check-circle' : 
+                 type === 'error' ? 'bi bi-exclamation-triangle' : 
+                 type === 'warning' ? 'bi bi-exclamation-triangle' : 'bi bi-info-circle';
+    
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icon} me-2"></i>
+            <div>${message}</div>
+        </div>
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    // Добавляем на страницу
+    document.body.appendChild(notification);
+    
+    // Автоматически убираем через указанное время
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.remove('show');
+            notification.classList.add('fade');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 150);
+        }
+    }, duration);
+}
+
+// Функция обработки отправки формы
+document.addEventListener('DOMContentLoaded', function() {
+    const diaryForm = document.getElementById('diary-form');
+    
+    if (diaryForm) {
+        diaryForm.addEventListener('submit', async function(e) {
+            // Явно предотвращаем стандартное поведение формы
+            e.preventDefault();
+            
+            // Проверяем, что выбран хотя бы один тип генерации
+            const selectedTypes = Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value);
+            if (selectedTypes.length === 0) {
+                alert('Выберите хотя бы один тип генерации');
+                return;
             }
             
-            const shareElement = document.getElementById('share-results');
-            if (shareElement) {
-                shareElement.style.display = 'block';
+            // Защита от повторной отправки
+            if (this.classList.contains('processing')) {
+                console.log('Форма уже обрабатывается');
+                return;
             }
             
-            // Форматируем эмоциональный анализ
-            const emotionResults = document.getElementById('emotion-results');
-            if (emotionResults) {
-                const emotions = data.emotion_analysis || {};
-                let emotionHtml = '<div class="emotion-analysis">';
+            this.classList.add('processing');
+            
+            // Находим кнопку отправки
+            const submitButton = this.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = 'Анализируем...';
+            }
+            
+            // Создаем элемент для отображения статуса
+            let statusElement = null;
+            try {
+                statusElement = document.createElement('div');
+                statusElement.className = 'alert alert-info mt-3';
+                statusElement.innerHTML = 'Запрос отправлен. Ожидайте ответа (это может занять до 30-60 секунд)...';
+                this.appendChild(statusElement);
+            } catch (err) {
+                console.warn('Не удалось создать элемент статуса:', err);
+            }
+            
+            try {
+                console.log('Отправка запроса на /analyze...');
                 
-                if (emotions.primary_emotions && Array.isArray(emotions.primary_emotions)) {
-                    emotionHtml += '<p><strong>Основные эмоции:</strong></p><ul>';
-                    emotions.primary_emotions.forEach(emotion => {
-                        if (emotion && emotion.emotion) {
-                            emotionHtml += `<li>${emotion.emotion}: ${emotion.intensity || '?'}/10</li>`;
+                // Устанавливаем таймаут для fetch с использованием AbortController
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 минуты таймаут
+                
+                const formData = new FormData(this);
+                
+                // Передаем данные через URLSearchParams
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId); // Отменяем таймаут, если ответ получен
+                
+                console.log('Получен ответ:', response.status, response.statusText);
+                
+                // Обновляем статус если элемент существует
+                if (statusElement && statusElement.parentNode) {
+                    statusElement.className = 'alert alert-success mt-3';
+                    statusElement.textContent = 'Ответ получен, обрабатываем результаты...';
+                }
+                
+                // Проверяем, что ответ можно преобразовать в JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('Ошибка: Сервер вернул не JSON:', contentType);
+                    throw new Error('Сервер вернул не JSON ответ');
+                }
+                
+                const text = await response.text();
+                console.log('Текст ответа:', text.substring(0, 100) + '...'); // Логируем только начало
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                    console.log('Данные получены успешно');
+                } catch (jsonError) {
+                    console.error('Ошибка парсинга JSON:', jsonError);
+                    throw new Error('Невозможно распарсить JSON');
+                }
+                
+                if (response.ok) {
+                    // Удаляем статусный элемент, если он существует и является дочерним
+                    try {
+                        if (statusElement && statusElement.parentNode === this) {
+                            this.removeChild(statusElement);
+                        }
+                    } catch (e) {
+                        console.warn('Не удалось удалить статусный элемент:', e);
+                    }
+                    
+                    // ОТЛАДКА: Логируем полученные данные
+                    console.log('DEBUG: Полученные данные от сервера:', data);
+                    console.log('DEBUG: generated_literary_work:', data.generated_literary_work);
+                    console.log('DEBUG: generated_image:', data.generated_image);
+                    console.log('DEBUG: generated_music:', data.generated_music);
+                    
+                    // Сохраняем результаты для возможной публикации
+                    const diaryText = document.getElementById('diary_text');
+                    lastAnalysisResults = {
+                        diary_text: diaryText ? diaryText.value : '',
+                        emotion_analysis: data.emotion_analysis || {},
+                        generated_literary_work: data.generated_literary_work || '',
+                        generation_types: Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value)
+                    };
+                    
+                    // ОТЛАДКА: Логируем выбранные типы
+                    console.log('DEBUG: selectedTypes на начало:', selectedTypes);
+                    
+                    // Безопасно обращаемся к элементам DOM
+                    const resultsElement = document.getElementById('results');
+                    if (resultsElement) {
+                        resultsElement.style.display = 'block';
+                        console.log('DEBUG: Показали секцию results');
+                    }
+                    
+                    const shareElement = document.getElementById('share-results');
+                    if (shareElement) {
+                        shareElement.style.display = 'block';
+                    }
+                    
+                    // Обновляем отображение секций результатов на основе выбранных типов генерации
+                    updateGenerationUI();
+                    
+                    // Показываем секцию сгенерированного контента
+                    const generatedContentElement = document.getElementById('generated-content');
+                    if (generatedContentElement) {
+                        generatedContentElement.style.display = 'block';
+                        console.log('DEBUG: Показали секцию generated-content');
+                    }
+                    
+                    // ПРИНУДИТЕЛЬНОЕ ОТОБРАЖЕНИЕ ДЛЯ ДИАГНОСТИКИ
+                    // Принудительно показываем все секции результатов
+                    const allSections = document.querySelectorAll('.literary-section, .image-section, .music-section');
+                    console.log('DEBUG: Найдено секций:', allSections.length);
+                    allSections.forEach(section => {
+                        if (section) {
+                            section.style.display = 'block';
+                            section.style.visibility = 'visible';
+                            section.style.opacity = '1';
+                            console.log('DEBUG: Принудительно показали секцию:', section.className);
                         }
                     });
-                    emotionHtml += '</ul>';
+                    
+                    // Дополнительная диагностика элементов
+                    const literarySection = document.querySelector('.literary-section');
+                    const imageSection = document.querySelector('.image-section');
+                    const musicSection = document.querySelector('.music-section');
+                    const literaryResults = document.getElementById('literary-results');
+                    const imageResults = document.getElementById('image-results');
+                    const musicResults = document.getElementById('music-results');
+                    
+                    console.log('DEBUG: Элементы DOM:');
+                    console.log('  literarySection:', !!literarySection);
+                    console.log('  imageSection:', !!imageSection);
+                    console.log('  musicSection:', !!musicSection);
+                    console.log('  literaryResults:', !!literaryResults);
+                    console.log('  imageResults:', !!imageResults);
+                    console.log('  musicResults:', !!musicResults);
+                    
+                    // Принудительно заполняем текстовый контент если он есть
+                    if (data.generated_literary_work) {
+                        console.log('DEBUG: Принудительно заполняем литературный результат');
+                        const literaryResults = document.getElementById('literary-results');
+                        if (literaryResults) {
+                            literaryResults.innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
+                            literaryResults.style.display = 'block';
+                            literaryResults.style.visibility = 'visible';
+                            console.log('DEBUG: Заполнили literary-results');
+                        }
+                    }
+                    
+                    // Принудительно показываем изображение если оно есть
+                    if (data.generated_image && data.generated_image.success && data.generated_image.image_url) {
+                        console.log('DEBUG: Принудительно отображаем изображение');
+                        displayGeneratedImage(data.generated_image.image_url);
+                    }
+                    
+                    // Отображаем результаты эмоционального анализа
+                    const emotionResults = document.getElementById('emotion-results');
+                    if (emotionResults) {
+                        const emotions = data.emotion_analysis || {};
+                        let emotionHtml = '<div class="emotion-analysis">';
+                        
+                        if (emotions.primary_emotions && Array.isArray(emotions.primary_emotions)) {
+                            emotionHtml += '<div class="mb-3"><h5>Основные эмоции:</h5><ul class="list-unstyled">';
+                            emotions.primary_emotions.forEach(emotion => {
+                                if (emotion && emotion.emotion) {
+                                    const intensity = emotion.intensity || 0;
+                                    const barWidth = (intensity / 10) * 100;
+                                    emotionHtml += `
+                                        <li class="mb-2">
+                                            <strong>${emotion.emotion}</strong>: ${intensity}/10
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" style="width: ${barWidth}%"></div>
+                                            </div>
+                                        </li>`;
+                                }
+                            });
+                            emotionHtml += '</ul></div>';
+                        }
+                        
+                        if (emotions.emotional_tone) {
+                            emotionHtml += `<div class="mb-3"><h5>Общий тон:</h5><p class="text-muted">${emotions.emotional_tone}</p></div>`;
+                        }
+                        
+                        if (emotions.hidden_motives && emotions.hidden_motives.length > 0) {
+                            emotionHtml += `<div class="mb-3"><h5>Скрытые мотивы:</h5><p class="text-muted">${emotions.hidden_motives.join(', ')}</p></div>`;
+                        }
+                        
+                        if (emotions.attitude) {
+                            emotionHtml += `<div class="mb-3"><h5>Отношение:</h5><p class="text-muted">${emotions.attitude}</p></div>`;
+                        }
+                        
+                        // Новый раздел: Тематический анализ
+                        if (emotions.thematic_analysis) {
+                            const thematic = emotions.thematic_analysis;
+                            emotionHtml += '<div class="mb-3"><h5>Тематический анализ военных деталей:</h5>';
+                            
+                            if (thematic.military_characters && thematic.military_characters.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-person-badge"></i> Военные персонажи:</strong> 
+                                        <span class="text-muted">${thematic.military_characters.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.battle_locations && thematic.battle_locations.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-geo-alt"></i> Места сражений:</strong> 
+                                        <span class="text-muted">${thematic.battle_locations.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.war_equipment && thematic.war_equipment.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-shield"></i> Военная техника:</strong> 
+                                        <span class="text-muted">${thematic.war_equipment.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.frontline_life && thematic.frontline_life.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-house"></i> Фронтовая жизнь:</strong> 
+                                        <span class="text-muted">${thematic.frontline_life.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            if (thematic.historical_events && thematic.historical_events.length > 0) {
+                                emotionHtml += `
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-calendar-event"></i> Исторические события:</strong> 
+                                        <span class="text-muted">${thematic.historical_events.join(', ')}</span>
+                                    </div>`;
+                            }
+                            
+                            emotionHtml += '</div>';
+                        }
+                        
+                        emotionHtml += '</div>';
+                        emotionResults.innerHTML = emotionHtml;
+                        
+                        // Показываем кнопку оценки для эмоционального анализа
+                        showFeedbackButtons();
+                    }
+                    
+                    // Активируем все выбранные контейнеры контента независимо от того, 
+                    // получены ли данные для них - показываем либо контент, либо индикаторы загрузки
+                    
+                    // Показываем все выбранные секции с анимацией
+                    selectedTypes.forEach((contentType, index) => {
+                        console.log(`DEBUG: Обработка contentType: ${contentType}, index: ${index}`);
+                        const delay = index * 200; // Последовательная анимация с задержкой
+                        
+                        if (contentType === 'text') {
+                            console.log('DEBUG: Обработка текста...');
+                            const literarySection = document.querySelector('.literary-section');
+                            console.log('DEBUG: literarySection найден:', !!literarySection);
+                            if (literarySection) {
+                                literarySection.style.display = 'block';
+                                console.log('DEBUG: Показали literarySection');
+                                setTimeout(() => literarySection.classList.add('fadeIn'), delay);
+                                
+                                // Заполняем контент, если он есть
+                                if (data.generated_literary_work) {
+                                    console.log('DEBUG: Заполняем текстовый контент:', data.generated_literary_work.substring(0, 100) + '...');
+                                    document.getElementById('literary-results').innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
+                                    document.querySelector('.literary-section').style.display = 'block';
+                                    // Показываем секцию обратной связи для текста
+                                    const literarySection = document.querySelector('.literary-section .card-footer');
+                                    if (literarySection) {
+                                        literarySection.style.display = 'block';
+                                    }
+                                    const generatedContentElement = document.getElementById('generated-content');
+                                    if (generatedContentElement) {
+                                        generatedContentElement.style.display = 'block';
+                                    }
+                                } else {
+                                    console.log('DEBUG: Нет данных для generated_literary_work');
+                                }
+                            }
+                        }
+                        
+                        if (contentType === 'image') {
+                            console.log('DEBUG: Обработка изображения...');
+                            const imageSection = document.querySelector('.image-section');
+                            console.log('DEBUG: imageSection найден:', !!imageSection);
+                            if (imageSection) {
+                                imageSection.style.display = 'block';
+                                console.log('DEBUG: Показали imageSection');
+                                setTimeout(() => imageSection.classList.add('fadeIn'), delay);
+                                
+                                // Если изображение готово, показываем его
+                                if (data.generated_image && data.generated_image.success) {
+                                    console.log("DEBUG: Отображение изображения из результатов API...", data.generated_image.image_url);
+                                    
+                                    // Сохраняем внешний URL для возможного использования при ошибке локального URL
+                                    if (data.generated_image.external_url) {
+                                        window.lastGeneratedImageExternalUrl = data.generated_image.external_url;
+                                    }
+                                    
+                                    displayGeneratedImage(data.generated_image.image_url);
+                                } else {
+                                    // Если произошла ошибка, показываем сообщение
+                                    const loadingElement = document.getElementById('image-loading');
+                                    if (loadingElement) {
+                                        loadingElement.style.display = 'block'; // Явно показываем блок
+                                        console.log('DEBUG: generated_image', data.generated_image);
+                                        if (data.generated_image && data.generated_image.error) {
+                                            // Проверяем, является ли ошибка связанной с запрещенным контентом
+                                            if (data.generated_image.type === 'content_policy_violation' && data.generated_image.can_regenerate_safe) {
+                                                // Показываем красивое предупреждение
+                                                loadingElement.innerHTML = `
+                                                    <div class="alert alert-warning shadow-lg fade show p-4 mb-3" style="border-left: 6px solid #ffc107; animation: fadeIn 0.5s;">
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                                                            <div>
+                                                                <h5 class="mb-1 fw-bold">Нарушение политики контента</h5>
+                                                                <div class="text-muted small">Некоторые описания в тексте дневника не могут быть визуализированы согласно политике OpenAI.</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <strong>${data.generated_image.error}</strong>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <ul class="mb-2 ps-4">
+                                                                <li>Выберите другой отрывок дневника без описаний насилия</li>
+                                                                <li>Или попробуйте создать <b>символическую иллюстрацию</b> (качество и точность могут отличаться)</li>
+                                                            </ul>
+                                                            <div class="alert alert-info py-2 px-3 small mb-2">
+                                                                <i class="bi bi-info-circle"></i> Символическая иллюстрация будет создана без сцен насилия, но с сохранением атмосферы и эпохи.
+                                                            </div>
+                                                        </div>
+                                                        <button id="generate-safe-image" class="btn btn-lg btn-outline-warning w-100 fw-bold">
+                                                            <i class="bi bi-shield-check"></i> Создать символическую иллюстрацию
+                                                        </button>
+                                                    </div>`;
+                                                loadingElement.classList.remove('progress');
+                                                
+                                                // Добавляем обработчик для кнопки перегенерации
+                                                document.getElementById('generate-safe-image').addEventListener('click', function() {
+                                                    // Показываем индикатор загрузки
+                                                    loadingElement.innerHTML = `
+                                                        <div class="alert alert-warning mb-3">
+                                                            <i class="fas fa-exclamation-triangle"></i> 
+                                                            <strong>Внимание!</strong> Изображение будет сгенерировано на основе безопасного альтернативного промпта из-за нарушения политики содержания OpenAI. 
+                                                            Качество и точность изображения могут отличаться от исходной задумки.
+                                                        </div>
+                                                        <p class="text-muted">Генерация символического изображения...</p>
+                                                        <div class="progress">
+                                                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                                 role="progressbar" style="width: 100%"></div>
+                                                        </div>`;
+                                                    
+                                                    // Отправляем запрос на генерацию безопасного изображения
+                                                    fetch('/generate_safe_image', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/x-www-form-urlencoded',
+                                                        },
+                                                        body: new URLSearchParams({
+                                                            diary_text: document.getElementById('diary_text').value
+                                                        })
+                                                    })
+                                                    .then(response => {
+                                                        // Проверяем, что ответ - JSON
+                                                        const contentType = response.headers.get('content-type');
+                                                        if (!contentType || !contentType.includes('application/json')) {
+                                                            throw new Error('Сервер вернул не JSON ответ');
+                                                        }
+                                                        return response.text();
+                                                    })
+                                                    .then(responseText => {
+                                                        // Безопасный парсинг JSON-ответа с проверкой
+                                                        let data;
+                                                        try {
+                                                            data = JSON.parse(responseText);
+                                                            console.log("Получен ответ для безопасного изображения:", data);
+                                                        } catch (e) {
+                                                            console.error("Ошибка парсинга JSON:", e, "Текст ответа:", responseText);
+                                                            throw new Error("Ошибка парсинга JSON-ответа");
+                                                        }
+                                                        
+                                                        if (data.success && data.image_url) {
+                                                            // Сохраняем внешний URL, если он есть
+                                                            if (data.external_url) {
+                                                                window.lastGeneratedImageExternalUrl = data.external_url;
+                                                            }
+                                                            
+                                                            // Показываем сгенерированное безопасное изображение
+                                                            displayGeneratedImage(data.image_url);
+                                                            
+                                                            // Добавляем уведомление о символической альтернативе
+                                                            const noticeElement = document.createElement('div');
+                                                            noticeElement.className = 'alert alert-info mt-3';
+                                                            noticeElement.innerHTML = `
+                                                                <i class="fas fa-info-circle"></i>
+                                                                Было создано символическое изображение вместо прямой иллюстрации содержимого дневника.
+                                                            `;
+                                                            document.getElementById('image-results').appendChild(noticeElement);
+                                                        } else {
+                                                            // Показываем ошибку
+                                                            loadingElement.innerHTML = `
+                                                                <div class="alert alert-danger">
+                                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                                    Не удалось сгенерировать даже символическое изображение: ${data.error || 'Неизвестная ошибка'}
+                                                                </div>`;
+                                                        }
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Ошибка при запросе безопасного изображения:', error);
+                                                        loadingElement.innerHTML = `
+                                                            <div class="alert alert-danger">
+                                                                <i class="fas fa-exclamation-triangle"></i>
+                                                                Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+                                                            </div>`;
+                                                    });
+                                                });
+                                            } else {
+                                                // Обычная ошибка
+                                                loadingElement.innerHTML = `
+                                                    <div class="alert alert-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i> 
+                                                        Не удалось сгенерировать изображение: ${data.generated_image.error}
+                                                    </div>`;
+                                                loadingElement.classList.remove('progress');
+                                            }
+                                        } else {
+                                            // Если нет конкретной ошибки, показываем общее сообщение
+                                            loadingElement.innerHTML = `
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    Не удалось сгенерировать изображение. Попробуйте другой текст или повторите позже.
+                                                </div>`;
+                                            loadingElement.classList.remove('progress');
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (contentType === 'music') {
+                            const musicSection = document.querySelector('.music-section');
+                            if (musicSection) {
+                                musicSection.style.display = 'block';
+                                setTimeout(() => musicSection.classList.add('fadeIn'), delay);
+                                
+                                // Если музыка готова или есть task_id для проверки статуса, обрабатываем
+                                if (data.generated_music) {
+                                    console.log("Данные о музыке получены:", data.generated_music);
+                                    displayGeneratedMusic(data.generated_music);
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Прокручиваем страницу к результатам
+                    const resultsSection = document.getElementById('results');
+                    if (resultsSection) {
+                        resultsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    
+                } else {
+                    // В случае ошибки HTTP
+                    throw new Error(`Ошибка HTTP: ${response.status} - ${response.statusText}`);
                 }
+            } catch (error) {
+                console.error('Ошибка при обработке запроса:', error);
                 
-                if (emotions.emotional_tone) {
-                    emotionHtml += `<p><strong>Общий тон:</strong> ${emotions.emotional_tone}</p>`;
+                // Отображаем сообщение об ошибке
+                if (statusElement) {
+                    statusElement.className = 'alert alert-danger mt-3';
+                    statusElement.innerHTML = `
+                        <strong>Ошибка:</strong> ${error.message || 'Произошла ошибка при обработке вашего запроса'}
+                        <br><small>Попробуйте еще раз или обновите страницу.</small>
+                    `;
                 }
+            } finally {
+                // Разблокируем форму в любом случае
+                this.classList.remove('processing');
                 
-                if (emotions.hidden_motives && Array.isArray(emotions.hidden_motives)) {
-                    emotionHtml += `<p><strong>Скрытые мотивы:</strong> ${emotions.hidden_motives.join(', ')}</p>`;
+                // Восстанавливаем кнопку
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Анализировать';
                 }
-                
-                if (emotions.attitude) {
-                    emotionHtml += `<p><strong>Отношение:</strong> ${emotions.attitude}</p>`;
-                }
-                
-                emotionHtml += '</div>';
-                emotionResults.innerHTML = emotionHtml;
             }
-            
-            // Отображаем художественное произведение
-            const literaryResults = document.getElementById('literary-results');
-            if (literaryResults) {
-                literaryResults.innerHTML = data.generated_literary_work || 'Произведение не было сгенерировано';
-            }
-        } else {
-            // Обновляем статус при ошибке
-            if (statusElement && statusElement.parentNode) {
-                statusElement.className = 'alert alert-danger mt-3';
-                statusElement.textContent = 'Произошла ошибка при анализе: ' + (data.error || 'Неизвестная ошибка');
-            }
-            
-            console.error('Ошибка от сервера:', data);
-            alert(data.error || 'Произошла ошибка при анализе');
-        }
-    } catch (error) {
-        // Проверяем, был ли таймаут
-        if (error.name === 'AbortError') {
-            if (statusElement && statusElement.parentNode) {
-                statusElement.className = 'alert alert-danger mt-3';
-                statusElement.textContent = 'Превышено время ожидания ответа. Попробуйте снова с меньшим текстом.';
-            }
-            console.error('Таймаут запроса');
-            alert('Превышено время ожидания ответа. Попробуйте снова с меньшим текстом.');
-        } else {
-            // Обновляем статус при других ошибках
-            if (statusElement && statusElement.parentNode) {
-                statusElement.className = 'alert alert-danger mt-3';
-                statusElement.textContent = 'Ошибка: ' + error.message;
-            }
-            
-            console.error('Ошибка при отправке запроса:', error);
-            alert('Произошла ошибка при отправке запроса: ' + error.message);
-        }
-    } finally {
-        // Разблокируем форму
-        this.classList.remove('processing');
-        
-        // Восстанавливаем кнопку
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = 'Анализировать';
-        }
+        });
     }
 });
 
@@ -301,5 +1087,2235 @@ document.getElementById('share-results')?.addEventListener('click', async functi
         alert('Произошла ошибка при отправке запроса');
     }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация чекбоксов для выбора типов генерации
+    const generationOptions = document.querySelectorAll('.generation-type');
+    generationOptions.forEach(option => {
+        option.addEventListener('change', updateGenerationUI);
+    });
+    
+    // Инициализация кнопки "Выбрать всё"
+    const selectAllBtn = document.getElementById('select-all-btn');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('.generation-type');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+            });
+            
+            // Обновить интерфейс
+            updateGenerationUI();
+            
+            // Обновить текст кнопки
+            this.textContent = allChecked ? 'Выбрать всё' : 'Снять выбор';
+        });
+    }
+    
+    // Инициализируем интерфейс
+    updateGenerationUI();
+});
+
+// Функция для отображения сгенерированного изображения
+function displayGeneratedImage(imageUrl) {
+    console.log("Отображение изображения:", imageUrl);
+    const imageContainer = document.getElementById('generated-image-container');
+    const imageElement = document.getElementById('generated-image');
+    const loadingElement = document.getElementById('image-loading');
+    const errorElement = document.getElementById('image-error');
+    
+    if (!imageContainer || !imageElement) {
+        console.error("Не найдены элементы для отображения изображения");
+        return;
+    }
+    
+    // Проверяем, что URL не пустой
+    if (!imageUrl || imageUrl === 'undefined') {
+        console.error("Получен пустой URL изображения");
+        if (errorElement) {
+            errorElement.textContent = "Получен некорректный URL изображения";
+            errorElement.style.display = 'block';
+        }
+        if (loadingElement) loadingElement.style.display = 'none';
+        return;
+    }
+    
+    // Нормализуем URL изображения
+    let normalizedUrl = imageUrl;
+    
+    // Если URL слишком длинный, вероятно, он содержит ошибку
+    if (normalizedUrl.length > 1000) {
+        console.warn("Подозрительно длинный URL изображения:", normalizedUrl.length, "символов");
+        // Проверяем наличие двойной кодировки
+        if (normalizedUrl.includes('%25')) {
+            normalizedUrl = decodeURIComponent(normalizedUrl);
+            console.log("Декодирован URL с двойной кодировкой");
+        }
+    }
+    
+    // Сохраняем URL для возможного использования в будущем
+    if (normalizedUrl && normalizedUrl.startsWith('http')) {
+        window.lastGeneratedImageExternalUrl = normalizedUrl;
+    }
+    
+    // Скрываем загрузку и ошибки
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (errorElement) errorElement.style.display = 'none';
+    
+    // Показываем индикатор загрузки
+    if (loadingElement) loadingElement.style.display = 'block';
+    
+    // Счетчик попыток загрузки
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    // Функция для попытки загрузки изображения
+    function tryLoadImage(url) {
+        console.log(`Попытка загрузки изображения ${retryCount+1}/${maxRetries+1}:`, url);
+        
+        // Устанавливаем обработчики событий для изображения
+        imageElement.onerror = function() {
+            console.error(`Ошибка загрузки изображения (попытка ${retryCount+1}/${maxRetries+1}):`, url);
+            
+            // Пробуем следующий метод загрузки
+            retryCount++;
+            
+            if (retryCount <= maxRetries) {
+                // Пробуем разные варианты URL
+                if (retryCount === 1 && url.startsWith('/')) {
+                    // Если URL начинается с /, пробуем без /
+                    setTimeout(() => tryLoadImage(url.substring(1)), 500);
+                } else if (retryCount === 2 && url.includes('//')) {
+                    // Если URL содержит двойной слеш, пробуем исправить
+                    const fixedUrl = url.replace(/([^:])\/\/+/g, '$1/');
+                    setTimeout(() => tryLoadImage(fixedUrl), 500);
+                } else if (window.lastGeneratedImageExternalUrl && window.lastGeneratedImageExternalUrl !== url) {
+                    // Пробуем внешний URL
+                    setTimeout(() => tryLoadImage(window.lastGeneratedImageExternalUrl), 500);
+                } else {
+                    // Показываем ошибку если все попытки исчерпаны
+                    showImageLoadError("Не удалось загрузить изображение");
+                }
+            } else {
+                // Все попытки исчерпаны
+                showImageLoadError("Не удалось загрузить изображение после нескольких попыток");
+            }
+        };
+        
+        imageElement.onload = function() {
+            console.log("Изображение успешно загружено:", url);
+            
+            // Скрываем индикатор загрузки и ошибки
+            if (loadingElement) loadingElement.style.display = 'none';
+            if (errorElement) errorElement.style.display = 'none';
+            
+            // Показываем контейнер с изображением
+            imageContainer.style.display = 'block';
+            
+            // Показываем секцию обратной связи для изображения
+            const imageFeedback = document.getElementById('image-feedback');
+            if (imageFeedback) {
+                imageFeedback.style.display = 'block';
+            }
+        };
+        
+        // Устанавливаем изображение
+        // Добавляем параметр времени, чтобы обойти кэширование
+        const cacheBuster = `?t=${new Date().getTime()}`;
+        imageElement.src = url + cacheBuster;
+    }
+    
+    // Функция для отображения ошибки загрузки
+    function showImageLoadError(message) {
+        if (loadingElement) loadingElement.style.display = 'none';
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        console.error(message);
+    }
+    
+    // Начинаем загрузку изображения
+    tryLoadImage(normalizedUrl);
+}
+
+// Функция для проверки статуса генерации музыки
+function checkMusicGenerationStatus(taskId) {
+    if (!taskId) {
+        console.error("Отсутствует ID задачи для проверки статуса");
+        return;
+    }
+    
+    console.log(`Проверка статуса генерации музыки для задачи: ${taskId}`);
+    
+    // Счетчик попыток и максимальное количество повторений
+    let attempts = 0;
+    const maxAttempts = 60; // 60 повторений с интервалом 5 секунд = 5 минут
+    
+    // Устанавливаем индикатор загрузки
+    const loadingElement = document.getElementById('music-loading');
+    const errorElement = document.getElementById('music-error');
+    const musicContainer = document.getElementById('generated-music-container');
+    
+    // Убедимся, что секция музыки видима
+    const musicSection = document.querySelector('.music-section');
+    if (musicSection) {
+        musicSection.style.display = 'block';
+    }
+    
+    if (loadingElement) {
+        loadingElement.style.display = 'block';
+        loadingElement.innerHTML = `
+            <p class="text-muted">Проверка статуса генерации музыки...</p>
+            <div class="progress mb-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+            </div>
+            <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
+        `;
+    }
+    
+    // Скрываем сообщение об ошибке
+    if (errorElement) errorElement.style.display = 'none';
+    
+    // Функция для выполнения одной проверки статуса
+    function checkStatus() {
+        // Увеличиваем счетчик попыток
+        attempts++;
+        
+        fetch(`/check_music_status?task_id=${taskId}&t=${new Date().getTime()}`) // Добавляем timestamp для избежания кэширования
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(`Получен статус для задачи ${taskId} (попытка ${attempts}/${maxAttempts}):`, data);
+                
+                // Проверяем успешность запроса
+                if (!data.success) {
+                    // Если у нас более 3 попыток, продолжаем сделать еще несколько попыток
+                    if (attempts < 3) {
+                        throw new Error(data.message || "Ошибка при проверке статуса");
+                    } else {
+                        console.log("Ошибка при проверке статуса, но продолжаем попытки:", data.message);
+                    }
+                }
+                
+                // Если музыка готова, отображаем ее
+                if (data.status === 'complete' || data.is_music_ready === true || 
+                    data.audio_url || data.stream_url || data.local_audio_url || 
+                    data.proxy_url) {
+                    console.log("Музыка готова! Отображаем плеер:", data);
+                    
+                    // Убедимся, что музыкальная секция видна
+                    const musicSection = document.querySelector('.music-section');
+                    if (musicSection && musicSection.style.display === 'none') {
+                        musicSection.style.display = 'block';
+                    }
+                    
+                    // Отображаем готовую музыку
+                    displayGeneratedMusic(data);
+                    
+                    // Прекращаем дальнейшие проверки
+                    return;
+                }
+                
+                // Если статус "timeout" или ошибка, показываем сообщение об ошибке
+                if (data.status === 'timeout' || data.status === 'error') {
+                    console.log("Ошибка при генерации музыки:", data.message);
+                    
+                    if (errorElement) {
+                        let errorMessage = data.message || "Превышено время ожидания или произошла ошибка";
+                        
+                        // Создаем блок с ошибкой и рекомендациями
+                        errorElement.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h5>Ошибка при проверке статуса</h5>
+                                <p>${errorMessage}</p>
+                                <div class="mt-3">
+                                    <p><strong>Что делать дальше?</strong></p>
+                                    <ul>
+                                        <li>Проверьте ваше подключение к интернету</li>
+                                        <li>Обновите страницу и попробуйте сгенерировать музыку снова</li>
+                                        <li>Если проблема повторяется, возможно, у Suno API возникли технические проблемы</li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+                                    Обновить страницу и попробовать снова
+                                </button>
+                            </div>
+                        `;
+                        errorElement.style.display = 'block';
+                    }
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                    
+                    // Прекращаем дальнейшие проверки
+                    return;
+                }
+                
+                // Если API статус показывает ошибку, но задача все еще в процессе, показываем специальное сообщение
+                if (data.api_status === 'error') {
+                    console.log("API вернул ошибку, но задача всё еще в обработке:", data);
+                    
+                    // Если это первые 5 попыток, продолжаем пробовать, возможно временная ошибка
+                    if (attempts <= 5) {
+                        console.log("Продолжаем попытки, несмотря на ошибку API...");
+                    } else {
+                        if (errorElement) {
+                            let errorMessage = data.message || "API вернул ошибку при генерации музыки";
+                            
+                            // Создаем блок с ошибкой и рекомендациями
+                            errorElement.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <h5>Ошибка при генерации музыки</h5>
+                                    <p>API вернул ошибку. Генерация музыки не может быть завершена.</p>
+                                    <div class="mt-3">
+                                        <p><strong>Что делать дальше?</strong></p>
+                                        <ul>
+                                            <li>Проверьте ваше подключение к интернету</li>
+                                            <li>Обновите страницу и попробуйте снова</li>
+                                            <li>Если проблема повторяется, обратитесь к разработчикам</li>
+                                        </ul>
+                                    </div>
+                                    <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+                                        Обновить страницу
+                                    </button>
+                                </div>
+                            `;
+                            errorElement.style.display = 'block';
+                        }
+                        
+                        if (loadingElement) loadingElement.style.display = 'none';
+                        
+                        // Прекращаем дальнейшие проверки
+                        return;
+                    }
+                }
+                
+                // Если музыка все еще генерируется, обновляем прогресс и продолжаем проверки
+                if (loadingElement) {
+                    // Рассчитываем процент выполнения
+                    let progressPercent = 0;
+                    if (data.progress) {
+                        progressPercent = data.progress;
+                    } else if (data.elapsed_seconds) {
+                        // Максимальное время ожидания - 15 минут (900 секунд)
+                        progressPercent = Math.min(95, Math.round(data.elapsed_seconds / 900 * 100));
+                    } else {
+                        // Если нет данных о прогрессе, используем прогресс на основе попыток
+                        progressPercent = Math.min(90, Math.round(attempts / maxAttempts * 100));
+                    }
+                    
+                    loadingElement.innerHTML = `
+                        <p class="text-muted">Генерация музыки продолжается...</p>
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                                 style="width: ${progressPercent}%" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
+                                 ${progressPercent}%
+                            </div>
+                        </div>
+                        <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
+                        ${data.api_status ? `<span class="badge bg-secondary ms-2">API статус: ${data.api_status}</span>` : ''}
+                        <span class="badge bg-light text-dark ms-2">Попытка: ${attempts}/${maxAttempts}</span>
+                    `;
+                }
+                
+                // Если описание музыки доступно, отображаем его
+                const musicDescription = document.getElementById('music-description');
+                if (musicDescription && data.music_description) {
+                    musicDescription.textContent = data.music_description;
+                }
+                
+                // Если достигнуто максимальное количество попыток, показываем сообщение
+                if (attempts >= maxAttempts) {
+                    console.log("Достигнуто максимальное количество попыток проверки статуса");
+                    
+                    if (errorElement) {
+                        errorElement.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h5>Превышено время ожидания</h5>
+                                <p>Проверка статуса генерации музыки заняла слишком много времени (${maxAttempts} попыток).</p>
+                                <div class="mt-3">
+                                    <p><strong>Что это означает?</strong></p>
+                                    <ul>
+                                        <li>Возможно, запрос всё ещё обрабатывается на серверах Suno</li>
+                                        <li>Возможно, возникла проблема при передаче результата</li>
+                                        <li>Возможно, запрос был отменен на стороне сервера</li>
+                                    </ul>
+                                    <p><strong>Что делать дальше?</strong></p>
+                                    <ul>
+                                        <li>Вы можете подождать ещё некоторое время и проверить позже</li>
+                                        <li>Вы можете попробовать сгенерировать музыку снова</li>
+                                        <li>Проверьте ваш API ключ и количество доступных кредитов</li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
+                                    Проверить статус еще раз
+                                </button>
+                                <button class="btn btn-outline-secondary mt-2 ms-2" onclick="location.reload()">
+                                    Обновить страницу
+                                </button>
+                            </div>
+                        `;
+                        errorElement.style.display = 'block';
+                    }
+                    
+                    if (loadingElement) loadingElement.style.display = 'none';
+                } else {
+                    // Продолжаем проверки с интервалом
+                    setTimeout(checkStatus, 5000); // Проверяем каждые 5 секунд
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка при проверке статуса:", error);
+                
+                if (errorElement) {
+                    errorElement.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>Ошибка при проверке статуса</h5>
+                            <p>${error.message || 'Произошла ошибка при проверке статуса генерации музыки'}</p>
+                            <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
+                                Попробовать снова
+                            </button>
+                        </div>
+                    `;
+                    errorElement.style.display = 'block';
+                }
+                
+                if (loadingElement) loadingElement.style.display = 'none';
+                
+                // Пробуем еще раз через 10 секунд, если не превышено максимальное количество попыток
+                if (attempts < maxAttempts) {
+                    setTimeout(checkStatus, 10000);
+                }
+            });
+    }
+    
+    // Запускаем первую проверку
+    checkStatus();
+}
+
+// Функция для отображения ошибки генерации музыки
+function showMusicError(errorText, errorDetails = null, taskId = null) {
+    const errorElement = document.getElementById('music-error');
+    const errorTextElement = document.getElementById('music-error-text');
+    
+    if (errorElement) {
+        // Создаем контейнер для отображения ошибки
+        errorElement.innerHTML = '';
+        errorElement.className = 'alert alert-danger';
+        
+        // Заголовок ошибки
+        const errorHeader = document.createElement('h5');
+        errorHeader.textContent = 'Ошибка при генерации музыки';
+        errorElement.appendChild(errorHeader);
+        
+        // Текст ошибки
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'mb-2';
+        errorMsg.textContent = errorText || 'Неизвестная ошибка';
+        errorElement.appendChild(errorMsg);
+        
+        // Если есть детали ошибки, добавляем их
+        if (errorDetails) {
+            const detailsContainer = document.createElement('div');
+            detailsContainer.className = 'alert alert-secondary small p-2 mb-2';
+            
+            // Если это объект, выводим его содержимое
+            if (typeof errorDetails === 'object' && errorDetails !== null) {
+                try {
+                    detailsContainer.textContent = JSON.stringify(errorDetails, null, 2);
+                } catch (e) {
+                    detailsContainer.textContent = "Не удалось отформатировать детали ошибки";
+                }
+            } else {
+                detailsContainer.textContent = errorDetails;
+            }
+            
+            errorElement.appendChild(detailsContainer);
+        }
+        
+        // Если есть task_id, добавляем его
+        if (taskId) {
+            const taskInfo = document.createElement('div');
+            taskInfo.className = 'small text-muted mb-2';
+            taskInfo.textContent = `ID задачи: ${taskId}`;
+            errorElement.appendChild(taskInfo);
+        }
+        
+        // Добавляем рекомендации по решению
+        const solutionsTitle = document.createElement('h6');
+        solutionsTitle.className = 'mt-3 mb-2';
+        solutionsTitle.textContent = 'Возможные решения:';
+        errorElement.appendChild(solutionsTitle);
+        
+        const solutionsList = document.createElement('ul');
+        solutionsList.className = 'small';
+        
+        // Добавляем типичные решения
+        const solutions = [
+            "Проверьте, что API ключ SUNO настроен правильно",
+            "Попробуйте повторить запрос позже (возможно, сервер перегружен)",
+            "Для ошибок 404: возможно, задача уже удалена или путь к API неверен",
+            "Для ошибок аутентификации: проверьте срок действия API ключа",
+            "Убедитесь, что у вас есть достаточно кредитов в аккаунте SUNO"
+        ];
+        
+        // Если в ошибке есть 404, добавляем специальные рекомендации
+        if (errorText && errorText.includes('404')) {
+            solutions.unshift(
+                "Это ошибка 'не найдено'. Возможно, задача уже обработана или удалена",
+                "Проверьте логи сервера для получения дополнительной информации"
+            );
+        }
+        
+        // Если в ошибке есть упоминание status, добавляем рекомендацию
+        if (errorText && errorText.includes('status')) {
+            solutions.unshift(
+                "Ошибка связана с проверкой статуса. Возможно, URL для проверки устарел"
+            );
+        }
+        
+        // Добавляем все решения в список
+        solutions.forEach(solution => {
+            const solutionItem = document.createElement('li');
+            solutionItem.textContent = solution;
+            solutionsList.appendChild(solutionItem);
+        });
+        
+        errorElement.appendChild(solutionsList);
+        
+        // Кнопка для повторной проверки статуса
+        if (taskId) {
+            const recheckButton = document.createElement('button');
+            recheckButton.className = 'btn btn-sm btn-outline-primary mt-3';
+            recheckButton.textContent = 'Проверить статус еще раз';
+            recheckButton.onclick = () => checkMusicGenerationStatus(taskId);
+            errorElement.appendChild(recheckButton);
+        }
+        
+        errorElement.style.display = 'block';
+    }
+}
+
+// Функция для отображения сгенерированной музыки
+function displayGeneratedMusic(musicData) {
+    console.log("Запуск функции displayGeneratedMusic с данными:", musicData);
+    
+    // Сначала делаем секцию музыки видимой
+    const musicSection = document.querySelector('.music-section');
+    if (musicSection) {
+        musicSection.style.display = 'block';
+        musicSection.style.visibility = 'visible';
+        musicSection.style.opacity = '1';
+    }
+    
+    const musicContainer = document.getElementById('generated-music-container');
+    const loadingElement = document.getElementById('music-loading');
+    const errorElement = document.getElementById('music-error');
+    
+    if (!musicContainer) {
+        console.error("Не найден контейнер для отображения музыки");
+        return;
+    }
+    
+    // Скрываем индикаторы загрузки и ошибок
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (errorElement) errorElement.style.display = 'none';
+    
+    // Проверка на валидность musicData
+    if (!musicData) {
+        console.error("Ошибка: musicData отсутствует или null");
+        if (errorElement) {
+            errorElement.textContent = "Ошибка при генерации музыки: Неверные данные";
+            errorElement.style.display = 'block';
+        }
+        return;
+    }
+    
+    console.log("Данные музыки:", musicData);
+    
+    // Получаем URL аудио в порядке приоритета
+    const localAudioUrl = musicData.local_audio_url || '';
+    const proxyUrl = musicData.proxy_url || '';
+    const audioUrl = musicData.audio_url || '';
+    const streamUrl = musicData.stream_url || '';
+    
+    // Используем первый доступный URL
+    const finalAudioUrl = localAudioUrl || proxyUrl || audioUrl || streamUrl;
+    console.log("Итоговый URL для аудио:", finalAudioUrl);
+    
+    if (finalAudioUrl) {
+        // Очищаем контейнер
+        musicContainer.innerHTML = '';
+        
+        // Создаем надежный контейнер для плеера
+        const audioPlayerWrapper = document.createElement('div');
+        audioPlayerWrapper.className = 'audio-player-wrapper';
+        audioPlayerWrapper.style.cssText = 'display:block !important; margin:20px 0 !important; padding:15px !important; border:2px solid #5a8bc6 !important; border-radius:8px !important;';
+        
+        // Заголовок
+        const title = document.createElement('h4');
+        title.style.cssText = 'margin-bottom:15px !important; font-weight:bold !important;';
+        title.textContent = 'Музыкальное сопровождение';
+        audioPlayerWrapper.appendChild(title);
+        
+        // Описание музыки, если есть
+        if (musicData.music_description) {
+            const description = document.createElement('p');
+            description.style.cssText = 'margin-bottom:15px !important; font-style:italic !important;';
+            description.textContent = musicData.music_description;
+            audioPlayerWrapper.appendChild(description);
+        }
+        
+        // Создаем первый аудиоплеер
+        const audioPlayer = document.createElement('audio');
+        audioPlayer.controls = true;
+        audioPlayer.autoplay = false;
+        audioPlayer.preload = 'auto';
+        audioPlayer.className = 'primary-audio-player';
+        audioPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:3px solid #4a76a8 !important; margin:10px 0 !important;';
+        
+        // Добавляем источник
+        const source = document.createElement('source');
+        source.src = finalAudioUrl;
+        source.type = 'audio/mpeg';
+        audioPlayer.appendChild(source);
+        
+        // Текст для браузеров, не поддерживающих аудио
+        audioPlayer.appendChild(document.createTextNode('Ваш браузер не поддерживает HTML5 аудио.'));
+        
+        // Добавляем плеер в контейнер
+        audioPlayerWrapper.appendChild(audioPlayer);
+        
+        // Создаем контейнер для кнопок
+        const actionsContainer = document.createElement('div');
+        actionsContainer.style.cssText = 'display:flex !important; justify-content:space-between !important; align-items:center !important; margin-top:15px !important;';
+        
+        // Добавляем кнопку для скачивания
+        const downloadLink = document.createElement('a');
+        downloadLink.href = finalAudioUrl;
+        downloadLink.download = 'music_download.mp3';
+        downloadLink.className = 'download-audio-btn';
+        downloadLink.style.cssText = 'display:inline-block !important; padding:10px 20px !important; text-decoration:none !important; border-radius:5px !important; font-weight:bold !important;';
+        downloadLink.innerHTML = '<i class="bi bi-download"></i> Скачать аудиофайл';
+        actionsContainer.appendChild(downloadLink);
+        
+        // Добавляем кнопку "Не работает?"
+        const troubleshootBtn = document.createElement('button');
+        troubleshootBtn.className = 'btn btn-outline-secondary btn-sm';
+        troubleshootBtn.type = 'button';
+        troubleshootBtn.innerHTML = '<i class="bi bi-question-circle"></i> Не работает?';
+        troubleshootBtn.style.cssText = 'margin-left:15px !important;';
+        troubleshootBtn.onclick = function() {
+            // При нажатии создаем и показываем резервные плееры
+            createBackupPlayer(finalAudioUrl);
+            
+            // Отключаем кнопку, чтобы не создавать плееры многократно
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-check-circle"></i> Резервные плееры активированы';
+        };
+        actionsContainer.appendChild(troubleshootBtn);
+        
+        // Добавляем контейнер с кнопками
+        audioPlayerWrapper.appendChild(actionsContainer);
+        
+        // Добавляем обертку в контейнер
+        musicContainer.appendChild(audioPlayerWrapper);
+        
+        // Принудительно отображаем контейнер
+        musicContainer.style.display = 'block';
+        musicContainer.style.visibility = 'visible';
+        musicContainer.style.opacity = '1';
+        
+        console.log("Создан основной аудиоплеер для URL:", finalAudioUrl);
+        
+    } else if (musicData.task_id) {
+        // Если есть task_id, показываем индикатор загрузки и запускаем проверку статуса
+        if (loadingElement) {
+            loadingElement.style.display = 'block';
+            loadingElement.innerHTML = `
+                <p class="text-muted">Генерация музыки...</p>
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+                </div>
+                <span class="badge bg-info">Идентификатор задачи: ${musicData.task_id}</span>
+            `;
+        }
+        
+        // Запускаем проверку статуса
+        checkMusicGenerationStatus(musicData.task_id);
+    } else {
+        // Нет данных для отображения музыки
+        if (errorElement) {
+            errorElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    <strong>Нет данных для воспроизведения музыки</strong>
+                    <p>Не удалось найти источник аудио. Пожалуйста, повторите попытку.</p>
+                </div>
+            `;
+            errorElement.style.display = 'block';
+        }
+    }
+    
+    // Показываем секцию обратной связи для музыки
+    const musicFeedback = document.getElementById('music-feedback');
+    if (musicFeedback) {
+        musicFeedback.style.display = 'block';
+    }
+    
+    console.log("Музыкальная секция успешно отображена");
+}
+
+// Функция для создания резервного плеера
+function createBackupPlayer(audioUrl) {
+    console.log("Создание резервных плееров для URL:", audioUrl);
+    
+    if (!audioUrl) {
+        console.error("Ошибка: пустой URL для резервного плеера");
+        return;
+    }
+    
+    const parentContainer = document.getElementById('music-results');
+    if (!parentContainer) {
+        console.error("Не найден родительский контейнер #music-results");
+        return;
+    }
+    
+    // Проверяем, есть ли уже резервный плеер
+    if (document.querySelector('.backup-player')) {
+        console.log("Резервные плееры уже созданы, делаем их видимыми");
+        document.querySelectorAll('.backup-player').forEach(player => {
+            player.style.display = 'block';
+        });
+        return;
+    }
+    
+    // Создаем контейнер для резервных плееров
+    const backupContainer = document.createElement('div');
+    backupContainer.className = 'backup-player';
+    backupContainer.style.cssText = 'border:2px solid #4a76a8 !important; border-radius:8px !important; padding:15px !important; margin:20px 0 !important; display:block !important;';
+    
+    // Заголовок
+    const title = document.createElement('h4');
+    title.style.cssText = 'margin-bottom:15px !important; font-weight:bold !important;';
+    title.textContent = 'Резервные аудиоплееры';
+    backupContainer.appendChild(title);
+    
+    // Информационное сообщение
+    const info = document.createElement('p');
+    info.style.cssText = 'margin-bottom:10px !important;';
+    info.textContent = 'Если основной плеер не отображается, используйте эти альтернативные плееры:';
+    backupContainer.appendChild(info);
+    
+    // Создаем первый резервный плеер
+    const backupPlayerContainer = document.createElement('div');
+    backupPlayerContainer.className = 'backup-player-item';
+    backupPlayerContainer.style.cssText = 'border:1px solid #dddddd !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
+    
+    // Заголовок плеера
+    const playerTitle = document.createElement('h5');
+    playerTitle.textContent = 'Вариант 1: Стандартный HTML5 плеер';
+    playerTitle.style.cssText = 'margin-bottom:10px !important; font-size:16px !important;';
+    backupPlayerContainer.appendChild(playerTitle);
+    
+    // Создаем аудиоплеер
+    const backupPlayer = document.createElement('audio');
+    backupPlayer.controls = true;
+    backupPlayer.preload = 'auto';
+    backupPlayer.className = 'backup-audio-player';
+    backupPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:2px solid #4a76a8 !important; margin:10px 0 !important;';
+    
+    // Добавляем источник
+    const source = document.createElement('source');
+    source.src = audioUrl;
+    source.type = 'audio/mpeg';
+    backupPlayer.appendChild(source);
+    
+    // Текст для браузеров, не поддерживающих аудио
+    backupPlayer.appendChild(document.createTextNode('Ваш браузер не поддерживает HTML5 аудио.'));
+    
+    // Добавляем плеер в контейнер
+    backupPlayerContainer.appendChild(backupPlayer);
+    
+    // Добавляем кнопки для действий с аудио
+    const actionsDiv = document.createElement('div');
+    actionsDiv.style.cssText = 'display:flex !important; justify-content:center !important; gap:10px !important; margin-top:15px !important;';
+    
+    // Кнопка скачивания
+    const downloadLink = document.createElement('a');
+    downloadLink.href = audioUrl;
+    downloadLink.download = 'music_download.mp3';
+    downloadLink.className = 'btn btn-primary btn-sm';
+    downloadLink.style.cssText = 'font-weight:bold !important;';
+    downloadLink.innerHTML = '<i class="bi bi-download"></i> Скачать аудио';
+    actionsDiv.appendChild(downloadLink);
+    
+    // Кнопка открыть в новом окне
+    const openLink = document.createElement('a');
+    openLink.href = audioUrl;
+    openLink.target = '_blank';
+    openLink.className = 'btn btn-outline-primary btn-sm';
+    openLink.style.cssText = 'font-weight:bold !important;';
+    openLink.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> Открыть в новой вкладке';
+    actionsDiv.appendChild(openLink);
+    
+    backupPlayerContainer.appendChild(actionsDiv);
+    backupContainer.appendChild(backupPlayerContainer);
+    
+    // Создаем второй резервный вариант с простым аудио без стилей
+    const rawPlayerContainer = document.createElement('div');
+    rawPlayerContainer.className = 'backup-player-item';
+    rawPlayerContainer.style.cssText = 'border:1px solid #dddddd !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
+    
+    // Заголовок
+    const rawPlayerTitle = document.createElement('h5');
+    rawPlayerTitle.textContent = 'Вариант 2: Простой аудиоплеер';
+    rawPlayerTitle.style.cssText = 'margin-bottom:10px !important; font-size:16px !important;';
+    rawPlayerContainer.appendChild(rawPlayerTitle);
+    
+    // Описание
+    const rawPlayerDesc = document.createElement('p');
+    rawPlayerDesc.className = 'small text-muted';
+    rawPlayerDesc.textContent = 'Упрощенный вариант плеера, который может работать в старых браузерах:';
+    rawPlayerContainer.appendChild(rawPlayerDesc);
+    
+    // Создаем HTML5 аудиоэлемент
+    const rawHtmlAudio = document.createElement('audio');
+    rawHtmlAudio.controls = true;
+    rawHtmlAudio.preload = 'auto';
+    rawHtmlAudio.style.cssText = 'display:block !important; width:100% !important;';
+    
+    const rawSource = document.createElement('source');
+    rawSource.src = audioUrl;
+    rawSource.type = 'audio/mpeg';
+    rawHtmlAudio.appendChild(rawSource);
+    rawHtmlAudio.appendChild(document.createTextNode('Ваш браузер не поддерживает HTML5 аудио.'));
+    
+    rawPlayerContainer.appendChild(rawHtmlAudio);
+    
+    // Прямая ссылка на аудиофайл
+    const directLinkContainer = document.createElement('div');
+    directLinkContainer.className = 'mt-3';
+    directLinkContainer.innerHTML = `
+        <p class="small text-muted mb-1">Прямая ссылка на аудиофайл:</p>
+        <a href="${audioUrl}" target="_blank" class="small d-block text-break">${audioUrl}</a>
+    `;
+    rawPlayerContainer.appendChild(directLinkContainer);
+    
+    backupContainer.appendChild(rawPlayerContainer);
+    
+    // Кнопка закрытия резервных плееров
+    const closeButton = document.createElement('button');
+    closeButton.className = 'btn btn-outline-secondary btn-sm mt-3';
+    closeButton.innerHTML = '<i class="bi bi-x-circle"></i> Скрыть резервные плееры';
+    closeButton.onclick = function() {
+        backupContainer.style.display = 'none';
+        
+        // Находим кнопку "Не работает?" и активируем ее снова
+        const musicResults = document.getElementById('music-results');
+        if (musicResults) {
+            const troubleshootBtns = musicResults.querySelectorAll('button');
+            troubleshootBtns.forEach(btn => {
+                if (btn.innerHTML.includes('Резервные плееры активированы') || btn.innerHTML.includes('Не работает')) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-question-circle"></i> Не работает?';
+                }
+            });
+        }
+    };
+    backupContainer.appendChild(closeButton);
+    
+    // Добавляем контейнер с резервными плеерами на страницу
+    parentContainer.appendChild(backupContainer);
+    
+    console.log("Резервные плееры успешно созданы");
+    
+    // Через 1 секунду форсированно пытаемся проиграть аудио, чтобы проверить его работоспособность
+    setTimeout(() => {
+        try {
+            backupPlayer.load();
+            console.log("Выполнена принудительная перезагрузка аудио");
+        } catch (e) {
+            console.error("Ошибка при перезагрузке аудио:", e);
+        }
+    }, 1000);
+}
+
+// Функция для обновления интерфейса в зависимости от выбранных типов генерации
+function updateGenerationUI() {
+    const selectedTypes = Array.from(document.querySelectorAll('input[name="generation_types[]"]:checked')).map(input => input.value);
+    const submitButton = document.querySelector('#diary-form button[type="submit"]');
+    
+    // Определяем, какие секции результатов показывать при анализе
+    const showText = selectedTypes.includes('text');
+    const showImage = selectedTypes.includes('image');
+    const showMusic = selectedTypes.includes('music');
+    
+    // Находим секции результатов
+    const literaryResults = document.getElementById('literary-results');
+    const imageResults = document.getElementById('image-results');
+    const musicResults = document.getElementById('music-results');
+    
+    // Настраиваем видимость секций (только если результаты отображаются)
+    if (document.getElementById('results').style.display !== 'none') {
+        // Показываем/скрываем секции в зависимости от выбранных типов
+        if (literaryResults) {
+            const literaryCard = literaryResults.closest('.card');
+            if (literaryCard) literaryCard.style.display = showText ? 'block' : 'none';
+        }
+        
+        if (imageResults) {
+            const imageCard = imageResults.closest('.card');
+            if (imageCard) imageCard.style.display = showImage ? 'block' : 'none';
+        }
+        
+        if (musicResults) {
+            const musicCard = musicResults.closest('.card');
+            if (musicCard) musicCard.style.display = showMusic ? 'block' : 'none';
+        }
+    }
+    
+    // Настраиваем текст кнопки
+    if (submitButton) {
+        if (selectedTypes.length === 0) {
+            submitButton.textContent = 'Выберите тип генерации';
+            submitButton.disabled = true;
+        } else if (selectedTypes.length === 3) {
+            submitButton.textContent = 'Анализировать и создать всё';
+            submitButton.disabled = false;
+        } else {
+            const types = [];
+            if (showText) types.push('текст');
+            if (showImage) types.push('иллюстрацию');
+            if (showMusic) types.push('музыку');
+            submitButton.textContent = `Анализировать и создать ${types.join(' и ')}`;
+            submitButton.disabled = false;
+        }
+    }
+}
+
+// Функция для отдельной генерации изображения
+function generateImageOnly(text, emotions) {
+    // Находим или создаем контейнер для изображения
+    let imageSection = document.querySelector('.image-section');
+    if (!imageSection) {
+        imageSection = document.createElement('div');
+        imageSection.className = 'image-section mt-4 p-3 border rounded bg-light';
+        
+        // Заголовок
+        const header = document.createElement('h3');
+        header.textContent = 'Сгенерированное изображение';
+        imageSection.appendChild(header);
+        
+        // Контейнер для результатов
+        const imageResults = document.createElement('div');
+        imageResults.id = 'image-results';
+        imageSection.appendChild(imageResults);
+        
+        // Индикатор загрузки
+        const loading = document.createElement('div');
+        loading.id = 'image-loading';
+        loading.className = 'progress my-3';
+        loading.innerHTML = `
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" style="width: 100%"></div>
+        `;
+        imageResults.appendChild(loading);
+        
+        // Контейнер для изображения
+        const imageContainer = document.createElement('div');
+        imageContainer.id = 'generated-image-container';
+        imageContainer.className = 'text-center mb-3';
+        imageContainer.style.display = 'none';
+        
+        const imageElement = document.createElement('img');
+        imageElement.id = 'generated-image';
+        imageElement.className = 'img-fluid rounded shadow';
+        imageElement.alt = 'Сгенерированная иллюстрация';
+        
+        imageContainer.appendChild(imageElement);
+        imageResults.appendChild(imageContainer);
+        
+        // Добавляем на страницу
+        const resultsSection = document.getElementById('results');
+        if (resultsSection) {
+            resultsSection.appendChild(imageSection);
+        } else {
+            document.body.appendChild(imageSection);
+        }
+    }
+    
+    // Показываем секцию
+    imageSection.style.display = 'block';
+    imageSection.classList.add('fadeIn');
+    
+    // Показываем индикатор загрузки
+    const loadingElement = document.getElementById('image-loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'block';
+        loadingElement.innerHTML = `
+            <p class="text-muted">Генерация изображения...</p>
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 100%"></div>
+            </div>`;
+    }
+    
+    // Отправляем запрос на генерацию изображения
+    fetch('/generate_image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            text: text,
+            emotion_analysis: emotions
+        })
+    })
+    .then(response => {
+        // Проверяем, что ответ - JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Сервер вернул не JSON ответ');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Ответ от сервера /generate_image:', data);
+        
+        // Обрабатываем успешный ответ
+        if (data.success) {
+            // Сохраняем внешний URL, если он есть
+            if (data.external_url) {
+                window.lastGeneratedImageExternalUrl = data.external_url;
+            }
+            
+            // Показываем изображение
+            displayGeneratedImage(data.image_url);
+        }
+        // Обрабатываем ошибку
+        else {
+            if (loadingElement) {
+                // Проверяем, является ли ошибка связанной с запрещенным контентом
+                // Примечание: API может вернуть поля на верхнем уровне, а не внутри генерированного изображения
+                if (data.type === 'content_policy_violation' && data.can_regenerate_safe) {
+                    // Показываем специальное сообщение с возможностью перегенерации
+                    loadingElement.innerHTML = `
+                        <div class="alert alert-warning shadow-lg fade show p-4 mb-3" style="border-left: 6px solid #ffc107; animation: fadeIn 0.5s;">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                                <div>
+                                    <h5 class="mb-1 fw-bold">Нарушение политики контента</h5>
+                                    <div class="text-muted small">Некоторые описания в тексте дневника не могут быть визуализированы согласно политике OpenAI.</div>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <strong>${data.generated_image.error}</strong>
+                            </div>
+                            <div class="mb-3">
+                                <ul class="mb-2 ps-4">
+                                    <li>Выберите другой отрывок дневника без описаний насилия</li>
+                                    <li>Или попробуйте создать <b>символическую иллюстрацию</b> (качество и точность могут отличаться)</li>
+                                </ul>
+                                <div class="alert alert-info py-2 px-3 small mb-2">
+                                    <i class="bi bi-info-circle"></i> Символическая иллюстрация будет создана без сцен насилия, но с сохранением атмосферы и эпохи.
+                                </div>
+                            </div>
+                            <button id="generate-safe-image" class="btn btn-lg btn-outline-warning w-100 fw-bold">
+                                <i class="bi bi-shield-check"></i> Создать символическую иллюстрацию
+                            </button>
+                        </div>`;
+                    loadingElement.classList.remove('progress');
+                    
+                    // Добавляем обработчик для кнопки перегенерации
+                    document.getElementById('generate-safe-image').addEventListener('click', function() {
+                        // Показываем индикатор загрузки
+                        loadingElement.innerHTML = `
+                            <div class="alert alert-warning mb-3">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                <strong>Внимание!</strong> Изображение будет сгенерировано на основе безопасного альтернативного промпта из-за нарушения политики содержания OpenAI. 
+                                Качество и точность изображения могут отличаться от исходной задумки.
+                            </div>
+                            <p class="text-muted">Генерация символического изображения...</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 100%"></div>
+                            </div>`;
+                        
+                        // Отправляем запрос на генерацию безопасного изображения
+                        fetch('/generate_safe_image', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({
+                                diary_text: document.getElementById('diary_text').value
+                            })
+                        })
+                        .then(response => {
+                            // Проверяем, что ответ - JSON
+                            const contentType = response.headers.get('content-type');
+                            if (!contentType || !contentType.includes('application/json')) {
+                                throw new Error('Сервер вернул не JSON ответ');
+                            }
+                            return response.text();
+                        })
+                        .then(responseText => {
+                            // Безопасный парсинг JSON-ответа с проверкой
+                            let data;
+                            try {
+                                data = JSON.parse(responseText);
+                                console.log("Получен ответ для безопасного изображения:", data);
+                            } catch (e) {
+                                console.error("Ошибка парсинга JSON:", e, "Текст ответа:", responseText);
+                                throw new Error("Ошибка парсинга JSON-ответа");
+                            }
+                            
+                            if (data.success && data.image_url) {
+                                // Сохраняем внешний URL, если он есть
+                                if (data.external_url) {
+                                    window.lastGeneratedImageExternalUrl = data.external_url;
+                                }
+                                
+                                // Показываем сгенерированное безопасное изображение
+                                displayGeneratedImage(data.image_url);
+                                
+                                // Добавляем уведомление о символической альтернативе
+                                const noticeElement = document.createElement('div');
+                                noticeElement.className = 'alert alert-info mt-3';
+                                noticeElement.innerHTML = `
+                                    <i class="fas fa-info-circle"></i>
+                                    Было создано символическое изображение вместо прямой иллюстрации содержимого дневника.
+                                `;
+                                document.getElementById('image-results').appendChild(noticeElement);
+                            } else {
+                                // Показываем ошибку
+                                loadingElement.innerHTML = `
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Не удалось сгенерировать даже символическое изображение: ${data.error || 'Неизвестная ошибка'}
+                                    </div>`;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при запросе безопасного изображения:', error);
+                            loadingElement.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+                                </div>`;
+                        });
+                    });
+                } else {
+                    // Обычная ошибка
+                    loadingElement.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Не удалось сгенерировать изображение: ${data.error || 'Неизвестная ошибка'}
+                        </div>`;
+                    loadingElement.classList.remove('progress');
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка при запросе изображения:', error);
+        if (loadingElement) {
+            loadingElement.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+                </div>`;
+        }
+    });
+    
+    // Прокручиваем страницу к результатам
+    const resultsSection = document.getElementById('results');
+    if (resultsSection) {
+        resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Добавим кнопку для тестирования функционала отдельной генерации изображения
+document.addEventListener('DOMContentLoaded', function() {
+    // Создаем кнопку тестирования
+    const testButton = document.createElement('button');
+    testButton.id = 'test-policy-violation';
+    testButton.className = 'btn btn-sm btn-outline-danger mt-2';
+    testButton.textContent = 'Тест обработки запрещенного контента';
+    
+    // Находим подходящее место для кнопки
+    const formControls = document.querySelector('.form-controls');
+    if (formControls) {
+        formControls.appendChild(testButton);
+    } else {
+        // Если нет подходящего места, добавляем после формы
+        const analysisForm = document.getElementById('analysis-form');
+        if (analysisForm) {
+            analysisForm.insertAdjacentElement('afterend', testButton);
+        }
+    }
+    
+    // Добавляем обработчик события
+    testButton.addEventListener('click', function() {
+        // Используем специальный тестовый текст с описаниями насилия
+        const testText = `
+12 августа 1943 года. Под Курском.
+
+Сегодня был страшный бой. Наш батальон попал под массированный огонь немецких пулеметов. Я видел, как пули прошивали тела моих товарищей. Кровь была везде.
+
+Вчера нам удалось захватить немецкий танк. Мы расстреляли экипаж, когда они пытались выбраться. Их командир умолял сохранить ему жизнь, но после того, что они сделали с нашей деревней, пощады не было.
+
+Ночью помогал санитарам собирать раненых. Многие были изуродованы до неузнаваемости. У Петровича оторвало обе ноги, но он еще был жив, когда мы его нашли. Умер по дороге в медсанбат.
+
+Мы нашли тела мирных жителей со следами пыток. Женщины и дети... Не могу описать, что с ними сделали. После этого мы поклялись не брать пленных.
+
+Завтра снова в бой. Запас патронов пополнили, гранаты получили. Командир сказал, будем прорываться к железнодорожной станции. Немцы хорошо укрепились, но мы должны выбить их оттуда любой ценой.`;
+        
+        // Эмоциональный анализ (упрощенный)
+        const emotions = {
+            "primary_emotions": [
+                {"emotion": "ужас", "intensity": 9},
+                {"emotion": "гнев", "intensity": 8},
+                {"emotion": "отчаяние", "intensity": 7}
+            ],
+            "emotional_tone": "мрачный"
+        };
+        
+        // Вызываем функцию генерации изображения
+        generateImageOnly(testText, emotions);
+    });
+});
+
+// Добавляем функцию для тестирования обработки запрещенного контента
+function testContentPolicyViolation() {
+    console.log("Тестирование обработки запрещенного контента...");
+    
+    // Используем специальный тестовый текст с явными описаниями насилия и крови
+    const testText = `
+12 августа 1943 года. Под Курском.
+
+Сегодня был страшный бой. Наш батальон попал под массированный огонь немецких пулеметов. Я видел, как пули прошивали тела моих товарищей. Кровь была везде.
+
+Вчера нам удалось захватить немецкий танк. Мы расстреляли экипаж, когда они пытались выбраться. Их командир умолял сохранить ему жизнь, но после того, что они сделали с нашей деревней, пощады не было.
+
+Ночью помогал санитарам собирать раненых. Многие были изуродованы до неузнаваемости. У Петровича оторвало обе ноги, но он еще был жив, когда мы его нашли. Умер по дороге в медсанбат.
+
+Мы нашли тела мирных жителей со следами пыток. Женщины и дети... Не могу описать, что с ними сделали. После этого мы поклялись не брать пленных.`;
+
+    // Показываем текст теста в специальном блоке
+    const testInfoBlock = document.createElement('div');
+    testInfoBlock.className = 'alert alert-info';
+    testInfoBlock.innerHTML = `
+        <strong>Тестирование политики контента OpenAI:</strong>
+        <p>Запускаем тестовый запрос с текстом, содержащим явное насилие.</p>
+        <p>Должно появиться предупреждение о нарушении политики контента.</p>
+    `;
+    
+    // Создаем или находим секцию изображения
+    let imageSection = document.querySelector('.image-section');
+    if (!imageSection) {
+        imageSection = document.createElement('div');
+        imageSection.className = 'image-section mt-4 p-3 border rounded bg-light';
+        
+        // Заголовок
+        const header = document.createElement('h3');
+        header.textContent = 'Тест политики содержания';
+        imageSection.appendChild(header);
+        
+        // Контейнер для результатов
+        const imageResults = document.createElement('div');
+        imageResults.id = 'image-results';
+        imageSection.appendChild(imageResults);
+        
+        // Добавляем секцию в интерфейс
+        const generatedContent = document.getElementById('generated-content');
+        if (generatedContent) {
+            generatedContent.appendChild(imageSection);
+        } else {
+            document.body.appendChild(imageSection);
+        }
+    }
+    
+    // Находим или создаем контейнер для загрузки
+    let loadingElement = document.getElementById('image-loading');
+    if (!loadingElement) {
+        loadingElement = document.createElement('div');
+        loadingElement.id = 'image-loading';
+        loadingElement.className = 'loading-indicator mb-3';
+        
+        const imageResults = document.getElementById('image-results');
+        if (imageResults) {
+            imageResults.appendChild(loadingElement);
+        } else {
+            imageSection.appendChild(loadingElement);
+        }
+    }
+    
+    // Показываем информационный блок и индикатор загрузки
+    document.getElementById('image-results').innerHTML = '';
+    document.getElementById('image-results').appendChild(testInfoBlock);
+    
+    // Показываем индикатор загрузки
+    loadingElement.className = 'loading-indicator mb-3 progress';
+    loadingElement.innerHTML = `
+        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+            role="progressbar" style="width: 100%"></div>
+    `;
+    
+    document.getElementById('image-results').appendChild(loadingElement);
+    
+    // Прокручиваем страницу к результатам
+    imageSection.scrollIntoView({ behavior: 'smooth' });
+    
+    // Отправляем запрос на генерацию изображения
+    fetch('/generate_image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            text: testText,
+            emotion_analysis: {
+                "primary_emotions": [
+                    {"emotion": "ужас", "intensity": 9},
+                    {"emotion": "гнев", "intensity": 8},
+                    {"emotion": "скорбь", "intensity": 7}
+                ],
+                "emotional_tone": "тяжелый и напряженный",
+                "hidden_motives": ["жажда мести", "стремление выжить"],
+                "attitude": "ненависть к врагу"
+            }
+        })
+    })
+    .then(response => {
+        // Проверяем, что ответ - JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Сервер вернул не JSON ответ');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Ответ от сервера /generate_image (тест):', data);
+        
+        // Обрабатываем успешный ответ
+        if (data.success) {
+            // Это неожиданно - текст должен был вызвать ошибку политики содержания
+            loadingElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>Неожиданный результат:</strong> Запрос не вызвал ошибку политики содержания, хотя должен был.
+                </div>`;
+            
+            // Показываем изображение, которое было сгенерировано
+            displayGeneratedImage(data.image_url);
+        }
+        // Обрабатываем ошибку
+        else {
+            // Проверяем, является ли ошибка связанной с политикой содержания
+            if (data.type === 'content_policy_violation' && data.can_regenerate_safe) {
+                // Это ожидаемый результат - показываем сообщение об успешном тесте
+                loadingElement.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> 
+                        <strong>Тест успешен!</strong> Система правильно определила нарушение политики содержания.
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>${data.error}</strong>
+                        <p class="mt-2">Вы можете:</p>
+                        <ul>
+                            <li>Выбрать другой отрывок дневника без описаний насилия</li>
+                            <li>Сгенерировать символическую иллюстрацию (качество может быть ниже и содержание менее точным)</li>
+                        </ul>
+                        <button id="generate-safe-image-test" class="btn btn-sm btn-outline-primary mt-2">
+                            Создать символическую иллюстрацию
+                        </button>
+                    </div>`;
+                
+                // Добавляем обработчик для кнопки перегенерации
+                document.getElementById('generate-safe-image-test').addEventListener('click', function() {
+                    // Показываем индикатор загрузки и предупреждение
+                    loadingElement.innerHTML = `
+                        <div class="alert alert-warning mb-3">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Внимание!</strong> Изображение будет сгенерировано на основе безопасного альтернативного промпта из-за нарушения политики содержания OpenAI. 
+                            Качество и точность изображения могут отличаться от исходной задумки.
+                        </div>
+                        <p class="text-muted">Генерация символического изображения...</p>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 100%"></div>
+                        </div>`;
+                    
+                    // Отправляем запрос на генерацию безопасного изображения
+                    fetch('/generate_safe_image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            diary_text: testText
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Получен ответ для безопасного изображения (тест):", data);
+                        
+                        if (data.success && data.image_url) {
+                            // Показываем сгенерированное безопасное изображение
+                            displayGeneratedImage(data.image_url);
+                            
+                            // Добавляем уведомление о символической альтернативе
+                            const noticeElement = document.createElement('div');
+                            noticeElement.className = 'alert alert-info mt-3';
+                            noticeElement.innerHTML = `
+                                <i class="fas fa-info-circle"></i>
+                                Было создано символическое изображение вместо прямой иллюстрации содержимого дневника.
+                            `;
+                            document.getElementById('image-results').appendChild(noticeElement);
+                        } else {
+                            // Показываем ошибку
+                            loadingElement.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Не удалось сгенерировать символическое изображение: ${data.error || 'Неизвестная ошибка'}
+                                </div>`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при запросе безопасного изображения (тест):', error);
+                        loadingElement.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+                            </div>`;
+                    });
+                });
+            } else {
+                // Обычная ошибка
+                loadingElement.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Не удалось сгенерировать изображение: ${data.error || 'Неизвестная ошибка'}
+                    </div>`;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка при тестировании политики содержания:', error);
+        loadingElement.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                Ошибка при запросе: ${error.message || 'Неизвестная ошибка'}
+            </div>`;
+    });
+}
+
+// Добавляем обработчик для кнопки тестирования
+document.addEventListener('DOMContentLoaded', function() {
+    // Создаем кнопку тестирования
+    const testButton = document.createElement('button');
+    testButton.id = 'test-policy-violation';
+    testButton.className = 'btn btn-sm btn-outline-danger mt-2';
+    testButton.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Тест обработки жестокого контента';
+    testButton.style.marginLeft = '10px';
+    
+    // Находим подходящее место для кнопки
+    const formControls = document.querySelector('.form-controls');
+    if (formControls) {
+        formControls.appendChild(testButton);
+    } else {
+        // Если нет подходящего места, добавляем после формы
+        const analysisForm = document.getElementById('analysis-form');
+        if (analysisForm) {
+            analysisForm.insertAdjacentElement('afterend', testButton);
+        }
+    }
+    
+    // Добавляем обработчик события для нашей улучшенной функции тестирования
+    testButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        testContentPolicyViolation();
+    });
+});
+
+// Функция для гарантированного отображения музыкального плеера
+document.addEventListener('DOMContentLoaded', function() {
+    // Устанавливаем таймер для проверки состояния музыкального плеера
+    setTimeout(function() {
+        // Находим музыкальную секцию и делаем ее видимой
+        const musicSection = document.querySelector('.music-section');
+        if (musicSection) {
+            console.log('Принудительное отображение музыкальной секции');
+            musicSection.style.display = 'block';
+            musicSection.style.opacity = '1';
+            musicSection.style.visibility = 'visible';
+        }
+        
+        // Находим контейнер музыки и делаем его видимым
+        const musicContainer = document.getElementById('generated-music-container');
+        if (musicContainer) {
+            console.log('Принудительное отображение контейнера музыки');
+            musicContainer.style.display = 'block';
+            musicContainer.style.opacity = '1';
+            musicContainer.style.visibility = 'visible';
+        }
+        
+        // Проверяем наличие аудио элементов и делаем их видимыми
+        const audioElements = document.querySelectorAll('audio');
+        if (audioElements.length > 0) {
+            console.log(`Обнаружено ${audioElements.length} аудио элементов`);
+            audioElements.forEach((audio, index) => {
+                console.log(`Принудительное отображение аудио элемента ${index + 1}`);
+                audio.style.display = 'block';
+                audio.style.opacity = '1';
+                audio.style.visibility = 'visible';
+                audio.style.width = '100%';
+                
+                // Добавляем обработчик ошибок для отладки
+                audio.onerror = function(e) {
+                    console.error(`Ошибка в аудио элементе ${index + 1}:`, e);
+                };
+                
+                // Перезагружаем аудио для принудительной инициализации
+                try {
+                    audio.load();
+                } catch (e) {
+                    console.warn(`Не удалось перезагрузить аудио ${index + 1}:`, e);
+                }
+            });
+        } else {
+            console.log('Аудио элементы не найдены');
+        }
+        
+        // Создаем альтернативный плеер, если не обнаружено работающих плееров
+        const parentContainer = document.getElementById('music-results');
+        if (parentContainer && audioElements.length === 0) {
+            console.log('Создание альтернативного аудио плеера');
+            
+            // Ищем потенциальные источники аудио в метаданных
+            const metadataElements = document.querySelectorAll('pre');
+            let audioUrls = [];
+            
+            metadataElements.forEach(el => {
+                try {
+                    const text = el.textContent;
+                    if (text && text.includes('audio_url') || text.includes('local_audio_url')) {
+                        // Ищем URL-ы аудио с помощью регулярных выражений
+                        const urlMatches = text.match(/"(local_audio_url|audio_url|stream_url)"\s*:\s*"([^"]+)"/g);
+                        if (urlMatches) {
+                            urlMatches.forEach(match => {
+                                const url = match.split(':')[1].trim().replace(/"/g, '');
+                                if (url.startsWith('http') || url.startsWith('/')) {
+                                    audioUrls.push(url);
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Ошибка при поиске URL-ов аудио:', e);
+                }
+            });
+            
+            // Создаем альтернативный плеер
+            const alternativePlayer = document.createElement('div');
+            alternativePlayer.className = 'card p-3 mt-3 alternative-player';
+            alternativePlayer.innerHTML = `
+                <h5>Альтернативный аудио плеер</h5>
+                <p class="text-muted small">Используйте этот плеер, если основной не отображается</p>
+                <audio controls style="width: 100%; display: block;">
+                    ${audioUrls.map(url => `<source src="${url}" type="audio/mpeg">`).join('')}
+                    Ваш браузер не поддерживает аудио элемент.
+                </audio>
+            `;
+            parentContainer.appendChild(alternativePlayer);
+        }
+    }, 2000); // Проверяем через 2 секунды после загрузки страницы
+});
+
+// Функция, которая запускается после загрузки страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Через 3 секунды запускаем проверку и восстановление всех аудиоплееров
+    setTimeout(ensureAudioPlayersVisible, 3000);
+});
+
+// Функция для принудительного отображения всех аудиоплееров
+function ensureAudioPlayersVisible() {
+    console.log("Запуск функции проверки видимости аудиоплееров");
+    
+    // Показываем секцию с музыкой, если она есть
+    const musicSection = document.querySelector('.music-section');
+    if (musicSection) {
+        console.log("Делаем секцию музыки видимой");
+        musicSection.style.display = 'block';
+        musicSection.style.visibility = 'visible';
+        musicSection.style.opacity = '1';
+    }
+    
+    // Делаем видимыми все контейнеры
+    const containers = [
+        '#generated-music-container',
+        '#music-results',
+        '.audio-player-container',
+        '.audio-player-wrapper'
+    ];
+    
+    containers.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length) {
+            console.log(`Найдено ${elements.length} элементов для селектора ${selector}`);
+            elements.forEach(el => {
+                el.style.display = 'block';
+                el.style.visibility = 'visible';
+                el.style.opacity = '1';
+                console.log(`Элемент с селектором ${selector} сделан видимым`);
+            });
+        } else {
+            console.log(`Не найдено элементов для селектора ${selector}`);
+        }
+    });
+    
+    // Делаем видимыми все аудиоплееры
+    const audioPlayers = document.querySelectorAll('audio');
+    if (audioPlayers.length) {
+        console.log(`Найдено ${audioPlayers.length} аудиоплееров`);
+        
+        audioPlayers.forEach(player => {
+            // Применяем стили напрямую к элементу
+            player.style.display = 'block';
+            player.style.visibility = 'visible';
+            player.style.opacity = '1';
+            player.style.width = '100%';
+            player.style.minHeight = '50px';
+            player.style.border = '2px solid #4a76a8';
+            player.style.backgroundColor = '#f5f5f5';
+            player.style.margin = '15px 0';
+            player.style.zIndex = '9999';
+            
+            // Принудительно загружаем аудио
+            try {
+                player.load();
+                console.log("Перезагружен аудиоплеер");
+            } catch (e) {
+                console.error("Ошибка при перезагрузке аудиоплеера:", e);
+            }
+        });
+    } else {
+        console.log("Не найдено аудиоплееров на странице");
+        
+        // Проверяем, есть ли URL аудио в скрытых элементах
+        checkForHiddenAudioUrls();
+    }
+}
+
+// Проверяем наличие URL аудио в скрытых элементах и создаем дополнительный плеер
+function checkForHiddenAudioUrls() {
+    console.log("Поиск скрытых URL аудио");
+    
+    // Ищем все элементы с атрибутами, содержащими URL-адреса
+    const allElements = document.querySelectorAll('*');
+    let foundUrls = [];
+    
+    allElements.forEach(el => {
+        // Проверяем все атрибуты элемента
+        Array.from(el.attributes).forEach(attr => {
+            const value = attr.value || '';
+            
+            // Ищем строки, похожие на URL аудиофайлов
+            if ((value.includes('.mp3') || value.includes('/proxy_audio') || 
+                 value.includes('/audio/') || value.includes('music_file')) && 
+                !foundUrls.includes(value)) {
+                console.log("Найден возможный URL аудио в атрибуте:", value);
+                foundUrls.push(value);
+            }
+        });
+        
+        // Проверяем текстовое содержимое
+        const textContent = el.textContent || '';
+        if ((textContent.includes('.mp3') || textContent.includes('/proxy_audio')) && 
+            textContent.length < 300) { // Ограничиваем длину для исключения больших текстов
+            
+            // Извлекаем возможные URL из текста
+            const urlRegex = /(https?:\/\/[^\s"'<>]+\.mp3|\/proxy_audio\?[^\s"'<>]+)/g;
+            const matches = textContent.match(urlRegex);
+            
+            if (matches) {
+                matches.forEach(url => {
+                    if (!foundUrls.includes(url)) {
+                        console.log("Найден возможный URL аудио в тексте:", url);
+                        foundUrls.push(url);
+                    }
+                });
+            }
+        }
+    });
+    
+    // Если найдены URL, создаем элемент с кнопкой для показа плееров
+    if (foundUrls.length > 0) {
+        console.log(`Найдено ${foundUrls.length} скрытых URL аудио`);
+        
+        const targetContainer = document.getElementById('music-results') || document.querySelector('.music-section') || document.body;
+        
+        // Проверяем, есть ли уже созданные скрытые плееры
+        if (document.querySelector('.emergency-audio-players')) {
+            console.log("Скрытые плееры уже созданы, добавляем кнопку для их отображения");
+            
+            // Если плееры уже созданы, но нет кнопки - добавляем только кнопку
+            if (!document.querySelector('.show-hidden-players-btn')) {
+                const showHiddenBtn = document.createElement('button');
+                showHiddenBtn.className = 'btn btn-outline-secondary btn-sm mt-3 show-hidden-players-btn';
+                showHiddenBtn.innerHTML = '<i class="bi bi-music-note-list"></i> Показать альтернативные плееры (найдено аудио)';
+                showHiddenBtn.onclick = function() {
+                    const emergencyPlayers = document.querySelector('.emergency-audio-players');
+                    if (emergencyPlayers) {
+                        emergencyPlayers.style.display = 'block';
+                        this.style.display = 'none';
+                    }
+                };
+                targetContainer.appendChild(showHiddenBtn);
+            }
+            return;
+        }
+        
+        // Создаем кнопку для показа резервных плееров
+        const showHiddenBtn = document.createElement('button');
+        showHiddenBtn.className = 'btn btn-outline-secondary btn-sm mt-3 show-hidden-players-btn';
+        showHiddenBtn.innerHTML = '<i class="bi bi-music-note-list"></i> Показать альтернативные плееры (найдено аудио)';
+        targetContainer.appendChild(showHiddenBtn);
+        
+        // Создаем контейнер для плееров
+        const container = document.createElement('div');
+        container.className = 'emergency-audio-players';
+        container.style.cssText = 'background:#f0f5fa !important; border:2px solid #4a76a8 !important; padding:20px !important; margin:20px 0 !important; border-radius:8px !important; display:none !important;';
+        
+        const title = document.createElement('h4');
+        title.textContent = 'Обнаружены скрытые аудио файлы';
+        title.style.cssText = 'color:#2c5282 !important; margin-bottom:20px !important; text-align:center !important; font-weight:bold !important;';
+        container.appendChild(title);
+        
+        const description = document.createElement('p');
+        description.textContent = 'Найдены ссылки на аудиофайлы, которые могут не отображаться в стандартном плеере. Попробуйте воспользоваться одним из этих плееров:';
+        description.style.cssText = 'margin-bottom:20px !important; font-style:italic !important;';
+        container.appendChild(description);
+        
+        // Создаем плееры для каждого URL
+        foundUrls.forEach((url, index) => {
+            const playerWrapper = document.createElement('div');
+            playerWrapper.className = 'emergency-player-item';
+            playerWrapper.style.cssText = 'background:#ffffff !important; border:1px solid #dddddd !important; padding:15px !important; margin-bottom:15px !important; border-radius:5px !important;';
+            
+            const playerTitle = document.createElement('h5');
+            playerTitle.textContent = `Альтернативный плеер #${index + 1}`;
+            playerTitle.style.cssText = 'color:#2c5282 !important; margin-bottom:10px !important;';
+            playerWrapper.appendChild(playerTitle);
+            
+            const urlDisplay = document.createElement('p');
+            urlDisplay.textContent = `Источник аудио: ${url}`;
+            urlDisplay.style.cssText = 'font-size:12px !important; color:#666 !important; margin-bottom:10px !important; word-break:break-all !important;';
+            playerWrapper.appendChild(urlDisplay);
+            
+            // Создаем аудиоплеер
+            const player = document.createElement('audio');
+            player.controls = true;
+            player.preload = 'auto';
+            player.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; border:2px solid #4a76a8 !important;';
+            
+            const source = document.createElement('source');
+            source.src = url;
+            source.type = 'audio/mpeg';
+            player.appendChild(source);
+            
+            playerWrapper.appendChild(player);
+            
+            // Добавляем кнопки для скачивания и открытия в новом окне
+            const buttons = document.createElement('div');
+            buttons.style.cssText = 'display:flex !important; justify-content:center !important; gap:10px !important; margin-top:10px !important;';
+            
+            const downloadBtn = document.createElement('a');
+            downloadBtn.href = url;
+            downloadBtn.download = `audio_file_${index + 1}.mp3`;
+            downloadBtn.className = 'btn btn-primary btn-sm';
+            downloadBtn.innerHTML = '<i class="bi bi-download"></i> Скачать';
+            buttons.appendChild(downloadBtn);
+            
+            const openBtn = document.createElement('a');
+            openBtn.href = url;
+            openBtn.target = '_blank';
+            openBtn.className = 'btn btn-outline-primary btn-sm';
+            openBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> Открыть в новой вкладке';
+            buttons.appendChild(openBtn);
+            
+            playerWrapper.appendChild(buttons);
+            container.appendChild(playerWrapper);
+        });
+        
+        // Добавляем кнопку закрытия
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'btn btn-outline-secondary btn-sm mt-3';
+        closeBtn.innerHTML = '<i class="bi bi-x-circle"></i> Скрыть альтернативные плееры';
+        closeBtn.onclick = function() {
+            container.style.display = 'none';
+            showHiddenBtn.style.display = 'block';
+        };
+        container.appendChild(closeBtn);
+        
+        // Добавляем контейнер на страницу
+        targetContainer.appendChild(container);
+        
+        // Добавляем обработчик кнопки для показа плееров
+        showHiddenBtn.onclick = function() {
+            container.style.display = 'block';
+            this.style.display = 'none';
+        };
+        
+        console.log("Создан контейнер с резервными плеерами для скрытых URL");
+    } else {
+        console.log("Не найдено скрытых URL аудио");
+    }
+}
+
+// Новая система оценки с модальными окнами
+document.addEventListener('DOMContentLoaded', function() {
+    let currentContentType = '';
+    let currentSessionId = '';
+    
+    // Обработчик для кнопок открытия модального окна оценки
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('feedback-modal-btn') || e.target.closest('.feedback-modal-btn')) {
+            const button = e.target.classList.contains('feedback-modal-btn') ? e.target : e.target.closest('.feedback-modal-btn');
+            currentContentType = button.getAttribute('data-content-type');
+            currentSessionId = Date.now().toString();
+            
+            setupFeedbackModal(currentContentType);
+        }
+    });
+    
+    // Проверка согласия с этическими нормами
+    const ethicsAgreement = document.getElementById('ethicsAgreement');
+    const ethicsCard = document.getElementById('ethics-agreement-card');
+    const submitButton = document.querySelector('#diary-form button[type="submit"]');
+    
+    if (ethicsAgreement && submitButton) {
+        // Проверяем, было ли ранее дано согласие (сохраняем в localStorage)
+        const previousAgreement = localStorage.getItem('ethicsAgreementAccepted');
+        
+        if (previousAgreement === 'true') {
+            // Если согласие уже было дано, скрываем плашку и разблокируем форму
+            if (ethicsCard) {
+                ethicsCard.style.display = 'none';
+            }
+            ethicsAgreement.checked = true;
+            updateSubmitButton();
+        } else {
+            // Если согласие не было дано, показываем плашку и блокируем форму
+            updateSubmitButton();
+        }
+        
+        function updateSubmitButton() {
+            if (ethicsAgreement.checked) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('btn-secondary');
+                submitButton.classList.add('btn-primary');
+            } else {
+                submitButton.disabled = true;
+                submitButton.classList.add('btn-secondary');
+                submitButton.classList.remove('btn-primary');
+            }
+        }
+        
+        // Обновляем состояние при изменении чекбокса
+        ethicsAgreement.addEventListener('change', function() {
+            updateSubmitButton();
+            
+            if (this.checked) {
+                // Сохраняем согласие в localStorage
+                localStorage.setItem('ethicsAgreementAccepted', 'true');
+                
+                // Анимируем скрытие плашки
+                if (ethicsCard) {
+                    ethicsCard.classList.add('fade-out');
+                    
+                    // Полностью скрываем плашку через 300ms
+                    setTimeout(() => {
+                        ethicsCard.style.display = 'none';
+                        ethicsCard.classList.remove('fade-out');
+                        
+                        // Показываем небольшое уведомление о принятии
+                        showNotification('Спасибо за принятие этических норм! Теперь вы можете анализировать дневники.', 'success');
+                    }, 300);
+                }
+            } else {
+                // Если пользователь снял галочку, удаляем согласие и показываем плашку
+                localStorage.removeItem('ethicsAgreementAccepted');
+                if (ethicsCard && ethicsCard.style.display === 'none') {
+                    ethicsCard.style.display = 'block';
+                    ethicsCard.classList.add('fadeIn');
+                }
+            }
+        });
+    }
+});
+
+// Настройка модального окна в зависимости от типа контента
+function setupFeedbackModal(contentType) {
+    const nameElement = document.getElementById('contentTypeName');
+    const descriptionElement = document.getElementById('contentTypeDescription');
+    const criteriaContainer = document.getElementById('criteriaContainer');
+    const contentTypeInput = document.getElementById('contentType');
+    const sessionIdInput = document.getElementById('sessionId');
+    
+    // Устанавливаем тип контента и ID сессии
+    contentTypeInput.value = contentType;
+    sessionIdInput.value = Date.now().toString();
+    
+    // Сбрасываем звёзды
+    resetStars();
+    
+    // Очищаем текстовое поле
+    document.getElementById('feedbackText').value = '';
+    
+    // Настраиваем заголовок и описание
+    switch(contentType) {
+        case 'emotion_analysis':
+            nameElement.textContent = 'Эмоциональный анализ';
+            descriptionElement.textContent = 'Оцените качество анализа эмоций и настроения текста дневника';
+            setupEmotionCriteria(criteriaContainer);
+            break;
+        case 'literary_work':
+            nameElement.textContent = 'Художественное произведение';
+            descriptionElement.textContent = 'Оцените качество сгенерированного литературного текста';
+            setupLiteraryCriteria(criteriaContainer);
+            break;
+        case 'generated_image':
+            nameElement.textContent = 'Сгенерированное изображение';
+            descriptionElement.textContent = 'Оцените качество и соответствие иллюстрации тексту дневника';
+            setupImageCriteria(criteriaContainer);
+            break;
+        case 'generated_music':
+            nameElement.textContent = 'Музыкальное сопровождение';
+            descriptionElement.textContent = 'Оцените качество и атмосферность сгенерированной музыки';
+            setupMusicCriteria(criteriaContainer);
+            break;
+    }
+}
+
+// Критерии для эмоционального анализа
+function setupEmotionCriteria(container) {
+    const criteria = [
+        {
+            name: 'Точность анализа',
+            description: 'Насколько точно определены эмоции и настроение',
+            id: 'emotion_accuracy'
+        },
+        {
+            name: 'Полнота анализа',
+            description: 'Охватывает ли анализ все важные аспекты текста',
+            id: 'emotion_completeness'
+        },
+        {
+            name: 'Понятность результатов',
+            description: 'Насколько понятно и структурировано представлен анализ',
+            id: 'emotion_clarity'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Критерии для литературного произведения
+function setupLiteraryCriteria(container) {
+    const criteria = [
+        {
+            name: 'Соответствие духу оригинала',
+            description: 'Насколько текст передаёт атмосферу военного дневника',
+            id: 'literary_authenticity'
+        },
+        {
+            name: 'Художественная ценность',
+            description: 'Качество языка, стиля и литературных приёмов',
+            id: 'literary_quality'
+        },
+        {
+            name: 'Эмоциональное воздействие',
+            description: 'Способность текста вызывать эмоциональный отклик',
+            id: 'literary_impact'
+        },
+        {
+            name: 'Историческая достоверность',
+            description: 'Соответствие исторической эпохе и реалиям войны',
+            id: 'literary_historical'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Критерии для изображения
+function setupImageCriteria(container) {
+    const criteria = [
+        {
+            name: 'Соответствие тексту',
+            description: 'Насколько изображение отражает содержание дневника',
+            id: 'image_relevance'
+        },
+        {
+            name: 'Художественное качество',
+            description: 'Композиция, цвета, общая эстетика изображения',
+            id: 'image_quality'
+        },
+        {
+            name: 'Историческая точность',
+            description: 'Соответствие деталей исторической эпохе',
+            id: 'image_historical'
+        },
+        {
+            name: 'Эмоциональная передача',
+            description: 'Способность изображения передать настроение текста',
+            id: 'image_emotion'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Критерии для музыки
+function setupMusicCriteria(container) {
+    const criteria = [
+        {
+            name: 'Соответствие настроению',
+            description: 'Насколько музыка передаёт эмоции из дневника',
+            id: 'music_mood'
+        },
+        {
+            name: 'Качество композиции',
+            description: 'Мелодия, гармония, аранжировка',
+            id: 'music_quality'
+        },
+        {
+            name: 'Историческая стилистика',
+            description: 'Соответствие музыкальному стилю эпохи',
+            id: 'music_period'
+        },
+        {
+            name: 'Техническое качество',
+            description: 'Чистота звука, баланс инструментов',
+            id: 'music_technical'
+        }
+    ];
+    
+    renderCriteria(container, criteria);
+}
+
+// Отрисовка критериев
+function renderCriteria(container, criteria) {
+    container.innerHTML = '';
+    
+    criteria.forEach(criterion => {
+        const criteriaDiv = document.createElement('div');
+        criteriaDiv.className = 'criteria-item';
+        criteriaDiv.innerHTML = `
+            <div class="criteria-name">${criterion.name}</div>
+            <div class="criteria-description">${criterion.description}</div>
+            <div class="mini-stars" data-criteria="${criterion.id}">
+                <i class="bi bi-star star" data-rating="1"></i>
+                <i class="bi bi-star star" data-rating="2"></i>
+                <i class="bi bi-star star" data-rating="3"></i>
+                <i class="bi bi-star star" data-rating="4"></i>
+                <i class="bi bi-star star" data-rating="5"></i>
+                <span class="rating-text text-muted ms-2">Не оценено</span>
+            </div>
+            <input type="hidden" name="criteria_${criterion.id}" value="0">
+        `;
+        container.appendChild(criteriaDiv);
+    });
+}
+
+// Обработка кликов по звёздам
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('star')) {
+        const rating = parseInt(e.target.getAttribute('data-rating'));
+        const starsContainer = e.target.closest('.stars') || e.target.closest('.mini-stars');
+        const isMainRating = starsContainer && starsContainer.classList.contains('stars');
+        
+        if (isMainRating) {
+            setMainRating(rating);
+        } else if (starsContainer) {
+            const criteriaId = starsContainer.getAttribute('data-criteria');
+            setCriteriaRating(starsContainer, criteriaId, rating);
+        }
+    }
+});
+
+// Установка основной оценки
+function setMainRating(rating) {
+    const stars = document.querySelectorAll('.stars .star');
+    const ratingText = document.querySelector('.rating-text');
+    const hiddenInput = document.getElementById('starRating');
+    
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('filled');
+            star.classList.remove('bi-star');
+            star.classList.add('bi-star-fill');
+        } else {
+            star.classList.remove('filled');
+            star.classList.remove('bi-star-fill');
+            star.classList.add('bi-star');
+        }
+    });
+    
+    const ratingTexts = ['', 'Очень плохо', 'Плохо', 'Удовлетворительно', 'Хорошо', 'Отлично'];
+    if (ratingText) ratingText.textContent = ratingTexts[rating];
+    if (hiddenInput) hiddenInput.value = rating;
+}
+
+// Установка оценки критерия
+function setCriteriaRating(container, criteriaId, rating) {
+    const stars = container.querySelectorAll('.star');
+    const ratingText = container.querySelector('.rating-text');
+    const hiddenInput = container.parentElement.querySelector(`input[name="criteria_${criteriaId}"]`);
+    
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('filled');
+            star.classList.remove('bi-star');
+            star.classList.add('bi-star-fill');
+        } else {
+            star.classList.remove('filled');
+            star.classList.remove('bi-star-fill');
+            star.classList.add('bi-star');
+        }
+    });
+    
+    const ratingTexts = ['', 'Очень плохо', 'Плохо', 'Удовлетворительно', 'Хорошо', 'Отлично'];
+    if (ratingText) ratingText.textContent = ratingTexts[rating];
+    if (hiddenInput) hiddenInput.value = rating;
+}
+
+// Сброс всех звёзд
+function resetStars() {
+    const allStars = document.querySelectorAll('#feedbackModal .star');
+    const allRatingTexts = document.querySelectorAll('#feedbackModal .rating-text');
+    const allHiddenInputs = document.querySelectorAll('#feedbackModal input[type="hidden"]');
+    
+    allStars.forEach(star => {
+        star.classList.remove('filled');
+        star.classList.remove('bi-star-fill');
+        star.classList.add('bi-star');
+    });
+    
+    allRatingTexts.forEach(text => {
+        text.textContent = text.closest('.stars') ? 'Выберите оценку' : 'Не оценено';
+    });
+    
+    allHiddenInputs.forEach(input => {
+        if (input.name && (input.name.startsWith('criteria_') || input.id === 'starRating')) {
+            input.value = '0';
+        }
+    });
+}
+
+// Отправка детальной оценки
+document.addEventListener('DOMContentLoaded', function() {
+    const submitBtn = document.getElementById('submitFeedback');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async function() {
+            const mainRating = document.getElementById('starRating').value;
+            const feedbackText = document.getElementById('feedbackText').value;
+            const contentType = document.getElementById('contentType').value;
+            const sessionId = document.getElementById('sessionId').value;
+            
+            if (mainRating === '0') {
+                showNotification('Пожалуйста, поставьте общую оценку', 'warning');
+                return;
+            }
+            
+            // Собираем оценки критериев
+            const criteriaRatings = {};
+            const criteriaInputs = document.querySelectorAll('#feedbackModal input[name^="criteria_"]');
+            criteriaInputs.forEach(input => {
+                const criteriaName = input.name.replace('criteria_', '');
+                criteriaRatings[criteriaName] = parseInt(input.value);
+            });
+            
+            // Подготавливаем данные для отправки
+            const feedbackData = {
+                content_type: contentType,
+                main_rating: parseInt(mainRating),
+                criteria_ratings: criteriaRatings,
+                feedback_text: feedbackText,
+                session_id: sessionId,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                // Блокируем кнопку
+                const originalText = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split"></i> Отправка...';
+                
+                const response = await fetch('/submit_detailed_feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(feedbackData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Показываем успешное уведомление
+                    showNotification('Спасибо за вашу оценку! Она поможет улучшить качество генерации.', 'success', 4000);
+                    
+                    // Анимация успеха для кнопки
+                    this.classList.add('feedback-submitted');
+                    this.innerHTML = '<i class="bi bi-check-circle-fill"></i> Отправлено!';
+                    
+                    // Закрываем модальное окно через 1 секунду
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackModal'));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        
+                        // Восстанавливаем кнопку
+                        this.disabled = false;
+                        this.innerHTML = originalText;
+                        this.classList.remove('feedback-submitted');
+                    }, 1000);
+                    
+                } else {
+                    throw new Error(result.error || 'Ошибка при отправке оценки');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка при отправке оценки:', error);
+                showNotification('Не удалось отправить оценку. Попробуйте позже.', 'error');
+                
+                // Восстанавливаем кнопку
+                this.disabled = false;
+                this.innerHTML = originalText;
+            }
+        });
+    }
+});
+
+// Показываем кнопки оценки после успешного анализа
+function showFeedbackButtons() {
+    const emotionFeedback = document.getElementById('emotion-feedback');
+    if (emotionFeedback) {
+        emotionFeedback.style.display = 'block';
+    }
+}
+
 </script>
-{% endblock %} 
+{% endblock %}

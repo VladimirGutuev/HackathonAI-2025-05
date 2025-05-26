@@ -1,0 +1,21 @@
+{
+  "task_id": "844fca22a8d686600fc9d1bc33010d26",
+  "title": "War Diary: Мрачный, но решит... Dramatic Orchestral",
+  "prompt": "Create high-quality dramatic Dramatic Orchestral music that captures the following emotions: решимость, утомление, горечь. The music should reflect a мрачный, но решительный tone of wartime experiences. moderate with emotional depth rhythm with brass and strings as primary instruments. Based on a war diary that describes: Утром подошли свежие силы. Банду разбили, трупы валяются по скалам... штаны, рубашки навыпуск. Рядом лежат пять бойцов и молодой лейтенант в разорванной форме....",
+  "style": "Dramatic Orchestral",
+  "mood": "dramatic",
+  "tempo": "moderate with emotional depth",
+  "instruments": "brass and strings",
+  "emotions": [
+    "решимость",
+    "утомление",
+    "горечь"
+  ],
+  "emotional_tone": "мрачный, но решительный",
+  "status": "error",
+  "created_at": "2025-05-21T09:56:09.086210",
+  "last_update": "2025-05-21T10:00:12.381549",
+  "error_message": "Ошибка запроса к API: 404 - {\"timestamp\":1747810813223,\"status\":404,\"error\":\"Not Found\",\"message\":\"No message available\",\"path\":\"/api/v1/tasks/844fca22a8d686600fc9d1bc33010d26\"}",
+  "api_status": "error",
+  "api_data": {}
+}
