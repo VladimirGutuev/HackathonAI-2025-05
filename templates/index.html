@@ -108,10 +108,15 @@
                             </div>
                             <div class="card-body" id="literary-results"></div>
                             <div class="card-footer bg-light">
-                                <div class="feedback-section" data-type="text">
-                                    <span class="text-muted me-3">Оцените качество текста:</span>
-                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="literary_work" data-bs-toggle="modal" data-bs-target="#feedbackModal">
-                                        <i class="bi bi-star"></i> Оценить произведение
+                                <div class="feedback-section d-flex justify-content-between align-items-center" data-type="text">
+                                    <div>
+                                        <span class="text-muted me-3">Оцените качество текста:</span>
+                                        <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="literary_work" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                            <i class="bi bi-star"></i> Оценить произведение
+                                        </button>
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-sm" id="download-text-btn" style="display: none;">
+                                        <i class="bi bi-download"></i> Скачать текст (.txt)
                                     </button>
                                 </div>
                             </div>
@@ -587,8 +592,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 минуты таймаут
                 
-                const formData = new FormData(this);
-                
+                const diaryText = document.getElementById('diary_text').value;
+                const generationTypes = Array.from(document.querySelectorAll('.generation-type:checked')).map(el => el.value);
+
+                // --- DEBUGGING START ---
+                console.log("Форма отправляется...");
+                console.log("Выбранные чекбоксы:", document.querySelectorAll('.generation-type:checked'));
+                console.log("Значения generationTypes:", generationTypes);
+                // --- DEBUGGING END ---
+
+                const formData = new FormData();
+                formData.append('diary_text', diaryText);
+                generationTypes.forEach(type => {
+                    formData.append('generation_types[]', type);
+                });
+
+                // --- DEBUGGING START ---
+                console.log("Содержимое formData перед отправкой:");
+                for (let pair of formData.entries()) {
+                    console.log(pair[0]+ ': ' + pair[1]); 
+                }
+                // --- DEBUGGING END ---
+
                 // Передаем данные через URLSearchParams
                 const response = await fetch('/analyze', {
                     method: 'POST',
@@ -610,21 +635,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Проверяем, что ответ можно преобразовать в JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    console.error('Ошибка: Сервер вернул не JSON:', contentType);
+                const contentTypeHeader = response.headers.get('content-type'); // Renamed to avoid conflict
+                if (!contentTypeHeader || !contentTypeHeader.includes('application/json')) {
+                    console.error('Ошибка: Сервер вернул не JSON:', contentTypeHeader);
                     throw new Error('Сервер вернул не JSON ответ');
                 }
                 
                 const text = await response.text();
-                console.log('Текст ответа:', text.substring(0, 100) + '...'); // Логируем только начало
+                // --- NEW DEBUGGING START ---
+                console.log('Полный текст ответа от сервера (первые 2000 символов):', text.substring(0, 2000) + (text.length > 2000 ? '...' : ''));
+                // --- NEW DEBUGGING END ---
                 
                 let data;
                 try {
                     data = JSON.parse(text);
-                    console.log('Данные получены успешно');
+                    // --- NEW DEBUGGING START ---
+                    console.log('Распарсенные данные (data):', data);
+                    if (data && typeof data.generated_literary_work !== 'undefined') {
+                        console.log('data.generated_literary_work:', data.generated_literary_work);
+                        console.log('Тип data.generated_literary_work:', typeof data.generated_literary_work);
+                        if (data.generated_literary_work) {
+                             console.log('Длина data.generated_literary_work:', data.generated_literary_work.length);
+                        }
+                    } else {
+                        console.log('data.generated_literary_work отсутствует или undefined в объекте data.');
+                    }
+                    // --- NEW DEBUGGING END ---
                 } catch (jsonError) {
-                    console.error('Ошибка парсинга JSON:', jsonError);
+                    console.error('Ошибка парсинга JSON:', jsonError, "Полный текст ответа был:", text);
                     throw new Error('Невозможно распарсить JSON');
                 }
                 
@@ -771,44 +809,119 @@ document.addEventListener('DOMContentLoaded', function() {
                                 literarySection.style.display = 'block';
                                 setTimeout(() => literarySection.classList.add('fadeIn'), delay);
                                 
+                                // --- NEW DEBUGGING START ---
+                                console.log("[Литературный текст] Проверка data.generated_literary_work. Значение:", data.generated_literary_work);
+                                // --- NEW DEBUGGING END ---
+                                
                                 // Заполняем контент, если он есть
                                 if (data.generated_literary_work) {
-                                    document.getElementById('literary-results').innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
-                                    document.querySelector('.literary-section').style.display = 'block';
-                                    // Показываем секцию обратной связи для текста
-                                    const literarySection = document.querySelector('.literary-section .card-footer');
-                                    if (literarySection) {
-                                        literarySection.style.display = 'block';
-                                    }
-                                    const generatedContentElement = document.getElementById('generated-content');
-                                    if (generatedContentElement) {
-                                        generatedContentElement.style.display = 'block';
+                                    // --- NEW DEBUGGING START ---
+                                    console.log("[Литературный текст] Условие if (data.generated_literary_work) ИСТИННО. Отображаем текст.");
+                                    // --- NEW DEBUGGING END ---
+                                    const literaryResultsElement = document.getElementById('literary-results');
+                                    const literarySectionElement = document.querySelector('.literary-section');
+
+                                    if (literaryResultsElement && literarySectionElement) {
+                                        literaryResultsElement.innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
+                                        
+                                        // Принудительное отображение с !important
+                                        literarySectionElement.style.setProperty('display', 'block', 'important');
+                                        literarySectionElement.style.setProperty('visibility', 'visible', 'important');
+                                        literarySectionElement.style.setProperty('opacity', '1', 'important');
+                                        literarySectionElement.style.setProperty('height', 'auto', 'important'); // Чтобы убедиться, что высота не 0
+                                        literarySectionElement.style.setProperty('overflow', 'visible', 'important');
+
+
+                                        // Показываем секцию обратной связи для текста
+                                        const literaryFeedbackSection = literarySectionElement.querySelector('.card-footer');
+                                        if (literaryFeedbackSection) {
+                                            literaryFeedbackSection.style.setProperty('display', 'block', 'important');
+                                        }
+                                        
+                                        const generatedContentElement = document.getElementById('generated-content');
+                                        if (generatedContentElement) {
+                                            generatedContentElement.style.setProperty('display', 'block', 'important');
+                                        }
+
+                                        // --- NEW DEBUGGING START ---
+                                        setTimeout(() => { // Небольшая задержка, чтобы стили успели примениться
+                                            const rect = literarySectionElement.getBoundingClientRect();
+                                            console.log("[Литературный текст] Стили применены. Размеры .literary-section:", rect);
+                                            if (rect.height === 0 || rect.width === 0) {
+                                                console.warn("[Литературный текст] Внимание! Секция .literary-section все еще имеет нулевые размеры после применения стилей!");
+                                            }
+                                             console.log("[Литературный текст] Computed display:", window.getComputedStyle(literarySectionElement).display);
+                                             console.log("[Литературный текст] Computed visibility:", window.getComputedStyle(literarySectionElement).visibility);
+                                             console.log("[Литературный текст] Computed opacity:", window.getComputedStyle(literarySectionElement).opacity);
+                                             console.log("[Литературный текст] literaryResultsElement.innerHTML:", literaryResultsElement.innerHTML);
+                                        }, 100);
+                                        // --- NEW DEBUGGING END ---
+
+                                        // Показываем кнопку скачивания текста
+                                        const downloadTextBtn = document.getElementById('download-text-btn');
+                                        if (downloadTextBtn) {
+                                            downloadTextBtn.style.display = 'inline-block';
+                                            downloadTextBtn.onclick = function() {
+                                                const textToSave = data.generated_literary_work;
+                                                const filename = `literary_work_${new Date().toISOString().slice(0,10)}.txt`;
+                                                const blob = new Blob([textToSave], {type: "text/plain;charset=utf-8"});
+                                                const link = document.createElement('a');
+                                                link.href = URL.createObjectURL(blob);
+                                                link.download = filename;
+                                                document.body.appendChild(link); // Required for Firefox
+                                                link.click();
+                                                document.body.removeChild(link);
+                                            };
+                                        }
+
+                                    } else {
+                                         console.error("[Литературный текст] Не найден элемент #literary-results или .literary-section для отображения текста.");
                                     }
                                 }
+                                // --- NEW DEBUGGING START ---
+                                else {
+                                    console.log("[Литературный текст] Условие if (data.generated_literary_work) ЛОЖНО. Текст НЕ будет отображен.");
+                                    const literaryResultsContent = document.getElementById('literary-results') ? document.getElementById('literary-results').innerHTML : "Элемент #literary-results не найден";
+                                    console.log("[Литературный текст] Текущее содержимое #literary-results:", literaryResultsContent);
+                                }
+                                // --- NEW DEBUGGING END ---
                             }
+                            // --- NEW DEBUGGING START ---
+                            else {
+                                console.error("[Литературный текст] Секция .literary-section не найдена!");
+                            }
+                            // --- NEW DEBUGGING END ---
                         }
                         
                         if (contentType === 'image') {
                             const imageSection = document.querySelector('.image-section');
                             if (imageSection) {
-                                imageSection.style.display = 'block';
+                                // Принудительное отображение секции изображения
+                                imageSection.style.setProperty('display', 'block', 'important');
+                                imageSection.style.setProperty('visibility', 'visible', 'important');
+                                imageSection.style.setProperty('opacity', '1', 'important');
+                                imageSection.style.setProperty('height', 'auto', 'important');
+                                imageSection.style.setProperty('overflow', 'visible', 'important');
+
                                 setTimeout(() => imageSection.classList.add('fadeIn'), delay);
                                 
+                                const generatedContentElement = document.getElementById('generated-content');
+                                if (generatedContentElement) {
+                                    generatedContentElement.style.setProperty('display', 'block', 'important');
+                                }
+
                                 // Если изображение готово, показываем его
                                 if (data.generated_image && data.generated_image.success && data.generated_image.image_url) {
-                                    console.log("Отображение изображения из результатов API...");
-                                    
-                                    // Сохраняем внешний URL для возможного использования при ошибке локального URL
+                                    console.log("[Изображение] Отображение изображения из результатов API...");
                                     if (data.generated_image.external_url) {
                                         window.lastGeneratedImageExternalUrl = data.generated_image.external_url;
                                     }
-                                    
                                     displayGeneratedImage(data.generated_image.image_url);
                                 } else {
-                                    // Если произошла ошибка, показываем сообщение
+                                    // Если произошла ошибка или изображение еще не готово
                                     const loadingElement = document.getElementById('image-loading');
                                     if (loadingElement) {
-                                        loadingElement.style.display = 'block'; // Явно показываем блок
+                                        loadingElement.style.setProperty('display', 'block', 'important'); // Явно показываем блок
                                         if (data.generated_image && data.generated_image.error) {
                                             // Проверяем, является ли ошибка связанной с запрещенным контентом
                                             if (data.generated_image.type === 'content_policy_violation' && data.generated_image.can_regenerate_safe) {
@@ -939,6 +1052,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                         }
                                     }
                                 }
+                            } else {
+                                console.error("[Изображение] Секция .image-section не найдена!");
                             }
                         }
                         
@@ -1057,6 +1172,21 @@ function displayGeneratedImage(imageUrl) {
     const loadingElement = document.getElementById('image-loading');
     const errorElement = document.getElementById('image-error');
     
+    // --- Добавляем контейнер для кнопки скачивания ---
+    let downloadButtonContainer = document.getElementById('image-download-button-container');
+    if (!downloadButtonContainer) {
+        downloadButtonContainer = document.createElement('div');
+        downloadButtonContainer.id = 'image-download-button-container';
+        downloadButtonContainer.className = 'mt-2 text-center';
+        // Вставляем контейнер после imageContainer, если он есть, или в image-results
+        const imageContainerParent = imageContainer ? imageContainer.parentNode : document.getElementById('image-results');
+        if (imageContainerParent) {
+            imageContainerParent.appendChild(downloadButtonContainer);
+        }
+    }
+    downloadButtonContainer.innerHTML = ''; // Очищаем предыдущие кнопки
+    // --- Конец добавления контейнера ---
+
     if (!imageContainer || !imageElement) {
         console.error("Не найдены элементы для отображения изображения");
         return;
@@ -1150,6 +1280,15 @@ function displayGeneratedImage(imageUrl) {
             if (imageFeedback) {
                 imageFeedback.style.display = 'block';
             }
+
+            // --- Добавляем кнопку скачивания ---
+            const downloadBtn = document.createElement('a');
+            downloadBtn.href = url; 
+            downloadBtn.download = `generated_image_${new Date().toISOString().slice(0,10)}.png`; // Предполагаем png, можно сделать умнее
+            downloadBtn.className = 'btn btn-outline-secondary btn-sm';
+            downloadBtn.innerHTML = '<i class="bi bi-download"></i> Скачать изображение';
+            downloadButtonContainer.appendChild(downloadBtn);
+            // --- Конец добавления кнопки ---
         };
         
         // Устанавливаем изображение

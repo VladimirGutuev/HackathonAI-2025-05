@@ -39,11 +39,16 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <span class="nav-link">{{ current_user.username }}</span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">Выйти</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUserLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUserLink">
+                                <li><a class="dropdown-item" href="{{ url_for('user_profile') }}"><i class="bi bi-person-lines-fill"></i> Мой профиль</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin') if current_user.is_admin else '#' }}"><i class="bi bi-shield-lock"></i> Админ-панель</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Выйти</a></li>
+                            </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Мой профиль - {{ current_user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-3 text-center">
+            {# Можно добавить аватар пользователя #}
+            <i class="bi bi-person-circle" style="font-size: 8rem;"></i>
+            <h2 class="mt-2">{{ current_user.username }}</h2>
+            <p class="text-muted">Дата регистрации: {{ current_user.created_at.strftime("%d %B %Y") if current_user.created_at else "Неизвестно" }}</p>
+            {# Дополнительная информация о пользователе, если есть #}
+        </div>
+        <div class="col-md-9">
+            <h1><i class="bi bi-person-lines-fill"></i> Мои генерации</h1>
+            <hr>
+            <p>Здесь отображается история ваших запросов на генерацию контента.</p>
+        </div>
+    </div>
+
+    {% if generations %}
+        <div class="accordion" id="generationsAccordion">
+            {% for gen in generations %}
+            <div class="accordion-item mb-3 shadow-sm">
+                <h2 class="accordion-header" id="heading-{{ gen.id }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ gen.id }}" aria-expanded="false" aria-controls="collapse-{{ gen.id }}">
+                        <span class="badge bg-primary me-2 text-capitalize">
+                            {% if gen.type == 'text' %}<i class="bi bi-file-earmark-text"></i> Текст
+                            {% elif gen.type == 'image' %}<i class="bi bi-image"></i> Изображение
+                            {% elif gen.type == 'music' %}<i class="bi bi-music-note-beamed"></i> Музыка
+                            {% else %}{{ gen.type }}{% endif %}
+                        </span>
+                        <span class="fw-bold me-3">{{ gen.title or "Без названия" }}</span>
+                        <small class="text-muted ms-auto">Создано: {{ gen.created_at }}</small>
+                    </button>
+                </h2>
+                <div id="collapse-{{ gen.id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ gen.id }}" data-bs-parent="#generationsAccordion">
+                    <div class="accordion-body">
+                        {% if gen.type == 'text' %}
+                            <p><strong>Тип:</strong> Художественное произведение</p>
+                            <p><strong>Название:</strong> {{ gen.title }}</p>
+                            <p><strong>Сниппет:</strong></p>
+                            <blockquote class="blockquote-sm bg-light p-2 rounded">
+                                <small>{{ gen.snippet or "Нет описания" }}</small>
+                            </blockquote>
+                            {% if gen.view_url %}
+                                <a href="{{ gen.view_url }}" class="btn btn-outline-secondary btn-sm mt-2 me-2" target="_blank"><i class="bi bi-eye"></i> Просмотреть полностью</a>
+                            {% endif %}
+                            {% if gen.download_url %}
+                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2"><i class="bi bi-download"></i> Скачать (.txt)</a>
+                            {% endif %}
+                        {% elif gen.type == 'image' %}
+                            <p><strong>Тип:</strong> Изображение</p>
+                            <p><strong>Название/Промпт:</strong> {{ gen.title or gen.snippet }}</p>
+                            {% if gen.image_url %}
+                                <div class="my-2 text-center">
+                                    <img src="{{ gen.image_url }}" alt="{{ gen.title or 'Сгенерированное изображение' }}" class="img-fluid rounded shadow-sm" style="max-height: 300px; max-width: 100%;">
+                                </div>
+                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2" download><i class="bi bi-download"></i> Скачать изображение</a>
+                            {% elif gen.error %}
+                                <div class="alert alert-warning" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ gen.error }}</div>
+                            {% else %}
+                                <p class="text-muted">Изображение недоступно.</p>
+                            {% endif %}
+                        {% elif gen.type == 'music' %}
+                            <p><strong>Тип:</strong> Музыкальный трек</p>
+                            <p><strong>Название:</strong> {{ gen.music_title or gen.title or "Трек в обработке" }}</p>
+                            <p><strong>Статус:</strong>
+                                <span class="badge
+                                    {% if gen.music_status == 'complete' and gen.local_audio_url %}bg-success
+                                    {% elif gen.music_status == 'processing' or gen.music_status == 'pending' or gen.music_status == 'submitted' %}bg-info text-dark
+                                    {% elif gen.music_status == 'error' or gen.music_status == 'failed' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ gen.music_status or 'unknown' }}
+                                </span>
+                            </p>
+                            {% if gen.local_audio_url %}
+                                <audio controls preload="none" class="mt-2 w-100">
+                                    <source src="{{ gen.local_audio_url }}" type="audio/mpeg">
+                                    Ваш браузер не поддерживает аудио элемент.
+                                </audio>
+                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2" download><i class="bi bi-download"></i> Скачать трек (.mp3)</a>
+                            {% elif gen.check_status_url %}
+                                <p class="mt-2">Трек еще генерируется. <button class="btn btn-link btn-sm p-0 music-status-checker-profile" data-task-id="{{ gen.file_path_or_id }}" data-status-url="{{ gen.check_status_url }}">Проверить статус</button></p>
+                                <div id="music-status-profile-{{ gen.file_path_or_id }}" class="mt-1 small"></div>
+                            {% else %}
+                                <p class="text-muted mt-2">Информация о треке недоступна.</p>
+                            {% endif %}
+                            {% if gen.snippet and (gen.snippet.startswith('{') or gen.snippet.startswith('[')) %}
+                                <details class="mt-2">
+                                    <summary><small class="text-muted">Детали запроса (JSON)</small></summary>
+                                    <pre class="bg-light p-2 rounded small" style="max-height: 150px; overflow-y: auto;"><code>{{ gen.snippet }}</code></pre>
+                                </details>
+                            {% elif gen.snippet %}
+                                <p class="mt-2"><small class="text-muted">Описание: {{ gen.snippet }}</small></p>
+                            {% endif %}
+                        {% endif %}
+                        <hr class="my-2">
+                        <p class="mb-0"><small class="text-muted">ID генерации: {{ gen.id }} | Создано: {{ gen.created_at }}</small></p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            <i class="bi bi-info-circle"></i> У вас пока нет сгенерированного контента. Попробуйте что-нибудь создать на <a href="{{ url_for('index') }}" class="alert-link">главной странице</a>!
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const musicStatusCheckers = document.querySelectorAll('.music-status-checker-profile');
+        musicStatusCheckers.forEach(button => {
+            button.addEventListener('click', async function () {
+                const taskId = this.dataset.taskId;
+                const statusUrl = this.dataset.statusUrl;
+                const statusDiv = document.getElementById(`music-status-profile-${taskId}`);
+
+                if (!statusDiv) return;
+                statusDiv.innerHTML = '<i class="bi bi-arrow-repeat"></i> Проверка статуса...';
+
+                try {
+                    const response = await fetch(statusUrl);
+                    const data = await response.json();
+
+                    if (data.status === 'complete' && data.audio_url) {
+                        statusDiv.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill"></i> Готово! Обновите страницу, чтобы увидеть плеер.</span>`;
+                        // Можно добавить код для динамического обновления плеера, но пока ограничимся сообщением
+                        // Например, можно перезагрузить страницу: location.reload();
+                    } else if (data.status === 'processing' || data.status === 'submitted' || data.status === 'pending') {
+                        statusDiv.innerHTML = `<span class="text-info"><i class="bi bi-hourglass-split"></i> Статус: ${data.status || 'в обработке'}. Попробуйте позже.</span>`;
+                    } else if (data.status === 'error') {
+                        statusDiv.innerHTML = `<span class="text-danger"><i class="bi bi-x-octagon-fill"></i> Ошибка: ${data.error || 'неизвестная ошибка'}.</span>`;
+                    } else {
+                        statusDiv.innerHTML = `<span class="text-muted">Статус: ${data.status || 'неизвестно'}. ${data.message || ''}</span>`;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при проверке статуса музыки в профиле:', error);
+                    statusDiv.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Не удалось проверить статус.</span>';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

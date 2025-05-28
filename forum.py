@@ -84,6 +84,22 @@ class UserFeedback(db.Model):
     def __repr__(self):
         return f'<UserFeedback {self.content_type}:{self.feedback_type}>'
 
+# Определение модели UserGeneration 
+class UserGeneration(db.Model):
+    __tablename__ = 'user_generations'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Corrected ForeignKey to 'user.id'
+    generation_type = db.Column(db.String(50), nullable=False)  # 'text', 'image', 'music'
+    file_path_or_id = db.Column(db.String(512), nullable=True) 
+    title = db.Column(db.String(255), nullable=True) 
+    snippet_or_description = db.Column(db.Text, nullable=True) 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('generations', lazy='dynamic')) 
+
+    def __repr__(self):
+        return f'<UserGeneration id={self.id} user_id={self.user_id} type={self.generation_type}>'
+
 def init_forum(app):
     db.init_app(app)
     with app.app_context():

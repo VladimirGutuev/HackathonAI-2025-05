@@ -7,6 +7,7 @@ import requests  # Добавляем для работы с API
 import io  # Добавляем для работы с файлами
 from datetime import datetime  # Добавляем для работы с датами
 import time  # Добавляем для работы с временем
+import uuid # Для генерации уникальных имен файлов
 
 # Попытка импорта системы RAG
 try:
@@ -201,51 +202,101 @@ class WarDiaryAnalyzer:
                 "attitude": "неизвестно"
             }
 
-    def generate_literary_work(self, diary_text, emotion_analysis):
+    def generate_literary_work(self, diary_text, emotion_analysis, user_id=None):
         """
-        Генерация художественного произведения на основе дневникового текста
-        и его эмоционального анализа.
+        Генерация художественного произведения на основе текста дневника и анализа эмоций.
+        Также сохраняет произведение и метаданные в папку instance/generated_literary_works/.
+        Возвращает словарь с текстом произведения и путями к файлам.
         
         Args:
-            diary_text (str): Исходный текст дневника
-            emotion_analysis (dict): Результаты анализа эмоций
+            diary_text (str): Текст дневника
+            emotion_analysis (dict): Результат анализа эмоций
+            user_id (int, optional): ID пользователя, если он аутентифицирован.
             
         Returns:
-            str: Сгенерированное художественное произведение
+            dict: Словарь с ключами 'text', 'filepath', 'meta_filepath' или None в случае ошибки.
         """
-        prompt = f"""
-        На основе следующего дневникового текста времен войны и его эмоционального анализа создайте художественное произведение.
-        
-        Исходный текст:
-        {diary_text}
-        
-        Эмоциональный анализ:
-        - Основные эмоции: {', '.join([f"{e['emotion']} ({e['intensity']})" for e in emotion_analysis['primary_emotions']])}
-        - Общий тон: {emotion_analysis['emotional_tone']}
-        - Скрытые мотивы: {', '.join(emotion_analysis['hidden_motives'])}
-        - Отношение к происходящему: {emotion_analysis['attitude']}
-        
-        Создайте небольшое художественное произведение, которое:
-        1. Передает те же эмоции и их интенсивность
-        2. Сохраняет исторический контекст
-        3. Раскрывает внутренний мир автора
-        4. Использует художественные приемы для усиления эмоционального воздействия
-        5. Сохраняет атмосферу военного времени
-        """
+        if not emotion_analysis or not isinstance(emotion_analysis, dict) or emotion_analysis.get('error'):
+            error_msg = emotion_analysis.get('error', 'Нет данных для анализа эмоций') if isinstance(emotion_analysis, dict) else 'Некорректные данные анализа эмоций'
+            print(f"Прерывание генерации лит. произведения: {error_msg}")
+            return None # Не генерируем, если нет анализа или в нем ошибка
 
+        primary_emotions_str = ", ".join([f"{e['emotion']} ({e['intensity']}/10)" for e in emotion_analysis.get('primary_emotions', [])])
+        emotional_tone = emotion_analysis.get('emotional_tone', 'неопределенный')
+        
+        prompt = f"""
+        На основе следующего отрывка из военного дневника и его эмоционального анализа, напиши короткое художественное произведение (рассказ, зарисовку, стихотворение в прозе) от третьего лица. 
+        Постарайся передать атмосферу, чувства и мысли автора дневника, но не копируй текст дневника дословно. 
+        Сосредоточься на внутреннем мире персонажа, его переживаниях и рефлексии на фоне событий. 
+        Избегай чрезмерного натурализма и жестоких сцен, если только они не служат для глубокого раскрытия характера или идеи. 
+        Важно сохранить уважительное отношение к исторической памяти.
+
+        Текст дневника:
+        {diary_text}
+
+        Эмоциональный анализ:
+        - Основные эмоции: {primary_emotions_str}
+        - Общий тон: {emotional_tone}
+
+        Сгенерируй произведение объемом примерно 200-400 слов.
+        """
+        
         try:
+            print("Отправка запроса на генерацию художественного произведения...")
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o", # Или другая подходящая модель
                 messages=[
-                    {"role": "system", "content": "Вы - талантливый писатель, специализирующийся на военной прозе. Ваш стиль сочетает реализм с глубоким психологизмом."},
+                    {"role": "system", "content": "Ты - талантливый писатель, специализирующийся на военной прозе и психологии человеческих переживаний в экстремальных условиях. Ты создаешь глубокие и трогательные произведения."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.8,
-                max_tokens=2000
+                temperature=0.75,
+                max_tokens=600 
             )
-            return response.choices[0].message.content
+            generated_text = response.choices[0].message.content.strip()
+            print(f"Художественное произведение сгенерировано, длина: {len(generated_text)} символов.")
+            
+            # --- Сохранение файла и метаданных ---
+            # Создаем директорию, если ее нет
+            works_dir = os.path.join('instance', 'generated_literary_works')
+            os.makedirs(works_dir, exist_ok=True)
+            
+            # Генерируем уникальный ID для файла
+            file_id = str(uuid.uuid4())
+            txt_filename = f"{file_id}.txt"
+            meta_filename = f"{file_id}.meta.json"
+            
+            txt_path = os.path.join(works_dir, txt_filename)
+            meta_path = os.path.join(works_dir, meta_filename)
+            
+            # Сохраняем текст произведения
+            with open(txt_path, 'w', encoding='utf-8') as f_txt:
+                f_txt.write(generated_text)
+            
+            # Сохраняем метаданные
+            metadata = {
+                'file_id': file_id,
+                'generation_timestamp': datetime.now().isoformat(),
+                'source_diary_text_snippet': diary_text[:200] + ("..." if len(diary_text) > 200 else ""),
+                'emotion_analysis_used': emotion_analysis,
+                'model_used': response.model, # Сохраняем модель, если API это возвращает
+                'user_id': user_id # Сохраняем ID пользователя, если передан
+            }
+            with open(meta_path, 'w', encoding='utf-8') as f_meta:
+                json.dump(metadata, f_meta, ensure_ascii=False, indent=4)
+                
+            print(f"Произведение сохранено: {txt_path}, метаданные: {meta_path}")
+            
+            return {
+                'text': generated_text,
+                'filepath': txt_filename, # Возвращаем только имя файла, не полный путь
+                'meta_filepath': meta_filename
+            }
+            
         except Exception as e:
-            return f"Произошла ошибка при генерации текста: {str(e)}"
+            print(f"Ошибка при генерации или сохранении художественного произведения: {e}")
+            import traceback
+            traceback.print_exc()
+            return None 
 
     def generate_image(self, prompt, size="1024x1024", model="gpt-4"):
         """

@@ -14,38 +14,38 @@
 
     <!-- Статистика -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="bi bi-music-note"></i> Музыкальные треки
-                    </h5>
+                    <h5 class="card-title"><i class="bi bi-music-note"></i> Муз. треки</h5>
                     <h2>{{ track_count }}</h2>
-                    <p class="card-text">Всего треков в системе</p>
+                    <p class="card-text">Всего треков</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="bi bi-image"></i> Изображения
-                    </h5>
+                    <h5 class="card-title"><i class="bi bi-image"></i> Изображения</h5>
                     <h2>{{ image_count }}</h2>
-                    <p class="card-text">Сгенерированных изображений</p>
+                    <p class="card-text">Всего изображений</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-file-text"></i> Лит. произв.</h5>
+                    <h2>{{ literary_works_count }}</h2>
+                    <p class="card-text">Сохранено произведений</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card bg-info text-white">
                 <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="bi bi-database"></i> RAG система
-                    </h5>
-                    <h2><i class="bi bi-check-circle"></i></h2>
-                    <p class="card-text">
-                        <a href="/rag_stats" class="text-white">Статистика RAG</a>
-                    </p>
+                    <h5 class="card-title"><i class="bi bi-database"></i> RAG система</h5>
+                    <p class="mt-3"><a href="{{ url_for('rag_stats') }}" class="btn btn-sm btn-light">Статистика RAG</a></p>
                 </div>
             </div>
         </div>
@@ -134,6 +134,120 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Управление Изображениями -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-card-image"></i> Управление изображениями ({{ image_count }})
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if images %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Миниатюра</th>
+                                    <th>Имя файла</th>
+                                    <th>Размер</th>
+                                    <th>Дата изменения</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for image in images %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ image.url }}" target="_blank">
+                                            <img src="{{ image.url }}" alt="{{ image.filename }}" class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
+                                        </a>
+                                    </td>
+                                    <td><code>{{ image.filename }}</code></td>
+                                    <td>{{ "%.2f KB" | format(image.size / 1024) if image.size else 'N/A' }}</td>
+                                    <td>{{ image.modified_date }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('delete_image_admin', filename=image.filename) }}" style="display:inline;" onsubmit="return confirm('Вы уверены, что хотите удалить это изображение?');">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-trash"></i> Удалить
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>Нет изображений для отображения в <code>static/generated_images/</code>.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Управление Литературными Произведениями -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-book"></i> Управление литературными произведениями ({{ literary_works_count }})
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if literary_works %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Имя файла</th>
+                                    <th>Сниппет</th>
+                                    <th>Дата создания</th>
+                                    <th>User ID</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for work in literary_works %}
+                                <tr>
+                                    <td><code>{{ work.txt_filename }}</code></td>
+                                    <td>
+                                        <small class="text-muted">{{ work.snippet }}...</small>
+                                    </td>
+                                    <td>{{ work.created_at_human }}</td>
+                                    <td>
+                                        {% if work.user_id %}
+                                            {{ work.user_id }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('view_literary_work', filename=work.txt_filename) }}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> Просмотреть
+                                        </a>
+                                        <form method="POST" action="{{ url_for('delete_literary_work_admin', file_id=work.file_id) }}" style="display:inline;" onsubmit="return confirm('Вы уверены, что хотите удалить это произведение?');">
+                                            <button type="submit" class="btn btn-sm btn-danger ms-1">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>Нет сохраненных литературных произведений в <code>instance/generated_literary_works/</code>.</p>
+                    <p>Произведения сохраняются автоматически при их генерации через основной интерфейс.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>

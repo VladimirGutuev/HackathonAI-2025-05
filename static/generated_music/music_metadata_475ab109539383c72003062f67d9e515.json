@@ -1,0 +1,17 @@
+{
+  "task_id": "475ab109539383c72003062f67d9e515",
+  "title": "War Diary: Эмоциональный тон... Cinematic Suspense",
+  "prompt": "Create high-quality tense Cinematic Suspense music that captures the following emotions: ностальгия, тревога. The music should reflect a Эмоциональный тон отрывка колеблется между ностальгией по прошлой жизни и тревогой перед предстоящим заданием. Несмотря на общий тон неопределенности, автор пытается сохранить спокойствие. tone of wartime experiences. moderate with emotional depth rhythm with low strings and percussion as primary instruments. Based on a war diary that describes: Эх, Соня, как всё изменилось! Какие планы были!\nКак хорошо было жить! А теперь война…\nА я собиралась в летних лагерях варить варенье, там\nягоды очень много, особенно земляники…\nПишу письмо под крылом самолёта. Вот-вот полечу на\nзадание. Не беспокойся за меня...",
+  "style": "Cinematic Suspense",
+  "mood": "tense",
+  "tempo": "moderate with emotional depth",
+  "instruments": "low strings and percussion",
+  "emotions": [
+    "ностальгия",
+    "тревога"
+  ],
+  "emotional_tone": "Эмоциональный тон отрывка колеблется между ностальгией по прошлой жизни и тревогой перед предстоящим заданием. Несмотря на общий тон неопределенности, автор пытается сохранить спокойствие.",
+  "status": "processing",
+  "created_at": "2025-05-28T11:45:36.475561",
+  "callback_url": "http://localhost:5000/music_callback"
+}
