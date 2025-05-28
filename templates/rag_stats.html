@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Система RAG - Историческая база данных{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0"><i class="bi bi-database"></i> Система RAG - Историческая база данных</h2>
+                </div>
+                <div class="card-body">
+                    {% if rag_available %}
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle"></i> <strong>Система RAG активна</strong> - исторический контекст доступен для анализа дневников
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center border-primary">
+                                    <div class="card-body">
+                                        <i class="bi bi-calendar-event text-primary" style="font-size: 2rem;"></i>
+                                        <h4 class="card-title text-primary">{{ stats.historical_events or 0 }}</h4>
+                                        <p class="card-text">Исторических событий</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center border-success">
+                                    <div class="card-body">
+                                        <i class="bi bi-wikipedia text-success" style="font-size: 2rem;"></i>
+                                        <h4 class="card-title text-success">{{ stats.wikipedia_articles or 0 }}</h4>
+                                        <p class="card-text">Wikipedia статей</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center border-info">
+                                    <div class="card-body">
+                                        <i class="bi bi-clock-history text-info" style="font-size: 2rem;"></i>
+                                        <h4 class="card-title text-info">{{ stats.cached_results or 0 }}</h4>
+                                        <p class="card-text">Кэшированных результатов</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center border-warning">
+                                    <div class="card-body">
+                                        <i class="bi bi-hdd-stack text-warning" style="font-size: 2rem;"></i>
+                                        <h4 class="card-title text-warning">
+                                            {% if stats.vector_cache_exists %}
+                                                <i class="bi bi-check-lg"></i>
+                                            {% else %}
+                                                <i class="bi bi-x-lg"></i>
+                                            {% endif %}
+                                        </h4>
+                                        <p class="card-text">Векторный кэш</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Как работает система RAG</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ol>
+                                            <li><strong>Извлечение ключевых слов</strong> - анализируются военные термины, даты, географические названия</li>
+                                            <li><strong>Поиск в базах данных</strong> - Wikipedia API и Historical Events API</li>
+                                            <li><strong>Векторизация и ранжирование</strong> - поиск наиболее релевантных источников</li>
+                                            <li><strong>Обогащение анализа</strong> - исторический контекст добавляется к эмоциональному анализу</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0"><i class="bi bi-database-up"></i> Источники данных</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <h6><i class="bi bi-wikipedia"></i> Wikipedia API</h6>
+                                            <p class="text-muted small">Открытый API без регистрации. Поиск статей на русском языке по военной тематике.</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6><i class="bi bi-calendar-event"></i> Historical Events API</h6>
+                                            <p class="text-muted small">Открытая база событий (190K+ записей) с поиском по датам и категориям.</p>
+                                        </div>
+                                        <div>
+                                            <h6><i class="bi bi-hdd"></i> Локальное кэширование</h6>
+                                            <p class="text-muted small">SQLite база для быстрого доступа к ранее найденным фактам.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Типы исторического обогащения</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>🔬 Полный анализ с историческим контекстом</h6>
+                                        <p class="text-muted small">Повторный анализ эмоций с учетом найденного исторического контекста</p>
+                                        
+                                        <h6>📚 Стандартный анализ + исторические источники</h6>
+                                        <p class="text-muted small">Обычный анализ дополнен релевантными историческими фактами</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>📖 Стандартный анализ + ограниченный контекст</h6>
+                                        <p class="text-muted small">Найден минимальный исторический контекст</p>
+                                        
+                                        <h6>📝 Стандартный анализ</h6>
+                                        <p class="text-muted small">Исторический контекст не найден или система недоступна</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    {% else %}
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i> <strong>Система RAG недоступна</strong>
+                            <p class="mb-0 mt-2">Для активации системы исторического обогащения требуется установка дополнительных зависимостей:</p>
+                            <code class="d-block mt-2">pip install scikit-learn numpy scipy</code>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-gear"></i> Настройка системы RAG</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Для включения системы исторического обогащения выполните следующие шаги:</p>
+                                <ol>
+                                    <li>Установите требуемые библиотеки: <code>pip install scikit-learn numpy scipy</code></li>
+                                    <li>Перезапустите приложение</li>
+                                    <li>Система автоматически создаст базу данных при первом использовании</li>
+                                </ol>
+                                
+                                <div class="alert alert-info mt-3">
+                                    <i class="bi bi-info-circle"></i> Все используемые API (Wikipedia, Historical Events) не требуют регистрации и полностью бесплатны.
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.border-primary {
+    border-color: #0d6efd !important;
+}
+
+.border-success {
+    border-color: #198754 !important;
+}
+
+.border-info {
+    border-color: #0dcaf0 !important;
+}
+
+.border-warning {
+    border-color: #ffc107 !important;
+}
+</style>
+{% endblock %} 

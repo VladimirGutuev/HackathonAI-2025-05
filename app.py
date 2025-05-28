@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response, send_from_directory
 from war_diary_analyzer import WarDiaryAnalyzer
 from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote, UserFeedback
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -87,19 +87,23 @@ def analyze():
         # Создаем анализатор и проводим эмоциональный анализ
         analyzer = WarDiaryAnalyzer()
         
-        # Сначала всегда проводим эмоциональный анализ
-        emotions = analyzer.analyze_emotions(diary_text)
-        print(f"Эмоциональный анализ завершен: {list(emotions.keys())}")
+        # Проводим расширенный анализ эмоций с историческим контекстом
+        print("Начало расширенного анализа с историческим контекстом...")
+        emotions = analyzer.analyze_emotions_with_context(diary_text)
+        print(f"Расширенный анализ завершен: {list(emotions.keys())}")
+        
+        # Извлекаем базовый анализ эмоций из результата
+        base_emotions = emotions.get('emotion_analysis', emotions)
         
         # Проверяем наличие ошибки в анализе эмоций
-        if 'error' in emotions and emotions['error']:
-            print(f"Ошибка при анализе эмоций: {emotions['error']}")
+        if 'error' in base_emotions and base_emotions['error']:
+            print(f"Ошибка при анализе эмоций: {base_emotions['error']}")
             return jsonify({
-                'error': emotions['error'],
-                'emotion_analysis': emotions,
+                'error': base_emotions['error'],
+                'emotion_analysis': base_emotions,
             }), 500
         
-        # Формируем ответ, всегда включаем анализ эмоций
+        # Формируем ответ, всегда включаем полный анализ (включая исторический контекст если есть)
         response_data = {
             'emotion_analysis': emotions,
         }
@@ -107,7 +111,7 @@ def analyze():
         # На основе эмоционального анализа генерируем выбранные типы контента
         if 'text' in generation_types:
             print("Начало генерации художественного произведения")
-            literary_work = analyzer.generate_literary_work(diary_text, emotions)
+            literary_work = analyzer.generate_literary_work(diary_text, base_emotions)
             print(f"Генерация текста завершена, длина: {len(literary_work)}")
             response_data['generated_literary_work'] = literary_work
         
@@ -117,7 +121,7 @@ def analyze():
                 # Убедимся, что папка для изображений существует
                 os.makedirs(os.path.join('static', 'generated_images'), exist_ok=True)
                 
-                image_result = analyzer.generate_image_from_diary(diary_text, emotions)
+                image_result = analyzer.generate_image_from_diary(diary_text, base_emotions)
                 print(f"Генерация изображения завершена: {image_result.get('success', False)}")
                 
                 if image_result.get('success', False):
@@ -208,7 +212,7 @@ def analyze():
                 # Используем внешний URL, если он указан, или request.host_url в противном случае
                 base_url = os.environ.get('EXTERNAL_URL', request.host_url.rstrip('/'))
                 print(f"Используется base_url для коллбэка: {base_url}")
-                music_result = analyzer.generate_music(diary_text, emotions, base_url=base_url)
+                music_result = analyzer.generate_music(diary_text, base_emotions, base_url=base_url)
                 print(f"Генерация музыки завершена: {music_result['success']}")
                 
                 if not music_result.get('success', False):
@@ -584,10 +588,29 @@ def generate_image():
         
         # Преобразуем пути к изображениям в URL-адреса
         local_path = image_result.get('local_path', '')
-        if local_path.startswith('static/'):
-            image_url = '/' + local_path
+        image_url = ''
+        
+        print(f"Локальный путь изображения: {local_path}")
+        
+        if local_path:
+            # Нормализуем путь для разных ОС
+            normalized_path = local_path.replace('\\', '/')
+            
+            # Убедимся, что путь начинается с static/
+            if normalized_path.startswith('static/'):
+                image_url = '/' + normalized_path
+            elif 'static/' in normalized_path:
+                # Находим часть пути начиная с static/
+                static_index = normalized_path.find('static/')
+                image_url = '/' + normalized_path[static_index:]
+            else:
+                # Если локального пути нет или он некорректный, используем внешний URL
+                image_url = image_result.get('image_url', '')
         else:
+            # Используем внешний URL, если локального пути нет
             image_url = image_result.get('image_url', '')
+        
+        print(f"Итоговый URL изображения: {image_url}")
         
         response_data = {
             'success': True,
@@ -644,6 +667,9 @@ def generate_safe_image():
             # Если локальный путь не начинается с /, добавляем его
             if display_url and not display_url.startswith('/'):
                 display_url = '/' + display_url
+            
+            print(f"Безопасное изображение - локальный путь: {local_path}")
+            print(f"Безопасное изображение - итоговый URL: {display_url}")
                 
             return jsonify({
                 'success': True, 
@@ -1292,6 +1318,296 @@ def submit_detailed_feedback():
             'success': False,
             'error': f'Не удалось сохранить оценку: {str(e)}'
         }), 500
+
+# Добавляем маршрут для обслуживания сгенерированных изображений
+@app.route('/static/generated_images/<filename>')
+def generated_image(filename):
+    """Обслуживание сгенерированных изображений"""
+    return send_from_directory(os.path.join(app.root_path, 'static', 'generated_images'), filename)
+
+# Добавляем маршрут для обслуживания сгенерированной музыки
+@app.route('/static/generated_music/<path:filename>')
+def generated_music(filename):
+    """Обслуживание сгенерированной музыки"""
+    return send_from_directory(os.path.join(app.root_path, 'static', 'generated_music'), filename)
+
+# Добавляем функцию для поиска завершенных музыкальных задач
+def find_available_music_tasks():
+    """
+    Ищет завершенные музыкальные задачи в папке generated_music
+    """
+    try:
+        music_dir = os.path.join('static', 'generated_music')
+        if not os.path.exists(music_dir):
+            return []
+        
+        available_tasks = []
+        
+        # Ищем все файлы метаданных
+        for filename in os.listdir(music_dir):
+            if filename.startswith('music_metadata_') and filename.endswith('.json'):
+                try:
+                    metadata_path = os.path.join(music_dir, filename)
+                    with open(metadata_path, 'r', encoding='utf-8') as f:
+                        metadata = json.load(f)
+                    
+                    # Проверяем, есть ли готовая музыка
+                    if (metadata.get('status') == 'complete' and 
+                        (metadata.get('audio_url') or metadata.get('stream_url') or 
+                         metadata.get('local_audio_url') or metadata.get('local_audio_path'))):
+                        
+                        task_info = {
+                            'task_id': metadata.get('task_id'),
+                            'title': metadata.get('title', 'Без названия'),
+                            'created_at': metadata.get('created_at'),
+                            'audio_url': metadata.get('audio_url', ''),
+                            'stream_url': metadata.get('stream_url', ''),
+                            'local_audio_url': metadata.get('local_audio_url', ''),
+                            'music_description': metadata.get('music_description', ''),
+                            'style': metadata.get('style', ''),
+                            'mood': metadata.get('mood', '')
+                        }
+                        available_tasks.append(task_info)
+                        
+                except Exception as e:
+                    print(f"Ошибка при чтении {filename}: {e}")
+                    continue
+        
+        # Сортируем по дате создания (новые первыми)
+        available_tasks.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        return available_tasks
+        
+    except Exception as e:
+        print(f"Ошибка при поиске завершенных задач: {e}")
+        return []
+
+# Добавляем endpoint для получения списка готовой музыки
+@app.route('/available_music')
+def available_music():
+    """
+    Возвращает список доступной готовой музыки
+    """
+    try:
+        tasks = find_available_music_tasks()
+        return jsonify({
+            'success': True,
+            'tasks': tasks,
+            'count': len(tasks)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/delete_music_track/<task_id>', methods=['POST'])
+def delete_music_track(task_id):
+    """
+    Удаляет музыкальный трек и связанные с ним файлы
+    """
+    try:
+        print(f"Запрос на удаление трека: {task_id}")
+        
+        # Проверяем валидность task_id (только буквы, цифры и некоторые символы)
+        import re
+        if not re.match(r'^[a-zA-Z0-9_-]+$', task_id):
+            return jsonify({
+                'success': False,
+                'error': 'Некорректный идентификатор трека'
+            }), 400
+        
+        deleted_files = []
+        
+        # Удаляем файл метаданных
+        metadata_path = os.path.join('static', 'generated_music', f"music_metadata_{task_id}.json")
+        if os.path.exists(metadata_path):
+            os.remove(metadata_path)
+            deleted_files.append(f"music_metadata_{task_id}.json")
+            print(f"Удален файл метаданных: {metadata_path}")
+        
+        # Удаляем аудиофайл
+        audio_path = os.path.join('static', 'generated_music', 'audio', f"music_{task_id}.mp3")
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+            deleted_files.append(f"music_{task_id}.mp3")
+            print(f"Удален аудиофайл: {audio_path}")
+        
+        # Удаляем обложку
+        cover_path = os.path.join('static', 'generated_music', 'covers', f"cover_{task_id}.jpg")
+        if os.path.exists(cover_path):
+            os.remove(cover_path)
+            deleted_files.append(f"cover_{task_id}.jpg")
+            print(f"Удалена обложка: {cover_path}")
+        
+        if not deleted_files:
+            return jsonify({
+                'success': False,
+                'error': 'Трек не найден или уже удален'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'message': f'Трек {task_id} успешно удален',
+            'deleted_files': deleted_files
+        })
+        
+    except Exception as e:
+        print(f"Ошибка при удалении трека {task_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Ошибка при удалении трека: {str(e)}'
+        }), 500
+
+@app.route('/cleanup_music_tracks', methods=['POST'])
+def cleanup_music_tracks():
+    """
+    Очищает старые или незавершенные музыкальные треки
+    """
+    try:
+        data = request.get_json() or {}
+        cleanup_type = data.get('type', 'incomplete')  # 'incomplete', 'old', 'all'
+        
+        print(f"Запрос на очистку треков типа: {cleanup_type}")
+        
+        music_dir = os.path.join('static', 'generated_music')
+        if not os.path.exists(music_dir):
+            return jsonify({
+                'success': True,
+                'message': 'Папка с музыкой не найдена',
+                'deleted_count': 0
+            })
+        
+        deleted_tracks = []
+        
+        # Ищем все файлы метаданных
+        for filename in os.listdir(music_dir):
+            if filename.startswith('music_metadata_') and filename.endswith('.json'):
+                try:
+                    metadata_path = os.path.join(music_dir, filename)
+                    with open(metadata_path, 'r', encoding='utf-8') as f:
+                        metadata = json.load(f)
+                    
+                    task_id = metadata.get('task_id', '')
+                    status = metadata.get('status', '')
+                    created_at = metadata.get('created_at', '')
+                    
+                    should_delete = False
+                    
+                    if cleanup_type == 'incomplete':
+                        # Удаляем незавершенные треки
+                        if status in ['processing', 'timeout', 'error', 'unknown']:
+                            should_delete = True
+                    elif cleanup_type == 'old':
+                        # Удаляем треки старше 7 дней
+                        if created_at:
+                            try:
+                                from datetime import datetime, timedelta
+                                created_date = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                                if datetime.now() - created_date > timedelta(days=7):
+                                    should_delete = True
+                            except:
+                                pass
+                    elif cleanup_type == 'all':
+                        # Удаляем все треки
+                        should_delete = True
+                    
+                    if should_delete and task_id:
+                        # Удаляем трек
+                        deleted_files = []
+                        
+                        # Удаляем метаданные
+                        if os.path.exists(metadata_path):
+                            os.remove(metadata_path)
+                            deleted_files.append(filename)
+                        
+                        # Удаляем аудиофайл
+                        audio_path = os.path.join(music_dir, 'audio', f"music_{task_id}.mp3")
+                        if os.path.exists(audio_path):
+                            os.remove(audio_path)
+                            deleted_files.append(f"music_{task_id}.mp3")
+                        
+                        # Удаляем обложку
+                        cover_path = os.path.join(music_dir, 'covers', f"cover_{task_id}.jpg")
+                        if os.path.exists(cover_path):
+                            os.remove(cover_path)
+                            deleted_files.append(f"cover_{task_id}.jpg")
+                        
+                        deleted_tracks.append({
+                            'task_id': task_id,
+                            'status': status,
+                            'deleted_files': deleted_files
+                        })
+                        
+                        print(f"Удален трек {task_id} (статус: {status})")
+                        
+                except Exception as e:
+                    print(f"Ошибка при обработке {filename}: {e}")
+                    continue
+        
+        return jsonify({
+            'success': True,
+            'message': f'Очистка завершена. Удалено треков: {len(deleted_tracks)}',
+            'deleted_count': len(deleted_tracks),
+            'deleted_tracks': deleted_tracks
+        })
+        
+    except Exception as e:
+        print(f"Ошибка при очистке треков: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Ошибка при очистке: {str(e)}'
+        }), 500
+
+@app.route('/admin')
+def admin():
+    """Страница администрирования для управления треками и тестирования"""
+    try:
+        # Получаем список всех треков
+        music_dir = os.path.join('static', 'generated_music')
+        tracks = []
+        
+        if os.path.exists(music_dir):
+            for filename in os.listdir(music_dir):
+                if filename.startswith('music_metadata_') and filename.endswith('.json'):
+                    try:
+                        metadata_path = os.path.join(music_dir, filename)
+                        with open(metadata_path, 'r', encoding='utf-8') as f:
+                            metadata = json.load(f)
+                        
+                        track_info = {
+                            'task_id': metadata.get('task_id', ''),
+                            'title': metadata.get('title', 'Без названия'),
+                            'status': metadata.get('status', 'unknown'),
+                            'created_at': metadata.get('created_at', ''),
+                            'style': metadata.get('style', ''),
+                            'mood': metadata.get('mood', ''),
+                            'has_audio': bool(metadata.get('local_audio_path') or metadata.get('audio_url')),
+                            'file_size': os.path.getsize(metadata_path)
+                        }
+                        tracks.append(track_info)
+                    except Exception as e:
+                        print(f"Ошибка при чтении {filename}: {e}")
+                        continue
+        
+        # Сортируем по дате создания (новые первыми)
+        tracks.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        # Статистика изображений
+        images_dir = os.path.join('static', 'generated_images')
+        image_count = 0
+        if os.path.exists(images_dir):
+            image_count = len([f for f in os.listdir(images_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
+        
+        return render_template('admin.html', 
+                             tracks=tracks, 
+                             track_count=len(tracks),
+                             image_count=image_count)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")

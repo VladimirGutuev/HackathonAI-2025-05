@@ -8,6 +8,15 @@ import io  # Добавляем для работы с файлами
 from datetime import datetime  # Добавляем для работы с датами
 import time  # Добавляем для работы с временем
 
+# Попытка импорта системы RAG
+try:
+    from historical_rag import HistoricalRAG
+    RAG_AVAILABLE = True
+    print("Система RAG с исторической базой данных доступна")
+except ImportError as e:
+    RAG_AVAILABLE = False
+    print(f"Система RAG недоступна: {e}")
+
 # Улучшенная загрузка переменных окружения
 env_path = find_dotenv()
 if env_path:
@@ -55,6 +64,16 @@ class WarDiaryAnalyzer:
         
         # Конфигурируем клиент OpenAI
         self.client = OpenAI(api_key=self.api_key)
+        
+        # Инициализируем систему RAG если доступна
+        self.historical_rag = None
+        if RAG_AVAILABLE:
+            try:
+                self.historical_rag = HistoricalRAG()
+                print("Система RAG инициализирована")
+            except Exception as e:
+                print(f"Ошибка инициализации RAG: {e}")
+                self.historical_rag = None
 
     def analyze_emotions(self, text):
         """
@@ -1865,6 +1884,143 @@ class WarDiaryAnalyzer:
                 'error': f"Ошибка при обработке данных из callback от Suno API: {str(e)}",
                 'task_id': task_id
             }
+
+    def analyze_emotions_with_context(self, diary_text):
+        """
+        Расширенный анализ эмоций с историческим контекстом через RAG.
+        
+        Args:
+            diary_text (str): Текст дневника для анализа
+            
+        Returns:
+            dict: Результаты анализа эмоций с историческим обогащением
+        """
+        print("Начало расширенного анализа эмоций с историческим контекстом...")
+        
+        # Сначала проводим стандартный анализ эмоций
+        emotion_analysis = self.analyze_emotions(diary_text)
+        
+        # Если есть ошибки в базовом анализе, возвращаем его без обогащения
+        if 'error' in emotion_analysis and emotion_analysis['error']:
+            print(f"Ошибка в базовом анализе эмоций: {emotion_analysis['error']}")
+            return emotion_analysis
+        
+        # Если RAG система доступна, обогащаем результат историческим контекстом
+        if self.historical_rag is not None:
+            try:
+                print("Поиск исторического контекста...")
+                
+                # Получаем релевантный исторический контекст
+                historical_context = self.historical_rag.get_relevant_historical_context(
+                    diary_text, 
+                    emotion_analysis, 
+                    top_k=5
+                )
+                
+                if historical_context:
+                    print(f"Найдено {len(historical_context)} релевантных исторических источников")
+                    
+                    # Обогащаем анализ историческим контекстом
+                    enhanced_analysis = self.historical_rag.enhance_analysis_with_context(
+                        emotion_analysis, 
+                        historical_context
+                    )
+                    
+                    # Генерируем историческое резюме для улучшения промптов
+                    if enhanced_analysis.get('has_historical_enrichment', False):
+                        print("Генерация обогащенного анализа эмоций с историческим контекстом...")
+                        
+                        # Создаем обогащенный промпт для повторного анализа
+                        historical_summary = enhanced_analysis['historical_context']['summary']
+                        
+                        enhanced_prompt = f"""
+                        Проанализируйте эмоциональное состояние автора в следующем отрывке из военного дневника
+                        с учетом предоставленного исторического контекста.
+                        
+                        Текст дневника:
+                        {diary_text}
+                        
+                        Исторический контекст:
+                        {historical_summary}
+                        
+                        Пожалуйста, определите:
+                        1. Основные эмоции с учетом исторических реалий
+                        2. Интенсивность эмоций по шкале от 1 до 10
+                        3. Общий эмоциональный тон в историческом контексте
+                        4. Скрытые эмоциональные мотивы с учетом исторических событий
+                        5. Отношение к происходящему в контексте эпохи
+                        6. Историческая достоверность описанных событий и чувств
+                        
+                        Верните ответ СТРОГО в следующем формате JSON:
+                        {{
+                            "primary_emotions": [
+                                {{"emotion": "название_эмоции", "intensity": число_от_1_до_10, "historical_context": "как эмоция связана с историческим контекстом"}},
+                                ...
+                            ],
+                            "emotional_tone": "описание_общего_тона_с_историческим_контекстом",
+                            "hidden_motives": ["мотив1", "мотив2", ...],
+                            "attitude": "отношение_к_происходящему_в_историческом_контексте",
+                            "historical_accuracy": "оценка_исторической_достоверности",
+                            "historical_insights": ["инсайт1", "инсайт2", ...]
+                        }}
+                        """
+                        
+                        try:
+                            # Отправляем обогащенный запрос к OpenAI
+                            response = self.client.chat.completions.create(
+                                model="gpt-4",
+                                messages=[
+                                    {"role": "system", "content": "Вы - историк и военный психолог, специализирующийся на анализе военных дневников с учетом исторического контекста. Всегда возвращайте ответ в формате JSON."},
+                                    {"role": "user", "content": enhanced_prompt}
+                                ],
+                                temperature=0.7,
+                                timeout=120
+                            )
+                            
+                            response_text = response.choices[0].message.content.strip()
+                            
+                            try:
+                                enhanced_emotion_analysis = json.loads(response_text)
+                                print("Обогащенный анализ эмоций успешно получен")
+                                
+                                # Объединяем оба анализа
+                                final_analysis = enhanced_analysis.copy()
+                                final_analysis['emotion_analysis'] = enhanced_emotion_analysis
+                                final_analysis['analysis_type'] = 'enhanced_with_historical_context'
+                                
+                                return final_analysis
+                                
+                            except json.JSONDecodeError as e:
+                                print(f"Ошибка парсинга обогащенного анализа: {e}")
+                                # Возвращаем стандартный обогащенный анализ
+                                enhanced_analysis['analysis_type'] = 'standard_with_historical_context'
+                                return enhanced_analysis
+                        
+                        except Exception as e:
+                            print(f"Ошибка при получении обогащенного анализа эмоций: {e}")
+                            enhanced_analysis['analysis_type'] = 'standard_with_historical_context'
+                            return enhanced_analysis
+                    
+                    else:
+                        print("Исторический контекст найден, но обогащение не применено")
+                        enhanced_analysis['analysis_type'] = 'standard_with_limited_context'
+                        return enhanced_analysis
+                
+                else:
+                    print("Релевантный исторический контекст не найден")
+                    emotion_analysis['analysis_type'] = 'standard_only'
+                    return emotion_analysis
+                    
+            except Exception as e:
+                print(f"Ошибка при работе с системой RAG: {e}")
+                emotion_analysis['analysis_type'] = 'standard_only'
+                emotion_analysis['rag_error'] = str(e)
+                return emotion_analysis
+        
+        else:
+            print("Система RAG недоступна, возвращаем стандартный анализ")
+            emotion_analysis['analysis_type'] = 'standard_only'
+            return emotion_analysis
 
 def main():
     """
