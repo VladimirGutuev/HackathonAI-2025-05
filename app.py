@@ -39,6 +39,14 @@ else:
 print("OPENAI_API_KEY:", "Установлен" if os.environ.get("OPENAI_API_KEY") else "НЕ УСТАНОВЛЕН")
 print("SUNOAI_API_KEY:", "Установлен" if os.environ.get("SUNOAI_API_KEY") else "НЕ УСТАНОВЛЕН")
 
+# Попытка импорта RAG компонентов
+try:
+    from historical_rag import HistoricalRAG
+    RAG_AVAILABLE = True
+except ImportError:
+    HistoricalRAG = None # Определяем как None, если импорт не удался
+    RAG_AVAILABLE = False
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///forum.db'
@@ -1608,6 +1616,31 @@ def admin():
                              image_count=image_count)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/rag-stats')
+def rag_stats():
+    stats = {}
+    # RAG_AVAILABLE is defined near the top of app.py based on HistoricalRAG import
+    if RAG_AVAILABLE and HistoricalRAG is not None:
+        try:
+            rag_instance = HistoricalRAG()
+            if hasattr(rag_instance, 'get_database_stats') and callable(getattr(rag_instance, 'get_database_stats')):
+                stats = rag_instance.get_database_stats()
+                # Ensure a status is present, even if get_database_stats() doesn't return one
+                if 'rag_status' not in stats:
+                    stats['rag_status'] = 'Доступна'
+            else:
+                stats['error'] = 'Метод get_database_stats() не найден в классе HistoricalRAG.'
+                stats['rag_status'] = 'Ошибка конфигурации'
+        except Exception as e:
+            print(f"Ошибка при инициализации HistoricalRAG или вызове get_database_stats: {e}")
+            stats['error'] = f"Ошибка при получении статистики RAG: {str(e)}"
+            stats['rag_status'] = 'Ошибка инициализации'
+    else:
+        stats['rag_status'] = 'Недоступна'
+        stats['error'] = 'Компонент HistoricalRAG не был загружен. Проверьте наличие файла historical_rag.py и его зависимости.'
+            
+    return render_template('rag_stats.html', stats=stats, rag_available=RAG_AVAILABLE)
 
 if __name__ == '__main__':
     print("\n=== Запуск сервера ===")
