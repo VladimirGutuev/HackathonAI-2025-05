@@ -1804,6 +1804,7 @@ function displayGeneratedMusic(musicData) {
     const proxyUrl = musicData.proxy_url || '';
     const audioUrl = musicData.audio_url || '';
     const streamUrl = musicData.stream_url || '';
+    const localCoverUrl = musicData.local_cover_url || ''; // НОВОЕ: получаем URL локальной обложки
     
     // Используем первый доступный URL
     const finalAudioUrl = localAudioUrl || proxyUrl || audioUrl || streamUrl;
@@ -1818,9 +1819,9 @@ function displayGeneratedMusic(musicData) {
             <div class="music-player">
                 <div class="music-player-content">
                     <!-- Обложка -->
-                    <div class="music-cover ${musicData.cover_url ? '' : 'no-cover'}">
-                        ${musicData.cover_url ? 
-                            `<img src="${musicData.cover_url}" alt="Обложка трека">` : 
+                    <div class="music-cover ${localCoverUrl ? 'has-cover' : 'no-cover'}">
+                        ${localCoverUrl ? 
+                            `<img src="${localCoverUrl}" alt="Обложка трека">` : 
                             `<div class="music-cover-placeholder">
                                 <i class="bi bi-music-note-beamed" style="font-size: 60px;"></i>
                             </div>`

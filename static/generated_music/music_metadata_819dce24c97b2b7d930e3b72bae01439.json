@@ -1,0 +1,71 @@
+{
+  "task_id": "819dce24c97b2b7d930e3b72bae01439",
+  "title": "War Diary: Тон записи обеспе... Cinematic Suspense",
+  "prompt": "Create high-quality tense Cinematic Suspense music that captures the following emotions: утомление, сочувствие, тревога. The music should reflect a Тон записи обеспечивает серьезное, тревожное и утомленное настроение, что отражает тяжелые условия военного времени и сложности, с которыми сталкиваются как солдаты, так и мирное население. tone of wartime experiences. moderate with emotional depth rhythm with low strings and percussion as primary instruments. Based on a war diary that describes: Совершили марш по направлению к фронту. Марш\nпродолжался 4 суток, временами шли полные\nсутки…\n[В деревнях] встречали нас старики преклонных\nлет и дети, молодые женщины и девчата были\nмобилизованы для рытья окопов. Здесь неурожай,\nпокупают картошку по 50–60 рублей за пуд,\nа хлеба не найдёшь нипочём...",
+  "style": "Cinematic Suspense",
+  "mood": "tense",
+  "tempo": "moderate with emotional depth",
+  "instruments": "low strings and percussion",
+  "emotions": [
+    "утомление",
+    "сочувствие",
+    "тревога"
+  ],
+  "emotional_tone": "Тон записи обеспечивает серьезное, тревожное и утомленное настроение, что отражает тяжелые условия военного времени и сложности, с которыми сталкиваются как солдаты, так и мирное население.",
+  "status": "error",
+  "created_at": "2025-05-29T20:43:30.726657",
+  "callback_url_used": "https://32be-37-120-217-10.ngrok-free.app/music_callback",
+  "model_used": "V4_5",
+  "last_update": "2025-05-29T20:48:03.767238",
+  "last_callback_data": {
+    "code": 200,
+    "data": {
+      "callbackType": "complete",
+      "data": [
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/M2EwZjc4ZjEtZTYxYy00YjNjLTljNjYtNjAyM2E4ZmE3MjQw.mp3",
+          "createTime": 1748540784940,
+          "duration": 257.92,
+          "id": "3a0f78f1-e61c-4b3c-9c66-6023a8fa7240",
+          "image_url": "https://apiboxfiles.erweima.ai/M2EwZjc4ZjEtZTYxYy00YjNjLTljNjYtNjAyM2E4ZmE3MjQw.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/3a0f78f1-e61c-4b3c-9c66-6023a8fa7240.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_3a0f78f1-e61c-4b3c-9c66-6023a8fa7240.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/3a0f78f1-e61c-4b3c-9c66-6023a8fa7240.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/M2EwZjc4ZjEtZTYxYy00YjNjLTljNjYtNjAyM2E4ZmE3MjQw",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Тон записи обеспе... Cinematic Suspense"
+        },
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/ZmYzZjBiOTktMTg2MC00MTE0LTgzOWMtNTMwNTM5ZjBkNWNh.mp3",
+          "createTime": 1748540784940,
+          "duration": 143.68,
+          "id": "ff3f0b99-1860-4114-839c-530539f0d5ca",
+          "image_url": "https://apiboxfiles.erweima.ai/ZmYzZjBiOTktMTg2MC00MTE0LTgzOWMtNTMwNTM5ZjBkNWNh.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/ff3f0b99-1860-4114-839c-530539f0d5ca.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_ff3f0b99-1860-4114-839c-530539f0d5ca.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/ff3f0b99-1860-4114-839c-530539f0d5ca.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/ZmYzZjBiOTktMTg2MC00MTE0LTgzOWMtNTMwNTM5ZjBkNWNh",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Тон записи обеспе... Cinematic Suspense"
+        }
+      ],
+      "task_id": "819dce24c97b2b7d930e3b72bae01439"
+    },
+    "msg": "All generated successfully."
+  },
+  "callback_received_at": "2025-05-29T20:46:24.443346",
+  "external_cover_url": "https://apiboxfiles.erweima.ai/M2EwZjc4ZjEtZTYxYy00YjNjLTljNjYtNjAyM2E4ZmE3MjQw.jpeg",
+  "local_cover_path": "static\\generated_music\\covers\\cover_819dce24c97b2b7d930e3b72bae01439.jpg",
+  "local_cover_url": "/static/generated_music/covers/cover_819dce24c97b2b7d930e3b72bae01439.jpg",
+  "cover_downloaded_at": "2025-05-29T20:46:27.491205",
+  "external_audio_url": "https://apiboxfiles.erweima.ai/M2EwZjc4ZjEtZTYxYy00YjNjLTljNjYtNjAyM2E4ZmE3MjQw.mp3",
+  "local_audio_path": "static\\generated_music\\audio\\music_819dce24c97b2b7d930e3b72bae01439.mp3",
+  "local_audio_url": "/static/generated_music/audio/music_819dce24c97b2b7d930e3b72bae01439.mp3",
+  "audio_downloaded_at": "2025-05-29T20:46:27.019028",
+  "message": "Не удалось получить музыку после 15 попыток (230s). Последнее сообщение: Задача 819dce24c97b2b7d930e3b72bae01439 не найдена на эндпоинте https://apibox.erweima.ai/api/v1/music/819dce24c97b2b7d930e3b72bae01439 (404).",
+  "error_type": "max_retries_no_endpoint_success"
+}

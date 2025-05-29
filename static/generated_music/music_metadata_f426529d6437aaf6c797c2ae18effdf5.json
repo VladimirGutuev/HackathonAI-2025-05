@@ -1,0 +1,71 @@
+{
+  "task_id": "f426529d6437aaf6c797c2ae18effdf5",
+  "title": "War Diary: Тон военного днев... Dramatic Film Score",
+  "prompt": "Create high-quality dramatic Dramatic Film Score music that captures the following emotions: утомление, сострадание, обеспокоенность. The music should reflect a Тон военного дневника тяжелый и мрачный. Он отражает трудности и неприятности военного времени, включая физическую усталость, бедность и страдания цивильного населения. tone of wartime experiences. moderate with emotional depth rhythm with full orchestra with piano accents as primary instruments. Based on a war diary that describes: Совершили марш по направлению к фронту. Марш\nпродолжался 4 суток, временами шли полные\nсутки…\n[В деревнях] встречали нас старики преклонных\nлет и дети, молодые женщины и девчата были\nмобилизованы для рытья окопов. Здесь неурожай,\nпокупают картошку по 50–60 рублей за пуд,\nа хлеба не найдёшь нипочём...",
+  "style": "Dramatic Film Score",
+  "mood": "dramatic",
+  "tempo": "moderate with emotional depth",
+  "instruments": "full orchestra with piano accents",
+  "emotions": [
+    "утомление",
+    "сострадание",
+    "обеспокоенность"
+  ],
+  "emotional_tone": "Тон военного дневника тяжелый и мрачный. Он отражает трудности и неприятности военного времени, включая физическую усталость, бедность и страдания цивильного населения.",
+  "status": "error",
+  "created_at": "2025-05-29T20:27:19.483627",
+  "callback_url_used": "https://32be-37-120-217-10.ngrok-free.app/music_callback",
+  "model_used": "V4_5",
+  "last_update": "2025-05-29T20:31:49.714185",
+  "last_callback_data": {
+    "code": 200,
+    "data": {
+      "callbackType": "complete",
+      "data": [
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/NzU3MjQwNWMtNWZhMS00Y2VlLTliZmMtNGIxOTBlODQ2NTdl.mp3",
+          "createTime": 1748539775458,
+          "duration": 234.8,
+          "id": "7572405c-5fa1-4cee-9bfc-4b190e84657e",
+          "image_url": "https://apiboxfiles.erweima.ai/NzU3MjQwNWMtNWZhMS00Y2VlLTliZmMtNGIxOTBlODQ2NTdl.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/7572405c-5fa1-4cee-9bfc-4b190e84657e.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_7572405c-5fa1-4cee-9bfc-4b190e84657e.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/7572405c-5fa1-4cee-9bfc-4b190e84657e.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/NzU3MjQwNWMtNWZhMS00Y2VlLTliZmMtNGIxOTBlODQ2NTdl",
+          "tags": "Dramatic Film Score",
+          "title": "War Diary: Тон военного днев... Dramatic Film Score"
+        },
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/ODQ3Yjc3NjctODE2NC00MTViLWFiOWQtMmJiZjQ0ZjVkYjlj.mp3",
+          "createTime": 1748539775458,
+          "duration": 214.4,
+          "id": "847b7767-8164-415b-ab9d-2bbf44f5db9c",
+          "image_url": "https://apiboxfiles.erweima.ai/ODQ3Yjc3NjctODE2NC00MTViLWFiOWQtMmJiZjQ0ZjVkYjlj.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/847b7767-8164-415b-ab9d-2bbf44f5db9c.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_847b7767-8164-415b-ab9d-2bbf44f5db9c.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/847b7767-8164-415b-ab9d-2bbf44f5db9c.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/ODQ3Yjc3NjctODE2NC00MTViLWFiOWQtMmJiZjQ0ZjVkYjlj",
+          "tags": "Dramatic Film Score",
+          "title": "War Diary: Тон военного днев... Dramatic Film Score"
+        }
+      ],
+      "task_id": "f426529d6437aaf6c797c2ae18effdf5"
+    },
+    "msg": "All generated successfully."
+  },
+  "callback_received_at": "2025-05-29T20:29:34.979550",
+  "external_cover_url": "https://apiboxfiles.erweima.ai/NzU3MjQwNWMtNWZhMS00Y2VlLTliZmMtNGIxOTBlODQ2NTdl.jpeg",
+  "local_cover_path": "static\\generated_music\\covers\\cover_f426529d6437aaf6c797c2ae18effdf5.jpg",
+  "local_cover_url": "/static/generated_music/covers/cover_f426529d6437aaf6c797c2ae18effdf5.jpg",
+  "cover_downloaded_at": "2025-05-29T20:29:37.123987",
+  "external_audio_url": "https://apiboxfiles.erweima.ai/NzU3MjQwNWMtNWZhMS00Y2VlLTliZmMtNGIxOTBlODQ2NTdl.mp3",
+  "local_audio_path": "static\\generated_music\\audio\\music_f426529d6437aaf6c797c2ae18effdf5.mp3",
+  "local_audio_url": "/static/generated_music/audio/music_f426529d6437aaf6c797c2ae18effdf5.mp3",
+  "audio_downloaded_at": "2025-05-29T20:29:36.678189",
+  "message": "Не удалось получить музыку после 15 попыток (230s). Последнее сообщение: Задача f426529d6437aaf6c797c2ae18effdf5 не найдена на эндпоинте https://apibox.erweima.ai/api/v1/music/f426529d6437aaf6c797c2ae18effdf5 (404).",
+  "error_type": "max_retries_no_endpoint_success"
+}

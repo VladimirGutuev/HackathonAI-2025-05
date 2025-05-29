@@ -893,6 +893,86 @@ def check_music_status():
             # Добавляем прокси URL для аудио
             if status_response.get('audio_url'):
                 status_response['proxy_url'] = f"/proxy_audio?url={urllib.parse.quote(status_response['audio_url'])}"
+
+            # НОВОЕ: Скачиваем аудио и обложку, если их нет локально, и обновляем метаданные
+            audio_url_from_api = status_response.get('audio_url')
+            cover_url_from_api = status_response.get('image_url') # Предполагаем, что API возвращает image_url для обложки
+
+            current_metadata = {}
+            if os.path.exists(metadata_path):
+                try:
+                    with open(metadata_path, 'r', encoding='utf-8') as f_meta_read:
+                        current_metadata = json.load(f_meta_read)
+                except Exception as e_read_meta:
+                    print(f"[check_music_status] Ошибка чтения существующих метаданных {metadata_path}: {e_read_meta}")
+            
+            current_metadata['task_id'] = task_id
+            current_metadata['status'] = 'complete'
+            current_metadata['last_api_check_at'] = datetime.now().isoformat()
+            
+            # Скачиваем аудио, если есть URL и его еще нет локально
+            if audio_url_from_api and not current_metadata.get('local_audio_url'):
+                print(f"[check_music_status] Скачиваю аудио из API: {audio_url_from_api}")
+                try:
+                    import requests
+                    audio_dir = os.path.join('static', 'generated_music', 'audio')
+                    os.makedirs(audio_dir, exist_ok=True)
+                    local_audio_filename = f"music_{task_id}.mp3"
+                    local_audio_path = os.path.join(audio_dir, local_audio_filename)
+                    
+                    response_audio = requests.get(audio_url_from_api, timeout=30)
+                    response_audio.raise_for_status()
+                    with open(local_audio_path, 'wb') as audio_file:
+                        audio_file.write(response_audio.content)
+                    
+                    if os.path.exists(local_audio_path) and os.path.getsize(local_audio_path) > 0:
+                        current_metadata['local_audio_path'] = local_audio_path
+                        current_metadata['local_audio_url'] = url_for('static', filename=f'generated_music/audio/{local_audio_filename}')
+                        status_response['local_audio_url'] = current_metadata['local_audio_url'] # Добавляем в ответ
+                        current_metadata['audio_downloaded_at'] = datetime.now().isoformat()
+                        print(f"[check_music_status] ✅ Аудио успешно скачано (через API check): {local_audio_path}")
+                    else:
+                        current_metadata['download_error'] = "Аудио файл не создался или пустой (API check)"
+                        print(f"[check_music_status] ❌ Аудио не создался или пустой (API check): {local_audio_path}")
+                except Exception as e:
+                    print(f"[check_music_status] ❌ Ошибка скачивания аудио (API check) для {task_id}: {e}")
+                    current_metadata['download_error'] = str(e)
+            
+            # Скачиваем обложку, если есть URL и ее еще нет локально
+            if cover_url_from_api and not current_metadata.get('local_cover_url'):
+                print(f"[check_music_status] Скачиваю обложку из API: {cover_url_from_api}")
+                try:
+                    import requests
+                    covers_dir = os.path.join('static', 'generated_music', 'covers')
+                    os.makedirs(covers_dir, exist_ok=True)
+                    local_cover_filename = f"cover_{task_id}.jpg"
+                    local_cover_path = os.path.join(covers_dir, local_cover_filename)
+                    
+                    response_cover = requests.get(cover_url_from_api, timeout=30)
+                    response_cover.raise_for_status()
+                    with open(local_cover_path, 'wb') as cover_file:
+                        cover_file.write(response_cover.content)
+                        
+                    if os.path.exists(local_cover_path) and os.path.getsize(local_cover_path) > 0:
+                        current_metadata['local_cover_path'] = local_cover_path
+                        current_metadata['local_cover_url'] = url_for('static', filename=f'generated_music/covers/{local_cover_filename}')
+                        status_response['local_cover_url'] = current_metadata['local_cover_url'] # Добавляем в ответ
+                        current_metadata['cover_downloaded_at'] = datetime.now().isoformat()
+                        print(f"[check_music_status] ✅ Обложка успешно скачана (через API check): {local_cover_path}")
+                    else:
+                        current_metadata['cover_download_error'] = "Файл обложки не создался или пустой (API check)"
+                        print(f"[check_music_status] ❌ Обложка не создалась или пустая (API check): {local_cover_path}")
+                except Exception as e:
+                    print(f"[check_music_status] ❌ Ошибка скачивания обложки (API check) для {task_id}: {e}")
+                    current_metadata['cover_download_error'] = str(e)
+
+            # Обновляем метаданные в файле
+            try:
+                with open(metadata_path, 'w', encoding='utf-8') as f_meta_write:
+                    json.dump(current_metadata, f_meta_write, ensure_ascii=False, indent=4)
+                print(f"[check_music_status] Метаданные для {task_id} обновлены после API проверки.")
+            except Exception as e_write_meta:
+                print(f"[check_music_status] Ошибка записи обновленных метаданных {metadata_path}: {e_write_meta}")
         
         print(f"Возвращаем статус: {status_response.get('status')}")
         return jsonify(status_response), 200
