@@ -45,11 +45,11 @@ def init_database():
             if not test_user:
                 print("👤 Создание тестового пользователя 'admin'...")
                 admin_user = User(username='admin')
-                admin_user.set_password('admin123')
-                admin_user.is_admin = True  # Устанавливаем флаг администратора
+                admin_user.set_password('X-,y*t)Lg%Xl6Yzn')
+                admin_user.is_admin = True
                 db.session.add(admin_user)
                 db.session.commit()
-                print("✅ Тестовый пользователь создан (admin/admin123)")
+                print("✅ Тестовый пользователь создан (admin/X-,y*t)Lg%Xl6Yzn)")
             
             print("🎉 База данных успешно инициализирована!")
             
