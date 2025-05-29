@@ -10,6 +10,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     topics = db.relationship('Topic', backref='author', lazy=True)
     messages = db.relationship('Message', backref='author', lazy=True)
     topic_votes = db.relationship('TopicVote', backref='user', lazy=True)

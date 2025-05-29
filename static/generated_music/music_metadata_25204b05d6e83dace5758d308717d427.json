@@ -1,0 +1,71 @@
+{
+  "task_id": "25204b05d6e83dace5758d308717d427",
+  "title": "War Diary: Тон записи выража... Uplifting Orchestral",
+  "prompt": "Create high-quality hopeful Uplifting Orchestral music that captures the following emotions: усталость, беспокойство, надежда. The music should reflect a Тон записи выражает усталость и некоторое беспокойство, но с примесью надежды на лучшее будущее. Это отражает общие чувства, которые испытывали многие люди во время войны. tone of wartime experiences. dynamic with building tension rhythm with strings and woodwinds as primary instruments. Based on a war diary that describes: За восемь месяцев фронтов я достаточно\nобогащён как писатель. Я сыт войной. Я не имею\nничего против того, чтобы сидеть где-нибудь\nв Ташкенте и спокойно, по-человечески,\nзаниматься своим основным делом – писать\nочерки, повесть, пьесу о виденном и пережитом.\nНо сейчас моя судьба связана с судьбой арми...",
+  "style": "Uplifting Orchestral",
+  "mood": "hopeful",
+  "tempo": "dynamic with building tension",
+  "instruments": "strings and woodwinds",
+  "emotions": [
+    "усталость",
+    "беспокойство",
+    "надежда"
+  ],
+  "emotional_tone": "Тон записи выражает усталость и некоторое беспокойство, но с примесью надежды на лучшее будущее. Это отражает общие чувства, которые испытывали многие люди во время войны.",
+  "status": "error",
+  "created_at": "2025-05-29T20:08:32.237120",
+  "callback_url_used": "https://32be-37-120-217-10.ngrok-free.app/music_callback",
+  "model_used": "V4_5",
+  "last_update": "2025-05-29T20:13:05.933044",
+  "last_callback_data": {
+    "code": 200,
+    "data": {
+      "callbackType": "complete",
+      "data": [
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/ZjMyZDIxMjEtODEwZi00ZTZmLWI4Y2YtYjJmYTFhZjZlMmRl.mp3",
+          "createTime": 1748538602039,
+          "duration": 96.92,
+          "id": "f32d2121-810f-4e6f-b8cf-b2fa1af6e2de",
+          "image_url": "https://apiboxfiles.erweima.ai/ZjMyZDIxMjEtODEwZi00ZTZmLWI4Y2YtYjJmYTFhZjZlMmRl.jpeg",
+          "model_name": "chirp-v4",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/f32d2121-810f-4e6f-b8cf-b2fa1af6e2de.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_f32d2121-810f-4e6f-b8cf-b2fa1af6e2de.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/f32d2121-810f-4e6f-b8cf-b2fa1af6e2de.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/ZjMyZDIxMjEtODEwZi00ZTZmLWI4Y2YtYjJmYTFhZjZlMmRl",
+          "tags": "Uplifting Orchestral",
+          "title": "War Diary: Тон записи выража... Uplifting Orchestral"
+        },
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/ZGJiZDE4YjctZmUzZS00ZDk4LWE4MDQtZGQyNzU2ZGMzZWNk.mp3",
+          "createTime": 1748538602039,
+          "duration": 111.28,
+          "id": "dbbd18b7-fe3e-4d98-a804-dd2756dc3ecd",
+          "image_url": "https://apiboxfiles.erweima.ai/ZGJiZDE4YjctZmUzZS00ZDk4LWE4MDQtZGQyNzU2ZGMzZWNk.jpeg",
+          "model_name": "chirp-v4",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/dbbd18b7-fe3e-4d98-a804-dd2756dc3ecd.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_dbbd18b7-fe3e-4d98-a804-dd2756dc3ecd.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/dbbd18b7-fe3e-4d98-a804-dd2756dc3ecd.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/ZGJiZDE4YjctZmUzZS00ZDk4LWE4MDQtZGQyNzU2ZGMzZWNk",
+          "tags": "Uplifting Orchestral",
+          "title": "War Diary: Тон записи выража... Uplifting Orchestral"
+        }
+      ],
+      "task_id": "25204b05d6e83dace5758d308717d427"
+    },
+    "msg": "All generated successfully."
+  },
+  "callback_received_at": "2025-05-29T20:10:01.578101",
+  "external_cover_url": "https://apiboxfiles.erweima.ai/ZjMyZDIxMjEtODEwZi00ZTZmLWI4Y2YtYjJmYTFhZjZlMmRl.jpeg",
+  "local_cover_path": "static\\generated_music\\covers\\cover_25204b05d6e83dace5758d308717d427.jpg",
+  "local_cover_url": "/static/generated_music/covers/cover_25204b05d6e83dace5758d308717d427.jpg",
+  "cover_downloaded_at": "2025-05-29T20:10:03.942148",
+  "external_audio_url": "https://apiboxfiles.erweima.ai/ZjMyZDIxMjEtODEwZi00ZTZmLWI4Y2YtYjJmYTFhZjZlMmRl.mp3",
+  "local_audio_path": "static\\generated_music\\audio\\music_25204b05d6e83dace5758d308717d427.mp3",
+  "local_audio_url": "/static/generated_music/audio/music_25204b05d6e83dace5758d308717d427.mp3",
+  "audio_downloaded_at": "2025-05-29T20:10:03.308604",
+  "message": "Не удалось получить музыку после 15 попыток (230s). Последнее сообщение: Задача 25204b05d6e83dace5758d308717d427 не найдена на эндпоинте https://apibox.erweima.ai/api/v1/music/25204b05d6e83dace5758d308717d427 (404).",
+  "error_type": "max_retries_no_endpoint_success"
+}

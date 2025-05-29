@@ -1,0 +1,110 @@
+{
+  "task_id": "93281b44965619be2864ab69ca6cb46a",
+  "status": "complete",
+  "created_at": "2025-05-29T19:44:35.566911",
+  "last_update": "2025-05-29T19:45:30.078171",
+  "callback_received": true,
+  "callback_data": {
+    "callbackType": "first",
+    "data": [
+      {
+        "audio_url": "",
+        "createTime": 1748536992382,
+        "id": "91ac23d3-238c-47c2-b72f-e334ec880f6d",
+        "image_url": "https://apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.jpeg",
+        "model_name": "chirp-auk",
+        "prompt": "",
+        "source_image_url": "https://cdn2.suno.ai/image_91ac23d3-238c-47c2-b72f-e334ec880f6d.jpeg",
+        "source_stream_audio_url": "https://audiopipe.suno.ai/?item_id=91ac23d3-238c-47c2-b72f-e334ec880f6d",
+        "stream_audio_url": "https://mfile.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk",
+        "tags": "Cinematic Suspense",
+        "title": "War Diary: Смешанный с нотам... Cinematic Suspense"
+      },
+      {
+        "audio_url": "https://apiboxfiles.erweima.ai/NGVlMjljNzgtMzJlMy00MWU1LThlOTUtMWYyZTBkN2E1ZTBj.mp3",
+        "createTime": 1748536992382,
+        "duration": 195.08,
+        "id": "4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c",
+        "image_url": "https://apiboxfiles.erweima.ai/NGVlMjljNzgtMzJlMy00MWU1LThlOTUtMWYyZTBkN2E1ZTBj.jpeg",
+        "model_name": "chirp-auk",
+        "prompt": "",
+        "source_audio_url": "https://cdn1.suno.ai/4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c.mp3",
+        "source_image_url": "https://cdn2.suno.ai/image_4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c.jpeg",
+        "source_stream_audio_url": "https://audiopipe.suno.ai/?item_id=4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c",
+        "stream_audio_url": "https://mfile.erweima.ai/NGVlMjljNzgtMzJlMy00MWU1LThlOTUtMWYyZTBkN2E1ZTBj",
+        "tags": "Cinematic Suspense",
+        "title": "War Diary: Смешанный с нотам... Cinematic Suspense"
+      }
+    ],
+    "task_id": "93281b44965619be2864ab69ca6cb46a"
+  },
+  "last_callback": {
+    "code": 200,
+    "data": {
+      "callbackType": "complete",
+      "data": [
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.mp3",
+          "createTime": 1748537130514,
+          "duration": 169.88,
+          "id": "91ac23d3-238c-47c2-b72f-e334ec880f6d",
+          "image_url": "https://apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/91ac23d3-238c-47c2-b72f-e334ec880f6d.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_91ac23d3-238c-47c2-b72f-e334ec880f6d.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/91ac23d3-238c-47c2-b72f-e334ec880f6d.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Смешанный с нотам... Cinematic Suspense"
+        },
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/NGVlMjljNzgtMzJlMy00MWU1LThlOTUtMWYyZTBkN2E1ZTBj.mp3",
+          "createTime": 1748537130514,
+          "duration": 195.08,
+          "id": "4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c",
+          "image_url": "https://apiboxfiles.erweima.ai/NGVlMjljNzgtMzJlMy00MWU1LThlOTUtMWYyZTBkN2E1ZTBj.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/4ee29c78-32e3-41e5-8e95-1f2e0d7a5e0c.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/NGVlMjljNzgtMzJlMy00MWU1LThlOTUtMWYyZTBkN2E1ZTBj",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Смешанный с нотам... Cinematic Suspense"
+        }
+      ],
+      "task_id": "93281b44965619be2864ab69ca6cb46a"
+    },
+    "msg": "All generated successfully."
+  },
+  "completed_at": "2025-05-29T19:45:33.209859",
+  "audio_url": "https://apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.mp3",
+  "stream_url": "https://mfile.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk",
+  "image_url": "https://apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.jpeg",
+  "embed_url": "",
+  "proxy_url": "/proxy_audio?url=https%3A//apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.mp3",
+  "local_audio_path": "static\\generated_music\\audio\\music_93281b44965619be2864ab69ca6cb46a.mp3",
+  "local_image_path": "static\\generated_music\\covers\\cover_93281b44965619be2864ab69ca6cb46a.jpg",
+  "local_audio_url": "/static/generated_music/audio/music_93281b44965619be2864ab69ca6cb46a.mp3",
+  "local_image_url": "/static/generated_music/covers/cover_93281b44965619be2864ab69ca6cb46a.jpg",
+  "duration": 169.88,
+  "tags": "Cinematic Suspense",
+  "track_data": {
+    "audio_url": "https://apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.mp3",
+    "createTime": 1748537130514,
+    "duration": 169.88,
+    "id": "91ac23d3-238c-47c2-b72f-e334ec880f6d",
+    "image_url": "https://apiboxfiles.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk.jpeg",
+    "model_name": "chirp-auk",
+    "prompt": "",
+    "source_audio_url": "https://cdn1.suno.ai/91ac23d3-238c-47c2-b72f-e334ec880f6d.mp3",
+    "source_image_url": "https://cdn2.suno.ai/image_91ac23d3-238c-47c2-b72f-e334ec880f6d.jpeg",
+    "source_stream_audio_url": "https://cdn1.suno.ai/91ac23d3-238c-47c2-b72f-e334ec880f6d.mp3",
+    "stream_audio_url": "https://mfile.erweima.ai/OTFhYzIzZDMtMjM4Yy00N2MyLWI3MmYtZTMzNGVjODgwZjZk",
+    "tags": "Cinematic Suspense",
+    "title": "War Diary: Смешанный с нотам... Cinematic Suspense"
+  },
+  "music_description": "Сгенерирована музыка на основе дневниковых записей",
+  "is_music_ready": true
+}
