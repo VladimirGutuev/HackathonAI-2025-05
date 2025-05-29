@@ -1555,8 +1555,12 @@ def cleanup_music_tracks():
         }), 500
 
 @app.route('/admin')
+@login_required
 def admin():
     """Страница администрирования для управления треками и тестирования"""
+    if not current_user.is_admin:
+        flash('Доступ запрещен. У вас нет прав администратора.', 'danger')
+        return redirect(url_for('index')) # Перенаправляем на главную страницу или страницу входа
     try:
         # --- Управление Музыкой --- #
         music_dir = os.path.join('static', 'generated_music')
