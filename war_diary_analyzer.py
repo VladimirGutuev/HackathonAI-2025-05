@@ -1413,7 +1413,7 @@ class WarDiaryAnalyzer:
                 'api_status': 'error'
             }
     
-    def _check_music_generation_status(self, task_id, retries=15, delay=15, timeout_seconds=400):  # Увеличен общий таймаут до 400 секунд
+    def _check_music_generation_status(self, task_id, retries=25, delay=10, timeout_seconds=600):  # Увеличен до 25 попыток с интервалом 10 сек, общий таймаут 600 сек (10 минут)
         """Проверяет статус генерации музыки через API Suno, используя локальное кеширование статуса и несколько эндпоинтов."""
         if not self.suno_api_key:
             return {'status': 'error', 'message': 'API ключ Suno не настроен'}
@@ -1455,8 +1455,8 @@ class WarDiaryAnalyzer:
         }
 
         total_wait_time = 0
-        # Увеличим начальную задержку перед первым реальным запросом к API
-        initial_api_delay = 20 # секунд
+        # Уменьшил начальную задержку для более быстрого реагирования
+        initial_api_delay = 10 # секунд (было 20)
         
         print(f"[_check_music_generation_status] Начальная задержка перед первым API запросом: {initial_api_delay}s для Task ID: {task_id}")
         time.sleep(initial_api_delay)

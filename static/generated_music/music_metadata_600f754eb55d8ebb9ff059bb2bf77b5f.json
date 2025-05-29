@@ -1,0 +1,69 @@
+{
+  "task_id": "600f754eb55d8ebb9ff059bb2bf77b5f",
+  "title": "War Diary: Общий эмоциональн... Cinematic Suspense",
+  "prompt": "Create high-quality tense Cinematic Suspense music that captures the following emotions: тревога, разочарование, беспомощность. The music should reflect a Общий эмоциональный тон текста отражает тревогу, разочарование и беспомощность, усиленные военным контекстом и постоянной угрозой воздушных налетов. tone of wartime experiences. dynamic with building tension rhythm with low strings and percussion as primary instruments. Based on a war diary that describes: Эта чёртова Керчь, наверное, никогда\nне изгладится из памяти. Нет дня, чтобы не было\nналётов. Ежедневно налетают по 4–5 раз в день\nгруппами от 4 до 12 самолётов. Уже скоро\nкончатся снаряды для наших пушек, хотя мы\nначали вести огонь экономно. (с. 591)\n…Я не понимаю, из каких соображений держат\nсудно...",
+  "style": "Cinematic Suspense",
+  "mood": "tense",
+  "tempo": "dynamic with building tension",
+  "instruments": "low strings and percussion",
+  "emotions": [
+    "тревога",
+    "разочарование",
+    "беспомощность"
+  ],
+  "emotional_tone": "Общий эмоциональный тон текста отражает тревогу, разочарование и беспомощность, усиленные военным контекстом и постоянной угрозой воздушных налетов.",
+  "status": "error",
+  "created_at": "2025-05-29T09:20:30.448836",
+  "callback_url_used": "https://7c8b-169-150-209-165.ngrok-free.app/music_callback",
+  "model_used": "V4_5",
+  "last_update": "2025-05-29T09:27:04.634507",
+  "last_callback_data": {
+    "code": 200,
+    "data": {
+      "callbackType": "complete",
+      "data": [
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/NGVhODMwOTktMTYzZi00ZDUxLTkyOGUtZWRhMGU3ODU5ZDg5.mp3",
+          "createTime": 1748499766627,
+          "duration": 156.0,
+          "id": "4ea83099-163f-4d51-928e-eda0e7859d89",
+          "image_url": "https://apiboxfiles.erweima.ai/NGVhODMwOTktMTYzZi00ZDUxLTkyOGUtZWRhMGU3ODU5ZDg5.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/4ea83099-163f-4d51-928e-eda0e7859d89.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_4ea83099-163f-4d51-928e-eda0e7859d89.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/4ea83099-163f-4d51-928e-eda0e7859d89.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/NGVhODMwOTktMTYzZi00ZDUxLTkyOGUtZWRhMGU3ODU5ZDg5",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Общий эмоциональн... Cinematic Suspense"
+        },
+        {
+          "audio_url": "https://apiboxfiles.erweima.ai/NGRjMjE3OGEtOWViZC00ODNhLWIzMTItMTIwYjNkMGQzYjAy.mp3",
+          "createTime": 1748499766627,
+          "duration": 194.96,
+          "id": "4dc2178a-9ebd-483a-b312-120b3d0d3b02",
+          "image_url": "https://apiboxfiles.erweima.ai/NGRjMjE3OGEtOWViZC00ODNhLWIzMTItMTIwYjNkMGQzYjAy.jpeg",
+          "model_name": "chirp-auk",
+          "prompt": "",
+          "source_audio_url": "https://cdn1.suno.ai/4dc2178a-9ebd-483a-b312-120b3d0d3b02.mp3",
+          "source_image_url": "https://cdn2.suno.ai/image_4dc2178a-9ebd-483a-b312-120b3d0d3b02.jpeg",
+          "source_stream_audio_url": "https://cdn1.suno.ai/4dc2178a-9ebd-483a-b312-120b3d0d3b02.mp3",
+          "stream_audio_url": "https://mfile.erweima.ai/NGRjMjE3OGEtOWViZC00ODNhLWIzMTItMTIwYjNkMGQzYjAy",
+          "tags": "Cinematic Suspense",
+          "title": "War Diary: Общий эмоциональн... Cinematic Suspense"
+        }
+      ],
+      "task_id": "600f754eb55d8ebb9ff059bb2bf77b5f"
+    },
+    "msg": "All generated successfully."
+  },
+  "callback_received_at": "2025-05-29T09:22:46.801347",
+  "external_audio_url": "https://apiboxfiles.erweima.ai/NGVhODMwOTktMTYzZi00ZDUxLTkyOGUtZWRhMGU3ODU5ZDg5.mp3",
+  "local_audio_path": "static\\generated_music\\audio\\music_600f754eb55d8ebb9ff059bb2bf77b5f.mp3",
+  "local_audio_url": "/static/generated_music/audio/music_600f754eb55d8ebb9ff059bb2bf77b5f.mp3",
+  "audio_downloaded_at": "2025-05-29T09:22:54.595948",
+  "external_cover_url": "https://apiboxfiles.erweima.ai/NGVhODMwOTktMTYzZi00ZDUxLTkyOGUtZWRhMGU3ODU5ZDg5.jpeg",
+  "cover_download_error": "403 Client Error: Forbidden for url: https://apiboxfiles.erweima.ai/NGVhODMwOTktMTYzZi00ZDUxLTkyOGUtZWRhMGU3ODU5ZDg5.jpeg",
+  "message": "Не удалось получить музыку после 25 попыток (250s). Последнее сообщение: Задача 600f754eb55d8ebb9ff059bb2bf77b5f не найдена на эндпоинте https://apibox.erweima.ai/api/v1/music/600f754eb55d8ebb9ff059bb2bf77b5f (404).",
+  "error_type": "max_retries_no_endpoint_success"
+}

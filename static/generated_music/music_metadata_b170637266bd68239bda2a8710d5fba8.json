@@ -1,71 +1,7 @@
 {
   "task_id": "b170637266bd68239bda2a8710d5fba8",
-  "title": "War Diary: Общий эмоциональн... Dramatic Film Score",
-  "prompt": "Create high-quality dramatic Dramatic Film Score music that captures the following emotions: разочарование, тоска, ирония. The music should reflect a Общий эмоциональный тон дневника выражает смешение разочарования, тоски и иронии. Это может отражать психологическое состояние многих солдат во время Второй мировой войны, особенно в период Берлинской наступательной операции. tone of wartime experiences. moderate with emotional depth rhythm with full orchestra with piano accents as primary instruments. Based on a war diary that describes: Как не хочется, но приходится сообщать вам\nпечальную весть: дают всем отпуска,\nно небольшие – 7–8 суток, а мне нужно минимум\n14–15 дней, и начальство ни в какую не хочет\nдать отпуска на такой срок. И что тут делать?\nА как хочется вас видеть, провести с вами хоть\nодин день.\nЧисла 5 марта меня уже зде...",
-  "style": "Dramatic Film Score",
-  "mood": "dramatic",
-  "tempo": "moderate with emotional depth",
-  "instruments": "full orchestra with piano accents",
-  "emotions": [
-    "разочарование",
-    "тоска",
-    "ирония"
-  ],
-  "emotional_tone": "Общий эмоциональный тон дневника выражает смешение разочарования, тоски и иронии. Это может отражать психологическое состояние многих солдат во время Второй мировой войны, особенно в период Берлинской наступательной операции.",
   "status": "error",
-  "created_at": "2025-05-29T06:49:13.378311",
-  "callback_url_used": "https://8a0b-79-127-211-217.ngrok-free.app/music_callback",
-  "model_used": "V4_5",
-  "last_update": "2025-05-29T06:54:06.651712",
-  "last_callback_data": {
-    "code": 200,
-    "data": {
-      "callbackType": "complete",
-      "data": [
-        {
-          "audio_url": "https://apiboxfiles.erweima.ai/NTUzZDcyODItYmI2NS00ZGQzLWIyMjQtMWZhNGUxZDc2YmQ4.mp3",
-          "createTime": 1748490672063,
-          "duration": 161.08,
-          "id": "553d7282-bb65-4dd3-b224-1fa4e1d76bd8",
-          "image_url": "https://apiboxfiles.erweima.ai/NTUzZDcyODItYmI2NS00ZGQzLWIyMjQtMWZhNGUxZDc2YmQ4.jpeg",
-          "model_name": "chirp-auk",
-          "prompt": "",
-          "source_audio_url": "https://cdn1.suno.ai/553d7282-bb65-4dd3-b224-1fa4e1d76bd8.mp3",
-          "source_image_url": "https://cdn2.suno.ai/image_553d7282-bb65-4dd3-b224-1fa4e1d76bd8.jpeg",
-          "source_stream_audio_url": "https://cdn1.suno.ai/553d7282-bb65-4dd3-b224-1fa4e1d76bd8.mp3",
-          "stream_audio_url": "https://mfile.erweima.ai/NTUzZDcyODItYmI2NS00ZGQzLWIyMjQtMWZhNGUxZDc2YmQ4",
-          "tags": "Dramatic Film Score",
-          "title": "War Diary: Общий эмоциональн... Dramatic Film Score"
-        },
-        {
-          "audio_url": "https://apiboxfiles.erweima.ai/MTBjOTBmNmEtMTI0ZS00MDk4LWFjOTYtZTk0MTI0Njc3ZWZi.mp3",
-          "createTime": 1748490672063,
-          "duration": 222.16,
-          "id": "10c90f6a-124e-4098-ac96-e94124677efb",
-          "image_url": "https://apiboxfiles.erweima.ai/MTBjOTBmNmEtMTI0ZS00MDk4LWFjOTYtZTk0MTI0Njc3ZWZi.jpeg",
-          "model_name": "chirp-auk",
-          "prompt": "",
-          "source_audio_url": "https://cdn1.suno.ai/10c90f6a-124e-4098-ac96-e94124677efb.mp3",
-          "source_image_url": "https://cdn2.suno.ai/image_10c90f6a-124e-4098-ac96-e94124677efb.jpeg",
-          "source_stream_audio_url": "https://cdn1.suno.ai/10c90f6a-124e-4098-ac96-e94124677efb.mp3",
-          "stream_audio_url": "https://mfile.erweima.ai/MTBjOTBmNmEtMTI0ZS00MDk4LWFjOTYtZTk0MTI0Njc3ZWZi",
-          "tags": "Dramatic Film Score",
-          "title": "War Diary: Общий эмоциональн... Dramatic Film Score"
-        }
-      ],
-      "task_id": "b170637266bd68239bda2a8710d5fba8"
-    },
-    "msg": "All generated successfully."
-  },
-  "callback_received_at": "2025-05-29T06:51:12.499349",
-  "external_cover_url": "https://apiboxfiles.erweima.ai/NTUzZDcyODItYmI2NS00ZGQzLWIyMjQtMWZhNGUxZDc2YmQ4.jpeg",
-  "local_cover_path": "static\\generated_music\\covers\\cover_b170637266bd68239bda2a8710d5fba8.jpg",
-  "local_cover_url": "/static/generated_music/covers/cover_b170637266bd68239bda2a8710d5fba8.jpg",
-  "cover_downloaded_at": "2025-05-29T06:51:15.415054",
-  "external_audio_url": "https://apiboxfiles.erweima.ai/NTUzZDcyODItYmI2NS00ZGQzLWIyMjQtMWZhNGUxZDc2YmQ4.mp3",
-  "local_audio_path": "static\\generated_music\\audio\\music_b170637266bd68239bda2a8710d5fba8.mp3",
-  "local_audio_url": "/static/generated_music/audio/music_b170637266bd68239bda2a8710d5fba8.mp3",
-  "audio_downloaded_at": "2025-05-29T06:51:14.554573",
   "message": "Не удалось получить музыку после 15 попыток (230s). Последнее сообщение: Задача b170637266bd68239bda2a8710d5fba8 не найдена на эндпоинте https://apibox.erweima.ai/api/v1/music/b170637266bd68239bda2a8710d5fba8 (404).",
-  "error_type": "max_retries_no_endpoint_success"
+  "error_type": "max_retries_no_endpoint_success",
+  "last_update": "2025-05-29T07:09:59.667807"
 }

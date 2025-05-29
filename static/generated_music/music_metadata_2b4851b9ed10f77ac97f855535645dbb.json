@@ -1,0 +1,22 @@
+{
+  "task_id": "2b4851b9ed10f77ac97f855535645dbb",
+  "title": "War Diary: Тон записи отража... Cinematic Suspense",
+  "prompt": "Create high-quality tense Cinematic Suspense music that captures the following emotions: страх, озлобленность, беспомощность. The music should reflect a Тон записи отражает тяжелую эмоциональную атмосферу, пронизанную страхом, отчаянием и разочарованием. Это сопоставимо с общим настроением на фронте во время войны. tone of wartime experiences. fast-paced and intense rhythm with low strings and percussion as primary instruments. Based on a war diary that describes: Эта чёртова Керчь, наверное, никогда\nне изгладится из памяти. Нет дня, чтобы не было\nналётов. Ежедневно налетают по 4–5 раз в день\nгруппами от 4 до 12 самолётов. Уже скоро\nкончатся снаряды для наших пушек, хотя мы\nначали вести огонь экономно. (с. 591)\n…Я не понимаю, из каких соображений держат\nсудно...",
+  "style": "Cinematic Suspense",
+  "mood": "tense",
+  "tempo": "fast-paced and intense",
+  "instruments": "low strings and percussion",
+  "emotions": [
+    "страх",
+    "озлобленность",
+    "беспомощность"
+  ],
+  "emotional_tone": "Тон записи отражает тяжелую эмоциональную атмосферу, пронизанную страхом, отчаянием и разочарованием. Это сопоставимо с общим настроением на фронте во время войны.",
+  "status": "error",
+  "created_at": "2025-05-29T08:10:08.879649",
+  "callback_url_used": "http://localhost:5000/music_callback",
+  "model_used": "V4_5",
+  "last_update": "2025-05-29T08:14:40.541710",
+  "message": "Не удалось получить музыку после 15 попыток (230s). Последнее сообщение: Задача 2b4851b9ed10f77ac97f855535645dbb не найдена на эндпоинте https://apibox.erweima.ai/api/v1/music/2b4851b9ed10f77ac97f855535645dbb (404).",
+  "error_type": "max_retries_no_endpoint_success"
+}

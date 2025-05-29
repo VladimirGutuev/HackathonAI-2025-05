@@ -9,6 +9,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     topics = db.relationship('Topic', backref='author', lazy=True)
     messages = db.relationship('Message', backref='author', lazy=True)
@@ -99,6 +100,21 @@ class UserGeneration(db.Model):
 
     def __repr__(self):
         return f'<UserGeneration id={self.id} user_id={self.user_id} type={self.generation_type}>'
+
+class UserActivity(db.Model):
+    """Модель для отслеживания активности пользователей"""
+    __tablename__ = 'user_activity'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Может быть анонимным
+    ip_address = db.Column(db.String(45), nullable=False)
+    user_agent = db.Column(db.String(500), nullable=True)
+    last_activity = db.Column(db.DateTime, default=datetime.utcnow)
+    page_visited = db.Column(db.String(200), nullable=True)
+    
+    user = db.relationship('User', backref=db.backref('activity_records', lazy=True))
+    
+    def __repr__(self):
+        return f'<UserActivity user_id={self.user_id} ip={self.ip_address}>'
 
 def init_forum(app):
     db.init_app(app)

@@ -1,0 +1,20 @@
+{
+  "task_id": "951d91f59eafb4ba58438aa549ca474d",
+  "title": "War Diary: Тон записи описыв... Neoclassical Piano",
+  "prompt": "Create high-quality melancholic Neoclassical Piano music that captures the following emotions: грусть, решимость, надежда. The music should reflect a Тон записи описывает сложную эмоциональную обстановку на фронте, сочетая в себе грусть, решимость и надежду. Это отражает реальность военного времени - трудности и потери, смешанные с решимостью продолжать борьбу и надеждой на лучшее. tone of wartime experiences. slow and contemplative rhythm with cello and piano as primary instruments. Based on a war diary that describes: Сегодня был тяжелый день на фронте. Потеряли многих товарищей. Но мы держимся и не сдаемся. Надеемся на лучшее....",
+  "style": "Neoclassical Piano",
+  "mood": "melancholic",
+  "tempo": "slow and contemplative",
+  "instruments": "cello and piano",
+  "emotions": [
+    "грусть",
+    "решимость",
+    "надежда"
+  ],
+  "emotional_tone": "Тон записи описывает сложную эмоциональную обстановку на фронте, сочетая в себе грусть, решимость и надежду. Это отражает реальность военного времени - трудности и потери, смешанные с решимостью продолжать борьбу и надеждой на лучшее.",
+  "status": "processing",
+  "created_at": "2025-05-29T08:25:44.896737",
+  "callback_url_used": "http://localhost:5000/music_callback",
+  "model_used": "V4_5",
+  "last_update": "2025-05-29T08:25:44.896737"
+}

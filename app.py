@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response, send_from_directory
 from war_diary_analyzer import WarDiaryAnalyzer
-from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote, UserFeedback, UserGeneration
+from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote, UserFeedback, UserGeneration, UserActivity
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import os
 import sys
@@ -11,6 +11,8 @@ import requests
 from urllib.parse import quote
 import urllib.parse
 import time
+from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
 
 # Улучшенная загрузка переменных окружения
 env_path = find_dotenv() 
@@ -58,6 +60,58 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 init_forum(app)
+
+# Миддлвар для отслеживания активности пользователей
+@app.before_request
+def track_user_activity():
+    """Отслеживание активности пользователей"""
+    from datetime import datetime, timedelta
+    
+    # Получаем IP и User-Agent
+    user_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+    user_agent = request.environ.get('HTTP_USER_AGENT', '')
+    current_page = request.path
+    
+    # Исключаем служебные запросы
+    if current_page.startswith('/static/') or current_page in ['/favicon.ico']:
+        return
+    
+    try:
+        user_id = current_user.id if current_user.is_authenticated else None
+        
+        # Ищем существующую запись активности
+        existing_activity = UserActivity.query.filter_by(
+            user_id=user_id, 
+            ip_address=user_ip
+        ).first()
+        
+        if existing_activity:
+            # Обновляем активность
+            existing_activity.last_activity = datetime.utcnow()
+            existing_activity.page_visited = current_page
+            existing_activity.user_agent = user_agent
+        else:
+            # Создаем новую запись
+            new_activity = UserActivity(
+                user_id=user_id,
+                ip_address=user_ip,
+                user_agent=user_agent,
+                last_activity=datetime.utcnow(),
+                page_visited=current_page
+            )
+            db.session.add(new_activity)
+        
+        # Очищаем старые записи (старше 30 минут)
+        cutoff_time = datetime.utcnow() - timedelta(minutes=30)
+        old_activities = UserActivity.query.filter(UserActivity.last_activity < cutoff_time).all()
+        for activity in old_activities:
+            db.session.delete(activity)
+        
+        db.session.commit()
+        
+    except Exception as e:
+        print(f"Ошибка отслеживания активности: {e}")
+        db.session.rollback()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -803,11 +857,14 @@ def check_music_status():
                     return jsonify({
                         'success': True,
                         'status': 'complete',
-                        'local_audio_url': local_audio_url,
                         'is_music_ready': True,
+                        'audio_url': audio_url,
+                        'stream_url': stream_url,
+                        'embed_url': embed_url,
+                        'proxy_url': proxy_url,
+                        'local_audio_url': local_audio_url,
                         'music_description': metadata.get('music_description', 'Сгенерированная музыка'),
-                        'style': metadata.get('style', ''),
-                        'mood': metadata.get('mood', '')
+                        'cover_url': metadata.get('local_cover_url') or metadata.get('external_cover_url') or metadata.get('image_url', '')
                     }), 200
                 
                 # Проверяем наличие аудио URL в метаданных (которые могли быть обновлены callback'ом)
@@ -831,7 +888,8 @@ def check_music_status():
                         'embed_url': embed_url,
                         'proxy_url': proxy_url,
                         'local_audio_url': local_audio_url,
-                        'music_description': metadata.get('music_description', 'Сгенерированная музыка')
+                        'music_description': metadata.get('music_description', 'Сгенерированная музыка'),
+                        'cover_url': metadata.get('local_cover_url') or metadata.get('external_cover_url') or metadata.get('image_url', '')
                     }), 200
                 
                 # Если файлов нет, но есть последние данные коллбэка, проверяем их
@@ -875,7 +933,8 @@ def check_music_status():
                                 'audio_url': audio_url,
                                 'stream_url': stream_url,
                                 'proxy_url': proxy_url,
-                                'music_description': metadata.get('music_description', 'Сгенерированная музыка')
+                                'music_description': metadata.get('music_description', 'Сгенерированная музыка'),
+                                'cover_url': metadata.get('local_cover_url') or metadata.get('external_cover_url') or metadata.get('image_url', '')
                             }), 200
             except Exception as e:
                 print(f"Ошибка при чтении метаданных: {str(e)}")
@@ -884,6 +943,63 @@ def check_music_status():
         # Если не удалось получить данные из локального файла, проверяем через API
         analyzer = WarDiaryAnalyzer()
         status_response = analyzer._check_music_generation_status(task_id)
+        
+        # НОВОЕ: Fallback логика - если задача не найдена (404), пытаемся создать новую
+        if (status_response.get('status') == 'error' and 
+            'не найдена на эндпоинте' in status_response.get('message', '') and 
+            '(404)' in status_response.get('message', '')):
+            
+            print(f"Задача {task_id} не найдена на сервере Suno (404). Пытаемся создать новую...")
+            
+            # Попробуем загрузить оригинальные параметры из метаданных
+            fallback_text = "Дневниковая запись о войне"
+            fallback_emotions = None
+            
+            if os.path.exists(metadata_path):
+                try:
+                    with open(metadata_path, 'r', encoding='utf-8') as f:
+                        old_metadata = json.load(f)
+                    
+                    # Восстанавливаем параметры из старых метаданных
+                    if 'emotions' in old_metadata and old_metadata['emotions']:
+                        fallback_emotions = {
+                            'primary_emotions': [{'emotion': e, 'intensity': 7} for e in old_metadata['emotions']],
+                            'emotional_tone': old_metadata.get('emotional_tone', 'reflective')
+                        }
+                    
+                    # Пытаемся восстановить текст из промпта
+                    if 'prompt' in old_metadata:
+                        prompt = old_metadata['prompt']
+                        # Ищем фрагмент текста после "describes:"
+                        if "describes:" in prompt:
+                            text_part = prompt.split("describes:")[-1].strip()
+                            if len(text_part) > 10:  # Минимальная длина
+                                fallback_text = text_part[:500]  # Ограничиваем длину
+                                
+                    print(f"Восстановлены параметры из старых метаданных: эмоции={[e.get('emotion', '') for e in fallback_emotions.get('primary_emotions', [])] if fallback_emotions else []}")
+                                
+                except Exception as e:
+                    print(f"Ошибка при чтении старых метаданных: {e}")
+            
+            # Создаем новую задачу с восстановленными параметрами
+            base_url = f"{request.scheme}://{request.host}"
+            new_result = analyzer.generate_music(fallback_text, fallback_emotions, base_url=base_url)
+            
+            if new_result.get('success') and new_result.get('task_id'):
+                new_task_id = new_result['task_id']
+                print(f"Создана новая задача генерации музыки: {new_task_id}")
+                
+                return jsonify({
+                    'success': True,
+                    'status': 'processing',
+                    'task_id': new_task_id,
+                    'is_music_ready': False,
+                    'message': f'Оригинальная задача {task_id} была удалена с сервера. Создана новая задача {new_task_id}',
+                    'music_description': new_result.get('music_description', 'Генерируется новая музыка'),
+                    'fallback_created': True
+                }), 200
+            else:
+                print(f"Не удалось создать новую задачу: {new_result}")
         
         # Если получен успешный статус от API, обновляем его
         if status_response.get('status') == 'complete' and (status_response.get('audio_url') or status_response.get('stream_url')):
@@ -2473,6 +2589,58 @@ def admin_api_clear_user_generations(user_id):
     except Exception as e:
         print(f"Ошибка в admin_api_clear_user_generations: {e}")
         db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/active-users')
+@login_required 
+def admin_api_active_users():
+    """API для получения списка активных пользователей"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+    
+    try:
+        from datetime import datetime, timedelta
+        
+        # Получаем активных пользователей за последние 30 минут
+        cutoff_time = datetime.utcnow() - timedelta(minutes=30)
+        active_sessions = UserActivity.query.filter(
+            UserActivity.last_activity > cutoff_time
+        ).order_by(UserActivity.last_activity.desc()).all()
+        
+        # Группируем по пользователям
+        users_data = {}
+        anonymous_count = 0
+        
+        for session in active_sessions:
+            if session.user_id:
+                if session.user_id not in users_data:
+                    user = User.query.get(session.user_id)
+                    users_data[session.user_id] = {
+                        'username': user.username if user else 'Unknown',
+                        'last_activity': session.last_activity.isoformat(),
+                        'pages': [],
+                        'ip_count': 0
+                    }
+                
+                if session.page_visited not in users_data[session.user_id]['pages']:
+                    users_data[session.user_id]['pages'].append(session.page_visited)
+                users_data[session.user_id]['ip_count'] += 1
+                
+                # Обновляем последнюю активность если она позже
+                if session.last_activity.isoformat() > users_data[session.user_id]['last_activity']:
+                    users_data[session.user_id]['last_activity'] = session.last_activity.isoformat()
+            else:
+                anonymous_count += 1
+        
+        return jsonify({
+            'success': True,
+            'active_users': list(users_data.values()),
+            'anonymous_count': anonymous_count,
+            'total_active': len(users_data) + anonymous_count
+        })
+        
+    except Exception as e:
+        print(f"Ошибка в admin_api_active_users: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
