@@ -49,6 +49,38 @@
                         </div>
                     </div>
                     
+                    <!-- Выбор типа литературного произведения -->
+                    <div class="mb-3" id="literary-type-section" style="display: none;">
+                        <label class="form-label">Тип литературного произведения:</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="literary_type" id="literary_poem" value="poem" checked>
+                                <label class="form-check-label" for="literary_poem">
+                                    <i class="bi bi-file-earmark-text"></i> Стихотворение
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="literary_type" id="literary_story" value="story">
+                                <label class="form-check-label" for="literary_story">
+                                    <i class="bi bi-book"></i> Повесть
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="literary_type" id="literary_drama" value="drama">
+                                <label class="form-check-label" for="literary_drama">
+                                    <i class="bi bi-masks-theater"></i> Драма
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="literary_type" id="literary_random" value="random">
+                                <label class="form-check-label" for="literary_random">
+                                    <i class="bi bi-dice-3"></i> Случайный выбор
+                                </label>
+                            </div>
+                        </div>
+                        <small class="text-muted">Выберите жанр литературного произведения, которое будет создано на основе анализа дневника</small>
+                    </div>
+                    
                     <!-- Согласие с этическими нормами -->
                     <div class="card mb-3 ethics-agreement" id="ethics-agreement-card">
                         <div class="card-header">
@@ -634,6 +666,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 generationTypes.forEach(type => {
                     formData.append('generation_types[]', type);
                 });
+                
+                // Добавляем тип литературного произведения
+                const literaryType = document.querySelector('input[name="literary_type"]:checked')?.value || 'random';
+                formData.append('literary_type', literaryType);
 
                 // --- DEBUGGING START ---
                 console.log("Содержимое formData перед отправкой:");
@@ -850,6 +886,23 @@ document.addEventListener('DOMContentLoaded', function() {
                                     const literarySectionElement = document.querySelector('.literary-section');
 
                                     if (literaryResultsElement && literarySectionElement) {
+                                        // Определяем тип произведения для отображения
+                                        const literaryTypeDisplay = {
+                                            'poem': 'Стихотворение',
+                                            'story': 'Повесть', 
+                                            'drama': 'Драма',
+                                            'random': 'Художественное произведение'
+                                        };
+                                        
+                                        const selectedLiteraryType = document.querySelector('input[name="literary_type"]:checked')?.value || 'random';
+                                        const typeDisplayName = literaryTypeDisplay[selectedLiteraryType] || 'Художественное произведение';
+                                        
+                                        // Обновляем заголовок секции
+                                        const literaryHeader = literarySectionElement.querySelector('.card-header h4');
+                                        if (literaryHeader) {
+                                            literaryHeader.innerHTML = `<i class="bi bi-file-text"></i> ${typeDisplayName}`;
+                                        }
+                                        
                                         literaryResultsElement.innerHTML = `<p class="text-muted">${data.generated_literary_work}</p>`;
                                         
                                         // Принудительное отображение с !important
@@ -1760,86 +1813,88 @@ function displayGeneratedMusic(musicData) {
         // Очищаем контейнер
         musicContainer.innerHTML = '';
         
-        // Создаем надежный контейнер для плеера
-        const audioPlayerWrapper = document.createElement('div');
-        audioPlayerWrapper.className = 'audio-player-wrapper';
-        audioPlayerWrapper.style.cssText = 'display:block !important; margin:20px 0 !important; padding:15px !important; border:2px solid #5a8bc6 !important; border-radius:8px !important;';
+        // Создаем красивый музыкальный плеер
+        const playerHTML = `
+            <div class="music-player">
+                <div class="music-player-content">
+                    <!-- Обложка -->
+                    <div class="music-cover ${musicData.cover_url ? '' : 'no-cover'}">
+                        ${musicData.cover_url ? 
+                            `<img src="${musicData.cover_url}" alt="Обложка трека">` : 
+                            `<div class="music-cover-placeholder">
+                                <i class="bi bi-music-note-beamed" style="font-size: 60px;"></i>
+                            </div>`
+                        }
+                    </div>
+                    
+                    <!-- Информация о треке -->
+                    <div class="music-info">
+                        <h4 class="music-title">${musicData.music_title || 'Музыкальное сопровождение'}</h4>
+                        <p class="music-description">${musicData.music_description || 'Сгенерировано на основе дневникового текста'}</p>
+                        ${musicData.style ? `<span class="badge bg-light text-dark"><i class="bi bi-music-note"></i> ${musicData.style}</span>` : ''}
+                        ${musicData.mood ? `<span class="badge bg-light text-dark ms-2"><i class="bi bi-emoji-smile"></i> ${musicData.mood}</span>` : ''}
+                    </div>
+                    
+                    <!-- Кастомный аудио плеер -->
+                    <div class="audio-player-custom">
+                        <!-- Скрытый нативный плеер -->
+                        <audio id="custom-audio-player" preload="auto">
+                            <source src="${finalAudioUrl}" type="audio/mpeg">
+                        </audio>
+                        
+                        <!-- Кнопки управления -->
+                        <div class="audio-controls">
+                            <button class="audio-btn" id="prev-btn" title="Предыдущий">
+                                <i class="bi bi-skip-start-fill"></i>
+                            </button>
+                            <button class="audio-btn play-pause" id="play-pause-btn" title="Воспроизвести">
+                                <i class="bi bi-play-fill"></i>
+                            </button>
+                            <button class="audio-btn" id="next-btn" title="Следующий">
+                                <i class="bi bi-skip-end-fill"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Прогресс бар -->
+                        <div class="progress-container" id="progress-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                        
+                        <!-- Время -->
+                        <div class="time-display">
+                            <span id="current-time">0:00</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                        
+                        <!-- Громкость -->
+                        <div class="volume-control">
+                            <i class="bi bi-volume-up-fill"></i>
+                            <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="70">
+                        </div>
+                    </div>
+                    
+                    <!-- Действия -->
+                    <div class="text-center mt-3">
+                        <a href="${finalAudioUrl}" download="music_${Date.now()}.mp3" class="download-btn">
+                            <i class="bi bi-download"></i> Скачать трек
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
         
-        // Заголовок
-        const title = document.createElement('h4');
-        title.style.cssText = 'margin-bottom:15px !important; font-weight:bold !important;';
-        title.textContent = 'Музыкальное сопровождение';
-        audioPlayerWrapper.appendChild(title);
+        // Добавляем HTML в контейнер
+        musicContainer.innerHTML = playerHTML;
         
-        // Описание музыки, если есть
-        if (musicData.music_description) {
-            const description = document.createElement('p');
-            description.style.cssText = 'margin-bottom:15px !important; font-style:italic !important;';
-            description.textContent = musicData.music_description;
-            audioPlayerWrapper.appendChild(description);
-        }
-        
-        // Создаем первый аудиоплеер
-        const audioPlayer = document.createElement('audio');
-        audioPlayer.controls = true;
-        audioPlayer.autoplay = false;
-        audioPlayer.preload = 'auto';
-        audioPlayer.className = 'primary-audio-player';
-        audioPlayer.style.cssText = 'display:block !important; width:100% !important; min-height:50px !important; visibility:visible !important; opacity:1 !important; border:3px solid #4a76a8 !important; margin:10px 0 !important;';
-        
-        // Добавляем источник
-        const source = document.createElement('source');
-        source.src = finalAudioUrl;
-        source.type = 'audio/mpeg';
-        audioPlayer.appendChild(source);
-        
-        // Текст для браузеров, не поддерживающих аудио
-        audioPlayer.appendChild(document.createTextNode('Ваш браузер не поддерживает HTML5 аудио.'));
-        
-        // Добавляем плеер в контейнер
-        audioPlayerWrapper.appendChild(audioPlayer);
-        
-        // Создаем контейнер для кнопок
-        const actionsContainer = document.createElement('div');
-        actionsContainer.style.cssText = 'display:flex !important; justify-content:space-between !important; align-items:center !important; margin-top:15px !important;';
-        
-        // Добавляем кнопку для скачивания
-        const downloadLink = document.createElement('a');
-        downloadLink.href = finalAudioUrl;
-        downloadLink.download = 'music_download.mp3';
-        downloadLink.className = 'download-audio-btn';
-        downloadLink.style.cssText = 'display:inline-block !important; padding:10px 20px !important; text-decoration:none !important; border-radius:5px !important; font-weight:bold !important;';
-        downloadLink.innerHTML = '<i class="bi bi-download"></i> Скачать аудиофайл';
-        actionsContainer.appendChild(downloadLink);
-        
-        // Добавляем кнопку "Не работает?"
-        const troubleshootBtn = document.createElement('button');
-        troubleshootBtn.className = 'btn btn-outline-secondary btn-sm';
-        troubleshootBtn.type = 'button';
-        troubleshootBtn.innerHTML = '<i class="bi bi-question-circle"></i> Не работает?';
-        troubleshootBtn.style.cssText = 'margin-left:15px !important;';
-        troubleshootBtn.onclick = function() {
-            // При нажатии создаем и показываем резервные плееры
-            createBackupPlayer(finalAudioUrl);
-            
-            // Отключаем кнопку, чтобы не создавать плееры многократно
-            this.disabled = true;
-            this.innerHTML = '<i class="bi bi-check-circle"></i> Резервные плееры активированы';
-        };
-        actionsContainer.appendChild(troubleshootBtn);
-        
-        // Добавляем контейнер с кнопками
-        audioPlayerWrapper.appendChild(actionsContainer);
-        
-        // Добавляем обертку в контейнер
-        musicContainer.appendChild(audioPlayerWrapper);
+        // Инициализируем кастомный плеер
+        initCustomAudioPlayer();
         
         // Принудительно отображаем контейнер
         musicContainer.style.display = 'block';
         musicContainer.style.visibility = 'visible';
         musicContainer.style.opacity = '1';
         
-        console.log("Создан основной аудиоплеер для URL:", finalAudioUrl);
+        console.log("Создан красивый музыкальный плеер для URL:", finalAudioUrl);
         
     } else if (musicData.task_id) {
         // Если есть task_id, показываем индикатор загрузки и запускаем проверку статуса
@@ -1877,6 +1932,78 @@ function displayGeneratedMusic(musicData) {
     }
     
     console.log("Музыкальная секция успешно отображена");
+}
+
+// Функция инициализации кастомного аудио плеера
+function initCustomAudioPlayer() {
+    const audio = document.getElementById('custom-audio-player');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const progressContainer = document.getElementById('progress-container');
+    const currentTimeElem = document.getElementById('current-time');
+    const durationElem = document.getElementById('duration');
+    const volumeSlider = document.getElementById('volume-slider');
+    const musicCover = document.querySelector('.music-cover');
+    
+    if (!audio || !playPauseBtn) return;
+    
+    // Установка громкости
+    audio.volume = volumeSlider.value / 100;
+    
+    // Обработчик play/pause
+    playPauseBtn.addEventListener('click', function() {
+        if (audio.paused) {
+            audio.play();
+            this.innerHTML = '<i class="bi bi-pause-fill"></i>';
+            musicCover.classList.add('playing');
+        } else {
+            audio.pause();
+            this.innerHTML = '<i class="bi bi-play-fill"></i>';
+            musicCover.classList.remove('playing');
+        }
+    });
+    
+    // Обновление прогресс бара
+    audio.addEventListener('timeupdate', function() {
+        const progress = (audio.currentTime / audio.duration) * 100;
+        progressBar.style.width = progress + '%';
+        
+        // Обновление времени
+        currentTimeElem.textContent = formatTime(audio.currentTime);
+    });
+    
+    // Обновление длительности
+    audio.addEventListener('loadedmetadata', function() {
+        durationElem.textContent = formatTime(audio.duration);
+    });
+    
+    // Клик по прогресс бару
+    progressContainer.addEventListener('click', function(e) {
+        const clickX = e.offsetX;
+        const width = this.offsetWidth;
+        const duration = audio.duration;
+        
+        audio.currentTime = (clickX / width) * duration;
+    });
+    
+    // Изменение громкости
+    volumeSlider.addEventListener('input', function() {
+        audio.volume = this.value / 100;
+    });
+    
+    // Окончание трека
+    audio.addEventListener('ended', function() {
+        playPauseBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+        musicCover.classList.remove('playing');
+        progressBar.style.width = '0%';
+    });
+    
+    // Форматирование времени
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+    }
 }
 
 // Функция для создания резервного плеера
@@ -2063,6 +2190,12 @@ function updateGenerationUI() {
     const showText = selectedTypes.includes('text');
     const showImage = selectedTypes.includes('image');
     const showMusic = selectedTypes.includes('music');
+    
+    // Показываем/скрываем секцию выбора типа литературного произведения
+    const literaryTypeSection = document.getElementById('literary-type-section');
+    if (literaryTypeSection) {
+        literaryTypeSection.style.display = showText ? 'block' : 'none';
+    }
     
     // Находим секции результатов
     const literaryResults = document.getElementById('literary-results');

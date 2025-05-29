@@ -8,6 +8,7 @@ import io  # Добавляем для работы с файлами
 from datetime import datetime  # Добавляем для работы с датами
 import time  # Добавляем для работы с временем
 import uuid # Для генерации уникальных имен файлов
+import random  # Добавляем для выбора случайного типа произведения
 
 # Попытка импорта системы RAG
 try:
@@ -202,7 +203,7 @@ class WarDiaryAnalyzer:
                 "attitude": "неизвестно"
             }
 
-    def generate_literary_work(self, diary_text, emotion_analysis, user_id=None):
+    def generate_literary_work(self, diary_text, emotion_analysis, user_id=None, literary_type='random'):
         """
         Генерация художественного произведения на основе текста дневника и анализа эмоций.
         Также сохраняет произведение и метаданные в папку instance/generated_literary_works/.
@@ -212,6 +213,7 @@ class WarDiaryAnalyzer:
             diary_text (str): Текст дневника
             emotion_analysis (dict): Результат анализа эмоций
             user_id (int, optional): ID пользователя, если он аутентифицирован.
+            literary_type (str): Тип произведения: 'poem', 'story', 'drama', 'random'
             
         Returns:
             dict: Словарь с ключами 'text', 'filepath', 'meta_filepath' или None в случае ошибки.
@@ -224,12 +226,47 @@ class WarDiaryAnalyzer:
         primary_emotions_str = ", ".join([f"{e['emotion']} ({e['intensity']}/10)" for e in emotion_analysis.get('primary_emotions', [])])
         emotional_tone = emotion_analysis.get('emotional_tone', 'неопределенный')
         
+        # Определяем тип произведения
+        if literary_type == 'random':
+            selected_type = random.choice(['poem', 'story', 'drama'])
+        else:
+            selected_type = literary_type
+        
+        # Формируем промпт в зависимости от типа произведения
+        type_instructions = {
+            'poem': {
+                'name': 'стихотворение',
+                'instruction': 'Напиши лирическое стихотворение от лица или о герое дневника. Используй образную речь, метафоры и ритм, чтобы передать эмоциональное состояние и атмосферу. Стихи должны быть глубокими и трогательными, отражающими внутренний мир человека на войне.',
+                'length': '16-24 строки',
+                'style': 'поэтический, образный, лирический'
+            },
+            'story': {
+                'name': 'повесть',
+                'instruction': 'Напиши небольшую повесть или развернутый рассказ от третьего лица. Создай полноценный сюжет с развитием характера, диалогами и описанием обстановки. Сосредоточься на психологических переживаниях героя и его внутренней трансформации.',
+                'length': '400-600 слов',
+                'style': 'повествовательный, психологический, детализированный'
+            },
+            'drama': {
+                'name': 'драматический монолог',
+                'instruction': 'Напиши драматический монолог или короткую сцену с диалогами. Используй театральную форму подачи - внутренний монолог героя, его размышления вслух или диалог с невидимым собеседником. Передай драматизм момента и силу переживаний.',
+                'length': '300-450 слов',
+                'style': 'драматический, эмоциональный, сценический'
+            }
+        }
+        
+        type_info = type_instructions[selected_type]
+        
         prompt = f"""
-        На основе следующего отрывка из военного дневника и его эмоционального анализа, напиши короткое художественное произведение (рассказ, зарисовку, стихотворение в прозе) от третьего лица. 
-        Постарайся передать атмосферу, чувства и мысли автора дневника, но не копируй текст дневника дословно. 
-        Сосредоточься на внутреннем мире персонажа, его переживаниях и рефлексии на фоне событий. 
-        Избегай чрезмерного натурализма и жестоких сцен, если только они не служат для глубокого раскрытия характера или идеи. 
-        Важно сохранить уважительное отношение к исторической памяти.
+        На основе следующего отрывка из военного дневника и его эмоционального анализа, создай {type_info['name']}.
+        
+        {type_info['instruction']}
+        
+        Требования:
+        - Объем: {type_info['length']}
+        - Стиль: {type_info['style']}
+        - Избегай чрезмерного натурализма и жестоких сцен
+        - Сохраняй уважительное отношение к исторической памяти
+        - Передай атмосферу эпохи и внутренний мир персонажа
 
         Текст дневника:
         {diary_text}
@@ -238,22 +275,22 @@ class WarDiaryAnalyzer:
         - Основные эмоции: {primary_emotions_str}
         - Общий тон: {emotional_tone}
 
-        Сгенерируй произведение объемом примерно 200-400 слов.
+        Создай {type_info['name']}, который глубоко передаст переживания и атмосферу того времени.
         """
 
         try:
-            print("Отправка запроса на генерацию художественного произведения...")
+            print(f"Отправка запроса на генерацию художественного произведения (тип: {selected_type})...")
             response = self.client.chat.completions.create(
                 model="gpt-4o", # Или другая подходящая модель
                 messages=[
-                    {"role": "system", "content": "Ты - талантливый писатель, специализирующийся на военной прозе и психологии человеческих переживаний в экстремальных условиях. Ты создаешь глубокие и трогательные произведения."},
+                    {"role": "system", "content": f"Ты - талантливый писатель, специализирующийся на военной прозе и психологии человеческих переживаний в экстремальных условиях. Ты мастерски создаешь {type_info['name']} в {type_info['style']} стиле."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.75,
-                max_tokens=600 
+                max_tokens=800 
             )
             generated_text = response.choices[0].message.content.strip()
-            print(f"Художественное произведение сгенерировано, длина: {len(generated_text)} символов.")
+            print(f"Художественное произведение ({selected_type}) сгенерировано, длина: {len(generated_text)} символов.")
             
             # --- Сохранение файла и метаданных ---
             # Создаем директорию, если ее нет
@@ -276,6 +313,7 @@ class WarDiaryAnalyzer:
             metadata = {
                 'file_id': file_id,
                 'generation_timestamp': datetime.now().isoformat(),
+                'literary_type': selected_type,
                 'source_diary_text_snippet': diary_text[:200] + ("..." if len(diary_text) > 200 else ""),
                 'emotion_analysis_used': emotion_analysis,
                 'model_used': response.model, # Сохраняем модель, если API это возвращает
@@ -289,14 +327,15 @@ class WarDiaryAnalyzer:
             return {
                 'text': generated_text,
                 'filepath': txt_filename, # Возвращаем только имя файла, не полный путь
-                'meta_filepath': meta_filename
+                'meta_filepath': meta_filename,
+                'literary_type': selected_type
             }
             
         except Exception as e:
             print(f"Ошибка при генерации или сохранении художественного произведения: {e}")
             import traceback
             traceback.print_exc()
-            return None 
+            return None
 
     def generate_image(self, prompt, size="1024x1024", model="gpt-4"):
         """
@@ -1595,10 +1634,10 @@ class WarDiaryAnalyzer:
             current_metadata.update(status_data)
             current_metadata['last_update'] = datetime.now().isoformat()
             
-            # ВАЖНО: Если есть audio_url, принудительно ставим статус completed
-            if current_metadata.get('audio_url') and current_metadata.get('status') != 'completed':
-                current_metadata['status'] = 'completed'
-                print(f"[_save_status_to_metadata] Автоматически изменен статус на 'completed' для Task ID: {task_id} (найден audio_url)")
+            # Проверяем наличие audio_url и автоматически обновляем статус
+            if current_metadata.get('audio_url') and current_metadata.get('status') != 'complete':
+                current_metadata['status'] = 'complete'
+                print(f"[_save_status_to_metadata] Автоматически изменен статус на 'complete' для Task ID: {task_id} (найден audio_url)")
             
             with open(metadata_path, 'w', encoding='utf-8') as f:
                 json.dump(current_metadata, f, ensure_ascii=False, indent=2)

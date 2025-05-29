@@ -331,6 +331,179 @@
             </div>
         </div>
     </div>
+
+    <!-- Управление пользователями и генерациями -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people-fill"></i> Управление пользователями и их генерациями
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Поиск пользователя -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="user-search" placeholder="Введите имя пользователя">
+                                <button class="btn btn-primary" onclick="searchUser()">Найти</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-info" onclick="showAllUsersStats()">
+                                <i class="bi bi-bar-chart"></i> Статистика всех пользователей
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Результаты поиска -->
+                    <div id="user-search-results" style="display: none;">
+                        <hr>
+                        <div id="user-info"></div>
+                        <div id="user-generations" class="mt-4"></div>
+                        <div id="user-storage-info" class="mt-3"></div>
+                    </div>
+                    
+                    <!-- Общая статистика -->
+                    <div id="all-users-stats" style="display: none;">
+                        <hr>
+                        <h5><i class="bi bi-graph-up"></i> Общая статистика системы</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 id="total-users">0</h3>
+                                        <p class="mb-0">Пользователей</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 id="total-generations">0</h3>
+                                        <p class="mb-0">Генераций</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 id="total-storage">0 MB</h3>
+                                        <p class="mb-0">Используется памяти</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 id="avg-storage">0 MB</h3>
+                                        <p class="mb-0">В среднем на пользователя</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Таблица пользователей с их статистикой -->
+                        <div class="mt-4">
+                            <h6>Топ пользователей по использованию:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="users-stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Пользователь</th>
+                                            <th>Генераций</th>
+                                            <th>Текстов</th>
+                                            <th>Изображений</th>
+                                            <th>Музыки</th>
+                                            <th>Память</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Настройки автоудаления -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Настройки автоматической очистки
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Автоудаление старых генераций</h5>
+                            <p class="text-muted">Настройте, через сколько дней автоматически удалять генерации</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Текстовые произведения:</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="text-retention-days" value="30" min="1" max="365">
+                                    <span class="input-group-text">дней</span>
+                                    <button class="btn btn-success btn-sm" onclick="saveRetentionSettings('text')">
+                                        <i class="bi bi-save"></i> Сохранить
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Изображения:</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="image-retention-days" value="14" min="1" max="365">
+                                    <span class="input-group-text">дней</span>
+                                    <button class="btn btn-success btn-sm" onclick="saveRetentionSettings('image')">
+                                        <i class="bi bi-save"></i> Сохранить
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Музыкальные треки:</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="music-retention-days" value="7" min="1" max="365">
+                                    <span class="input-group-text">дней</span>
+                                    <button class="btn btn-success btn-sm" onclick="saveRetentionSettings('music')">
+                                        <i class="bi bi-save"></i> Сохранить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Статус автоочистки</h5>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Автоочистка запускается ежедневно в 3:00 ночи
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="auto-cleanup-enabled" checked>
+                                    <span class="form-check-label">Автоочистка включена</span>
+                                </label>
+                            </div>
+                            
+                            <button class="btn btn-warning" onclick="runManualCleanup()">
+                                <i class="bi bi-play-circle"></i> Запустить очистку сейчас
+                            </button>
+                            
+                            <div id="cleanup-status" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Модальное окно подтверждения удаления треков -->
@@ -632,6 +805,234 @@ function confirmDeleteAllWorks() {
     .catch(error => {
         resultDiv.className = 'alert alert-danger';
         resultDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Ошибка: ${error.message}`;
+    });
+}
+
+// Функция поиска пользователя
+function searchUser() {
+    const username = document.getElementById('user-search').value.trim();
+    if (!username) {
+        alert('Введите имя пользователя');
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('user-search-results');
+    const userInfoDiv = document.getElementById('user-info');
+    const generationsDiv = document.getElementById('user-generations');
+    const storageDiv = document.getElementById('user-storage-info');
+    
+    resultsDiv.style.display = 'block';
+    userInfoDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>';
+    
+    fetch(`/admin/api/user/${username}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                const generations = data.generations;
+                const storage = data.storage;
+                
+                // Информация о пользователе
+                userInfoDiv.innerHTML = `
+                    <h5><i class="bi bi-person-circle"></i> ${user.username}</h5>
+                    <p class="mb-1">ID: ${user.id}</p>
+                    <p class="mb-1">Зарегистрирован: ${new Date(user.created_at).toLocaleDateString()}</p>
+                    <p class="mb-1">Статус: ${user.is_admin ? '<span class="badge bg-danger">Администратор</span>' : '<span class="badge bg-primary">Пользователь</span>'}</p>
+                `;
+                
+                // Генерации пользователя
+                generationsDiv.innerHTML = `
+                    <h6>Генерации пользователя (${generations.total}):</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5>${generations.text}</h5>
+                                    <p class="mb-0">Текстов</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5>${generations.image}</h5>
+                                    <p class="mb-0">Изображений</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5>${generations.music}</h5>
+                                    <p class="mb-0">Музыки</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-warning btn-sm" onclick="clearUserGenerations(${user.id}, 'all')">
+                            <i class="bi bi-trash"></i> Очистить все генерации
+                        </button>
+                        <a href="/admin/user/${user.id}/generations" class="btn btn-info btn-sm ms-2">
+                            <i class="bi bi-list-ul"></i> Подробный список
+                        </a>
+                    </div>
+                `;
+                
+                // Информация о памяти
+                storageDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-hdd"></i> Использование памяти: <strong>${storage.total_mb} MB</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Тексты: ${storage.text_mb} MB</li>
+                            <li>Изображения: ${storage.image_mb} MB</li>
+                            <li>Музыка: ${storage.music_mb} MB</li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                userInfoDiv.innerHTML = `<div class="alert alert-warning">Пользователь "${username}" не найден</div>`;
+                generationsDiv.innerHTML = '';
+                storageDiv.innerHTML = '';
+            }
+        })
+        .catch(error => {
+            userInfoDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+        });
+}
+
+// Показать статистику всех пользователей
+function showAllUsersStats() {
+    const statsDiv = document.getElementById('all-users-stats');
+    statsDiv.style.display = 'block';
+    
+    fetch('/admin/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Обновляем общую статистику
+                document.getElementById('total-users').textContent = data.stats.total_users;
+                document.getElementById('total-generations').textContent = data.stats.total_generations;
+                document.getElementById('total-storage').textContent = data.stats.total_storage_mb + ' MB';
+                document.getElementById('avg-storage').textContent = data.stats.avg_storage_mb + ' MB';
+                
+                // Заполняем таблицу пользователей
+                const tbody = document.querySelector('#users-stats-table tbody');
+                tbody.innerHTML = '';
+                
+                data.users.forEach(user => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${user.username}</td>
+                        <td>${user.total_generations}</td>
+                        <td>${user.text_count}</td>
+                        <td>${user.image_count}</td>
+                        <td>${user.music_count}</td>
+                        <td>${user.storage_mb} MB</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="document.getElementById('user-search').value='${user.username}'; searchUser();">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                });
+            }
+        })
+        .catch(error => {
+            alert('Ошибка загрузки статистики: ' + error.message);
+        });
+}
+
+// Сохранение настроек удержания
+function saveRetentionSettings(type) {
+    const days = document.getElementById(`${type}-retention-days`).value;
+    
+    fetch('/admin/api/retention-settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: type,
+            days: parseInt(days)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Настройки сохранены');
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+}
+
+// Ручной запуск очистки
+function runManualCleanup() {
+    if (!confirm('Запустить очистку старых файлов согласно текущим настройкам?')) {
+        return;
+    }
+    
+    const statusDiv = document.getElementById('cleanup-status');
+    statusDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Выполняется очистка...</div>';
+    
+    fetch('/admin/api/manual-cleanup', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> Очистка завершена
+                    <ul class="mb-0 mt-2">
+                        <li>Удалено текстов: ${data.deleted.text}</li>
+                        <li>Удалено изображений: ${data.deleted.image}</li>
+                        <li>Удалено треков: ${data.deleted.music}</li>
+                        <li>Освобождено памяти: ${data.freed_mb} MB</li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            statusDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+    });
+}
+
+// Очистка генераций пользователя
+function clearUserGenerations(userId, type) {
+    if (!confirm(`Удалить ${type === 'all' ? 'все' : type} генерации пользователя?`)) {
+        return;
+    }
+    
+    fetch(`/admin/api/user/${userId}/clear-generations`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: type })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Удалено генераций: ${data.deleted_count}`);
+            // Обновляем информацию о пользователе
+            const username = document.getElementById('user-search').value;
+            if (username) {
+                searchUser();
+            }
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
     });
 }
 </script>

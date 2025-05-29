@@ -835,4 +835,324 @@ audio {
     0% { background-color: inherit; }
     50% { background-color: rgba(40, 167, 69, 0.2); }
     100% { background-color: inherit; }
+}
+
+/* ===== КРАСИВЫЙ МУЗЫКАЛЬНЫЙ ПЛЕЕР ===== */
+.music-player {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    color: white;
+    position: relative;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.music-player::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.music-player-content {
+    position: relative;
+    z-index: 1;
+}
+
+.music-cover {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    overflow: hidden;
+    animation: rotate 20s linear infinite paused;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.music-cover.playing {
+    animation-play-state: running;
+}
+
+.music-cover.no-cover {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+}
+
+.music-cover-placeholder {
+    text-align: center;
+    opacity: 0.8;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.music-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.music-info {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.music-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.music-description {
+    font-size: 16px;
+    opacity: 0.9;
+    line-height: 1.5;
+}
+
+.audio-player-custom {
+    background: rgba(255,255,255,0.2);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.audio-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.audio-btn {
+    background: rgba(255,255,255,0.3);
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.audio-btn:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.1);
+}
+
+.audio-btn.play-pause {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+}
+
+.progress-container {
+    position: relative;
+    height: 8px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #fff 0%, #f0f0f0 100%);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.1s linear;
+    position: relative;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -8px;
+    top: -4px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.time-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.volume-slider {
+    width: 100px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.download-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.download-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+    color: white;
+    text-decoration: none;
+}
+
+/* Темная тема для музыкального плеера */
+[data-theme="dark"] .music-player {
+    background: linear-gradient(135deg, #434c72 0%, #5a3f69 100%);
+}
+
+[data-theme="dark"] .music-cover {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .audio-player-custom {
+    background: rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .audio-btn {
+    background: rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .progress-container {
+    background: rgba(0,0,0,0.3);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 576px) {
+    .music-player {
+        padding: 20px;
+    }
+    
+    .music-cover {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .music-title {
+        font-size: 20px;
+    }
+    
+    .audio-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .audio-btn.play-pause {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+}
+
+/* Стили для секции выбора типа литературного произведения */
+#literary-type-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#literary-type-section .form-check {
+    margin-bottom: 0.5rem;
+}
+
+#literary-type-section .form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+#literary-type-section .form-check-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+#literary-type-section .form-check-label:hover {
+    color: #28a745;
+}
+
+#literary-type-section .form-check-input:checked + .form-check-label {
+    color: #28a745;
+    font-weight: 600;
+}
+
+[data-theme="dark"] #literary-type-section {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-color: #495057;
+}
+
+[data-theme="dark"] #literary-type-section .form-check-label {
+    color: #e9ecef;
+}
+
+[data-theme="dark"] #literary-type-section .form-check-label:hover {
+    color: #28a745;
 } 

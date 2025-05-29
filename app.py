@@ -4,7 +4,7 @@ from forum import init_forum, db, User, Topic, Message, TopicVote, MessageVote, 
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv, find_dotenv, dotenv_values
 import json
 import requests
@@ -81,6 +81,9 @@ def analyze():
         # Получаем типы генерации
         generation_types = request.form.getlist('generation_types[]')
         
+        # Получаем тип литературного произведения
+        literary_type = request.form.get('literary_type', 'random')
+        
         if not diary_text:
             print("Ошибка: пустой текст дневника")
             return jsonify({'error': 'Текст дневника не может быть пустым'}), 400
@@ -92,6 +95,7 @@ def analyze():
 
         print(f"Получен текст дневника длиной {len(diary_text)} символов")
         print(f"Выбранные типы генерации: {generation_types}")
+        print(f"Тип литературного произведения: {literary_type}")
         
         # Создаем анализатор и проводим эмоциональный анализ
         analyzer = WarDiaryAnalyzer()
@@ -121,7 +125,7 @@ def analyze():
         if 'text' in generation_types:
             print("Начало генерации художественного произведения")
             user_id_to_pass = current_user.id if current_user.is_authenticated else None
-            literary_work_result = analyzer.generate_literary_work(diary_text, base_emotions, user_id=user_id_to_pass)
+            literary_work_result = analyzer.generate_literary_work(diary_text, base_emotions, user_id=user_id_to_pass, literary_type=literary_type)
             
             if literary_work_result and isinstance(literary_work_result, dict):
                 response_data['generated_literary_work'] = literary_work_result.get('text')
@@ -856,7 +860,7 @@ def check_music_status():
                             proxy_url = f"/proxy_audio?url={urllib.parse.quote(audio_url)}" if audio_url else ""
                             
                             # ВАЖНО: Обновляем статус в метаданных на completed
-                            metadata['status'] = 'completed'
+                            metadata['status'] = 'complete'
                             metadata['audio_url'] = audio_url
                             metadata['last_status_fix'] = datetime.now().isoformat()
                             
@@ -1058,8 +1062,8 @@ def music_callback():
             # ИСПРАВЛЕНИЕ: Правильно устанавливаем статус на основе наличия аудио
             audio_url_to_use = track_data.get('audio_url') if track_data else None
             if audio_url_to_use:
-                current_metadata['status'] = 'completed'  # Если есть audio_url, ставим completed
-                print(f"[music_callback] ✅ Найден audio_url, устанавливаю статус completed")
+                current_metadata['status'] = 'complete'  # Если есть audio_url, ставим complete
+                print(f"[music_callback] ✅ Найден audio_url, устанавливаю статус complete")
             else:
                 current_metadata['status'] = processed_data.get('status', 'processing')  # Иначе processing
                 print(f"[music_callback] ⚠️ Нет audio_url, статус: {current_metadata['status']}")
@@ -1857,7 +1861,7 @@ def user_profile():
                 elif meta.get('image_url'):  # старый формат
                     data['cover_url'] = meta['image_url']
                 
-                if meta.get('status') != 'completed' and not data.get('local_audio_url'):
+                if meta.get('status') != 'complete' and not data.get('local_audio_url'):
                     data['check_status_url'] = url_for('check_music_status', task_id=task_id)
             else:
                 data['music_status'] = 'pending_or_error'
@@ -2132,6 +2136,344 @@ def delete_all_literary_works():
             'success': False,
             'error': f'Ошибка при удалении: {str(e)}'
         }), 500
+
+@app.route('/admin/api/user/<username>')
+@login_required
+def admin_api_user(username):
+    """API для получения информации о пользователе"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+    
+    try:
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+        
+        # Подсчет генераций
+        generations = UserGeneration.query.filter_by(user_id=user.id).all()
+        text_count = sum(1 for g in generations if g.generation_type == 'text')
+        image_count = sum(1 for g in generations if g.generation_type == 'image')
+        music_count = sum(1 for g in generations if g.generation_type == 'music')
+        
+        # Подсчет используемой памяти
+        total_size = 0
+        text_size = 0
+        image_size = 0
+        music_size = 0
+        
+        for gen in generations:
+            if gen.generation_type == 'text' and gen.file_path_or_id:
+                txt_path = os.path.join('instance', 'generated_literary_works', gen.file_path_or_id)
+                if os.path.exists(txt_path):
+                    size = os.path.getsize(txt_path)
+                    text_size += size
+                    total_size += size
+                    
+            elif gen.generation_type == 'image' and gen.file_path_or_id:
+                if gen.file_path_or_id.startswith('static/'):
+                    img_path = gen.file_path_or_id
+                else:
+                    img_path = os.path.join('static', gen.file_path_or_id)
+                if os.path.exists(img_path):
+                    size = os.path.getsize(img_path)
+                    image_size += size
+                    total_size += size
+                    
+            elif gen.generation_type == 'music' and gen.file_path_or_id:
+                # Проверяем аудиофайл
+                audio_path = os.path.join('static', 'generated_music', 'audio', f'music_{gen.file_path_or_id}.mp3')
+                if os.path.exists(audio_path):
+                    size = os.path.getsize(audio_path)
+                    music_size += size
+                    total_size += size
+                # Проверяем обложку
+                cover_path = os.path.join('static', 'generated_music', 'covers', f'cover_{gen.file_path_or_id}.jpg')
+                if os.path.exists(cover_path):
+                    size = os.path.getsize(cover_path)
+                    music_size += size
+                    total_size += size
+        
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') else None,
+                'is_admin': user.is_admin
+            },
+            'generations': {
+                'total': len(generations),
+                'text': text_count,
+                'image': image_count,
+                'music': music_count
+            },
+            'storage': {
+                'total_mb': round(total_size / 1024 / 1024, 2),
+                'text_mb': round(text_size / 1024 / 1024, 2),
+                'image_mb': round(image_size / 1024 / 1024, 2),
+                'music_mb': round(music_size / 1024 / 1024, 2)
+            }
+        })
+        
+    except Exception as e:
+        print(f"Ошибка в admin_api_user: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/stats')
+@login_required
+def admin_api_stats():
+    """API для получения общей статистики"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+    
+    try:
+        # Общая статистика
+        total_users = User.query.count()
+        total_generations = UserGeneration.query.count()
+        
+        # Подсчет общего размера файлов
+        total_storage = 0
+        users_stats = []
+        
+        for user in User.query.all():
+            user_storage = 0
+            generations = UserGeneration.query.filter_by(user_id=user.id).all()
+            
+            text_count = 0
+            image_count = 0
+            music_count = 0
+            
+            for gen in generations:
+                if gen.generation_type == 'text':
+                    text_count += 1
+                    if gen.file_path_or_id:
+                        txt_path = os.path.join('instance', 'generated_literary_works', gen.file_path_or_id)
+                        if os.path.exists(txt_path):
+                            user_storage += os.path.getsize(txt_path)
+                            
+                elif gen.generation_type == 'image':
+                    image_count += 1
+                    if gen.file_path_or_id:
+                        img_path = os.path.join('static', gen.file_path_or_id) if not gen.file_path_or_id.startswith('static/') else gen.file_path_or_id
+                        if os.path.exists(img_path):
+                            user_storage += os.path.getsize(img_path)
+                            
+                elif gen.generation_type == 'music':
+                    music_count += 1
+                    if gen.file_path_or_id:
+                        audio_path = os.path.join('static', 'generated_music', 'audio', f'music_{gen.file_path_or_id}.mp3')
+                        if os.path.exists(audio_path):
+                            user_storage += os.path.getsize(audio_path)
+            
+            total_storage += user_storage
+            
+            if len(generations) > 0:  # Только пользователи с генерациями
+                users_stats.append({
+                    'username': user.username,
+                    'total_generations': len(generations),
+                    'text_count': text_count,
+                    'image_count': image_count,
+                    'music_count': music_count,
+                    'storage_mb': round(user_storage / 1024 / 1024, 2)
+                })
+        
+        # Сортируем пользователей по количеству генераций
+        users_stats.sort(key=lambda x: x['total_generations'], reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_users': total_users,
+                'total_generations': total_generations,
+                'total_storage_mb': round(total_storage / 1024 / 1024, 2),
+                'avg_storage_mb': round((total_storage / 1024 / 1024) / max(total_users, 1), 2)
+            },
+            'users': users_stats[:20]  # Топ 20 пользователей
+        })
+        
+    except Exception as e:
+        print(f"Ошибка в admin_api_stats: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/retention-settings', methods=['POST'])
+@login_required
+def admin_api_retention_settings():
+    """API для сохранения настроек автоудаления"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+    
+    try:
+        data = request.get_json()
+        retention_type = data.get('type')
+        days = data.get('days')
+        
+        if retention_type not in ['text', 'image', 'music']:
+            return jsonify({'success': False, 'error': 'Неверный тип'})
+        
+        if not isinstance(days, int) or days < 1 or days > 365:
+            return jsonify({'success': False, 'error': 'Неверное количество дней'})
+        
+        # Сохраняем настройки в файл конфигурации
+        config_path = os.path.join('instance', 'retention_config.json')
+        config = {}
+        
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+        
+        config[f'{retention_type}_retention_days'] = days
+        config['updated_at'] = datetime.now().isoformat()
+        
+        os.makedirs('instance', exist_ok=True)
+        with open(config_path, 'w') as f:
+            json.dump(config, f, indent=2)
+        
+        return jsonify({'success': True, 'message': 'Настройки сохранены'})
+        
+    except Exception as e:
+        print(f"Ошибка в admin_api_retention_settings: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/manual-cleanup', methods=['POST'])
+@login_required
+def admin_api_manual_cleanup():
+    """API для ручного запуска очистки"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+    
+    try:
+        # Читаем настройки удержания
+        config_path = os.path.join('instance', 'retention_config.json')
+        config = {
+            'text_retention_days': 30,
+            'image_retention_days': 14,
+            'music_retention_days': 7
+        }
+        
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                config.update(json.load(f))
+        
+        deleted = {'text': 0, 'image': 0, 'music': 0}
+        freed_size = 0
+        
+        # Очистка старых генераций
+        cutoff_dates = {
+            'text': datetime.now() - timedelta(days=config['text_retention_days']),
+            'image': datetime.now() - timedelta(days=config['image_retention_days']),
+            'music': datetime.now() - timedelta(days=config['music_retention_days'])
+        }
+        
+        generations = UserGeneration.query.all()
+        
+        for gen in generations:
+            if gen.created_at < cutoff_dates.get(gen.generation_type):
+                # Удаляем файлы
+                if gen.generation_type == 'text' and gen.file_path_or_id:
+                    txt_path = os.path.join('instance', 'generated_literary_works', gen.file_path_or_id)
+                    meta_path = os.path.join('instance', 'generated_literary_works', f"{gen.file_path_or_id}.meta.json")
+                    
+                    for path in [txt_path, meta_path]:
+                        if os.path.exists(path):
+                            freed_size += os.path.getsize(path)
+                            os.remove(path)
+                    deleted['text'] += 1
+                    
+                elif gen.generation_type == 'image' and gen.file_path_or_id:
+                    img_path = os.path.join('static', gen.file_path_or_id) if not gen.file_path_or_id.startswith('static/') else gen.file_path_or_id
+                    if os.path.exists(img_path):
+                        freed_size += os.path.getsize(img_path)
+                        os.remove(img_path)
+                    deleted['image'] += 1
+                    
+                elif gen.generation_type == 'music' and gen.file_path_or_id:
+                    audio_path = os.path.join('static', 'generated_music', 'audio', f'music_{gen.file_path_or_id}.mp3')
+                    cover_path = os.path.join('static', 'generated_music', 'covers', f'cover_{gen.file_path_or_id}.jpg')
+                    metadata_path = os.path.join('static', 'generated_music', f'music_metadata_{gen.file_path_or_id}.json')
+                    
+                    for path in [audio_path, cover_path, metadata_path]:
+                        if os.path.exists(path):
+                            freed_size += os.path.getsize(path)
+                            os.remove(path)
+                    deleted['music'] += 1
+                
+                # Удаляем запись из БД
+                db.session.delete(gen)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'deleted': deleted,
+            'freed_mb': round(freed_size / 1024 / 1024, 2)
+        })
+        
+    except Exception as e:
+        print(f"Ошибка в admin_api_manual_cleanup: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/user/<int:user_id>/clear-generations', methods=['POST'])
+@login_required
+def admin_api_clear_user_generations(user_id):
+    """API для очистки генераций конкретного пользователя"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+    
+    try:
+        data = request.get_json()
+        clear_type = data.get('type', 'all')
+        
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+        
+        deleted_count = 0
+        
+        if clear_type == 'all':
+            generations = UserGeneration.query.filter_by(user_id=user_id).all()
+        else:
+            generations = UserGeneration.query.filter_by(user_id=user_id, generation_type=clear_type).all()
+        
+        for gen in generations:
+            # Удаляем файлы (код аналогичен delete_generation)
+            if gen.generation_type == 'text' and gen.file_path_or_id:
+                txt_path = os.path.join('instance', 'generated_literary_works', gen.file_path_or_id)
+                meta_path = os.path.join('instance', 'generated_literary_works', f"{gen.file_path_or_id}.meta.json")
+                for path in [txt_path, meta_path]:
+                    if os.path.exists(path):
+                        os.remove(path)
+                        
+            elif gen.generation_type == 'image' and gen.file_path_or_id:
+                img_path = os.path.join('static', gen.file_path_or_id) if not gen.file_path_or_id.startswith('static/') else gen.file_path_or_id
+                if os.path.exists(img_path):
+                    os.remove(img_path)
+                    
+            elif gen.generation_type == 'music' and gen.file_path_or_id:
+                task_id = gen.file_path_or_id
+                files_to_delete = [
+                    os.path.join('static', 'generated_music', f"music_metadata_{task_id}.json"),
+                    os.path.join('static', 'generated_music', 'audio', f"music_{task_id}.mp3"),
+                    os.path.join('static', 'generated_music', 'covers', f"cover_{task_id}.jpg")
+                ]
+                for path in files_to_delete:
+                    if os.path.exists(path):
+                        os.remove(path)
+            
+            db.session.delete(gen)
+            deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        print(f"Ошибка в admin_api_clear_user_generations: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     try:
