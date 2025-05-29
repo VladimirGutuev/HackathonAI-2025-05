@@ -149,15 +149,25 @@
                     </h4>
                 </div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <button class="btn btn-danger" onclick="deleteAllImages()" 
+                                data-bs-toggle="modal" data-bs-target="#confirmDeleteImagesModal">
+                            <i class="bi bi-trash3"></i> Удалить все изображения
+                        </button>
+                    </div>
+                    
+                    <div id="cleanup-images-result" class="alert" style="display: none;"></div>
+                    
+                    <!-- Список изображений -->
                     {% if images %}
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Миниатюра</th>
+                                    <th>Изображение</th>
                                     <th>Имя файла</th>
-                                    <th>Размер</th>
-                                    <th>Дата изменения</th>
+                                    <th>Размер файла</th>
+                                    <th>Дата создания</th>
                                     <th>Действия</th>
                                 </tr>
                             </thead>
@@ -165,17 +175,16 @@
                                 {% for image in images %}
                                 <tr>
                                     <td>
-                                        <a href="{{ image.url }}" target="_blank">
-                                            <img src="{{ image.url }}" alt="{{ image.filename }}" class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
-                                        </a>
+                                        <img src="{{ image.url }}" alt="{{ image.filename }}" style="max-width: 100px; max-height: 100px;">
                                     </td>
-                                    <td><code>{{ image.filename }}</code></td>
-                                    <td>{{ "%.2f KB" | format(image.size / 1024) if image.size else 'N/A' }}</td>
-                                    <td>{{ image.modified_date }}</td>
+                                    <td>{{ image.filename }}</td>
+                                    <td>{{ image.size_kb }} KB</td>
+                                    <td>{{ image.created_at }}</td>
                                     <td>
-                                        <form method="POST" action="{{ url_for('delete_image_admin', filename=image.filename) }}" style="display:inline;" onsubmit="return confirm('Вы уверены, что хотите удалить это изображение?');">
+                                        <form method="POST" action="{{ url_for('delete_image_admin', filename=image.filename) }}" 
+                                              style="display: inline;" onsubmit="return confirm('Удалить это изображение?');">
                                             <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="bi bi-trash"></i> Удалить
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                     </td>
@@ -202,6 +211,16 @@
                     </h4>
                 </div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <button class="btn btn-danger" onclick="deleteAllLiteraryWorks()" 
+                                data-bs-toggle="modal" data-bs-target="#confirmDeleteWorksModal">
+                            <i class="bi bi-trash3"></i> Удалить все произведения
+                        </button>
+                    </div>
+                    
+                    <div id="cleanup-works-result" class="alert" style="display: none;"></div>
+                    
+                    <!-- Список произведений -->
                     {% if literary_works %}
                     <div class="table-responsive">
                         <table class="table table-striped">
@@ -314,7 +333,7 @@
     </div>
 </div>
 
-<!-- Модальное окно подтверждения -->
+<!-- Модальное окно подтверждения удаления треков -->
 <div class="modal fade" id="confirmModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -333,13 +352,47 @@
     </div>
 </div>
 
+<!-- Модальное окно подтверждения удаления изображений -->
+<div class="modal fade" id="confirmDeleteImagesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить ВСЕ изображения? Это действие нельзя отменить.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteAllImages()">Удалить все изображения</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления произведений -->
+<div class="modal fade" id="confirmDeleteWorksModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить ВСЕ литературные произведения? Это действие нельзя отменить.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteAllWorks()">Удалить все произведения</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Функция очистки треков
 function cleanupTracks(type) {
-    if (type === 'all') {
-        return; // Для 'all' используем модальное окно
-    }
-    
     const resultDiv = document.getElementById('cleanup-result');
     resultDiv.style.display = 'block';
     resultDiv.className = 'alert alert-info';
@@ -507,5 +560,79 @@ function loadRecentImages() {
 document.addEventListener('DOMContentLoaded', function() {
     loadRecentImages();
 });
+
+// Функции для изображений
+function deleteAllImages() {
+    // Не делаем ничего, ждем подтверждения из модального окна
+}
+
+function confirmDeleteAllImages() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteImagesModal'));
+    modal.hide();
+    
+    const resultDiv = document.getElementById('cleanup-images-result');
+    resultDiv.style.display = 'block';
+    resultDiv.className = 'alert alert-info';
+    resultDiv.innerHTML = '<i class="bi bi-hourglass-split"></i> Удаление всех изображений...';
+    
+    fetch('/delete_all_images', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.className = 'alert alert-success';
+            resultDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${data.message}`;
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Ошибка: ${data.error}`;
+        }
+    })
+    .catch(error => {
+        resultDiv.className = 'alert alert-danger';
+        resultDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Ошибка: ${error.message}`;
+    });
+}
+
+// Функции для произведений
+function deleteAllLiteraryWorks() {
+    // Не делаем ничего, ждем подтверждения из модального окна
+}
+
+function confirmDeleteAllWorks() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteWorksModal'));
+    modal.hide();
+    
+    const resultDiv = document.getElementById('cleanup-works-result');
+    resultDiv.style.display = 'block';
+    resultDiv.className = 'alert alert-info';
+    resultDiv.innerHTML = '<i class="bi bi-hourglass-split"></i> Удаление всех произведений...';
+    
+    fetch('/delete_all_literary_works', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.className = 'alert alert-success';
+            resultDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${data.message}`;
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Ошибка: ${data.error}`;
+        }
+    })
+    .catch(error => {
+        resultDiv.className = 'alert alert-danger';
+        resultDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Ошибка: ${error.message}`;
+    });
+}
 </script>
 {% endblock %} 

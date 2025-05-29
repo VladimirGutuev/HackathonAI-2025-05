@@ -9,10 +9,10 @@
 
     {% if rag_available is sameas true %}
         {% if stats and not stats.get('error') %}
-            <div class="alert alert-success" role="alert">
+                        <div class="alert alert-success" role="alert">
                 <i class="bi bi-check-circle-fill"></i> RAG система активна и статистика успешно загружена.
-            </div>
-            
+                        </div>
+                        
             <h4>Общая информация:</h4>
             <table class="table table-striped table-bordered">
                 <tbody>
@@ -28,9 +28,9 @@
                                         <li><strong>{{ sub_key | title }}:</strong> {{ sub_value }}</li>
                                     {% endfor %}
                                     </ul>
-                                {% else %}
+                                            {% else %}
                                     {{ value }}
-                                {% endif %}
+                                            {% endif %}
                             </td>
                         </tr>
                     {% endfor %}
@@ -48,10 +48,10 @@
                 <i class="bi bi-exclamation-triangle-fill"></i> <strong>Ошибка при загрузке статистики RAG:</strong>
                 <p>{{ stats.get('error') }}</p>
                 <p>Текущий статус RAG: <strong>{{ stats.get('rag_status', 'Неизвестно') }}</strong></p>
-            </div>
+                            </div>
             <p>Пожалуйста, проверьте логи сервера для получения дополнительной информации.</p>
-        {% else %}
-            <div class="alert alert-warning" role="alert">
+                    {% else %}
+                        <div class="alert alert-warning" role="alert">
                 <i class="bi bi-info-circle-fill"></i> Статистика RAG пока недоступна или не была загружена. Система RAG может быть активна.
             </div>
         {% endif %}

@@ -16,6 +16,18 @@
             <h1><i class="bi bi-person-lines-fill"></i> Мои генерации</h1>
             <hr>
             <p>Здесь отображается история ваших запросов на генерацию контента.</p>
+            
+            {% if generations %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-muted">Всего генераций: {{ generations|length }}</span>
+                <form method="POST" action="{{ url_for('clear_all_generations') }}" style="display: inline;"
+                      onsubmit="return confirm('Вы уверены, что хотите удалить ВСЮ историю генераций? Это действие нельзя отменить.')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash"></i> Очистить всю историю
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -48,8 +60,16 @@
                                 <a href="{{ gen.view_url }}" class="btn btn-outline-secondary btn-sm mt-2 me-2" target="_blank"><i class="bi bi-eye"></i> Просмотреть полностью</a>
                             {% endif %}
                             {% if gen.download_url %}
-                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2"><i class="bi bi-download"></i> Скачать (.txt)</a>
+                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2 me-2"><i class="bi bi-download"></i> Скачать (.txt)</a>
                             {% endif %}
+                            
+                            <!-- Кнопка удаления -->
+                            <form method="POST" action="{{ url_for('delete_generation', generation_id=gen.id) }}" style="display: inline;" class="mt-2"
+                                  onsubmit="return confirm('Вы уверены, что хотите удалить эту генерацию?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                            </form>
                         {% elif gen.type == 'image' %}
                             <p><strong>Тип:</strong> Изображение</p>
                             <p><strong>Название/Промпт:</strong> {{ gen.title or gen.snippet }}</p>
@@ -57,44 +77,60 @@
                                 <div class="my-2 text-center">
                                     <img src="{{ gen.image_url }}" alt="{{ gen.title or 'Сгенерированное изображение' }}" class="img-fluid rounded shadow-sm" style="max-height: 300px; max-width: 100%;">
                                 </div>
-                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2" download><i class="bi bi-download"></i> Скачать изображение</a>
+                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2 me-2" download><i class="bi bi-download"></i> Скачать изображение</a>
                             {% elif gen.error %}
                                 <div class="alert alert-warning" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ gen.error }}</div>
                             {% else %}
                                 <p class="text-muted">Изображение недоступно.</p>
                             {% endif %}
+                            
+                            <!-- Кнопка удаления -->
+                            <form method="POST" action="{{ url_for('delete_generation', generation_id=gen.id) }}" style="display: inline;" class="mt-2"
+                                  onsubmit="return confirm('Вы уверены, что хотите удалить эту генерацию?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                            </form>
                         {% elif gen.type == 'music' %}
                             <p><strong>Тип:</strong> Музыкальный трек</p>
                             <p><strong>Название:</strong> {{ gen.music_title or gen.title or "Трек в обработке" }}</p>
                             <p><strong>Статус:</strong>
                                 <span class="badge
-                                    {% if gen.music_status == 'complete' and gen.local_audio_url %}bg-success
+                                    {% if gen.music_status == 'completed' and gen.local_audio_url %}bg-success
                                     {% elif gen.music_status == 'processing' or gen.music_status == 'pending' or gen.music_status == 'submitted' %}bg-info text-dark
                                     {% elif gen.music_status == 'error' or gen.music_status == 'failed' %}bg-danger
                                     {% else %}bg-secondary{% endif %}">
                                     {{ gen.music_status or 'unknown' }}
                                 </span>
+                                {% if gen.local_audio_url and '/static/generated_music/audio/' in gen.local_audio_url %}
+                                    <span class="badge bg-primary ms-1">Локально сохранен</span>
+                                {% endif %}
                             </p>
+                            
+                            {% if gen.cover_url %}
+                                <div class="my-2 text-center">
+                                    <img src="{{ gen.cover_url }}" alt="Обложка: {{ gen.music_title or gen.title }}" 
+                                         class="img-fluid rounded shadow-sm" style="max-height: 200px; max-width: 100%;">
+                                </div>
+                            {% endif %}
+                            
                             {% if gen.local_audio_url %}
                                 <audio controls preload="none" class="mt-2 w-100">
                                     <source src="{{ gen.local_audio_url }}" type="audio/mpeg">
                                     Ваш браузер не поддерживает аудио элемент.
                                 </audio>
-                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2" download><i class="bi bi-download"></i> Скачать трек (.mp3)</a>
+                                <a href="{{ gen.download_url }}" class="btn btn-outline-success btn-sm mt-2 me-2" download><i class="bi bi-download"></i> Скачать трек (.mp3)</a>
                             {% elif gen.check_status_url %}
-                                <p class="mt-2">Трек еще генерируется. <button class="btn btn-link btn-sm p-0 music-status-checker-profile" data-task-id="{{ gen.file_path_or_id }}" data-status-url="{{ gen.check_status_url }}">Проверить статус</button></p>
-                                <div id="music-status-profile-{{ gen.file_path_or_id }}" class="mt-1 small"></div>
-                            {% else %}
-                                <p class="text-muted mt-2">Информация о треке недоступна.</p>
+                                <a href="{{ gen.check_status_url }}" class="btn btn-outline-info btn-sm mt-2 me-2" target="_blank"><i class="bi bi-hourglass-split"></i> Проверить статус</a>
                             {% endif %}
-                            {% if gen.snippet and (gen.snippet.startswith('{') or gen.snippet.startswith('[')) %}
-                                <details class="mt-2">
-                                    <summary><small class="text-muted">Детали запроса (JSON)</small></summary>
-                                    <pre class="bg-light p-2 rounded small" style="max-height: 150px; overflow-y: auto;"><code>{{ gen.snippet }}</code></pre>
-                                </details>
-                            {% elif gen.snippet %}
-                                <p class="mt-2"><small class="text-muted">Описание: {{ gen.snippet }}</small></p>
-                            {% endif %}
+                            
+                            <!-- Кнопка удаления -->
+                            <form method="POST" action="{{ url_for('delete_generation', generation_id=gen.id) }}" style="display: inline;" class="mt-2"
+                                  onsubmit="return confirm('Вы уверены, что хотите удалить эту генерацию?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                            </form>
                         {% endif %}
                         <hr class="my-2">
                         <p class="mb-0"><small class="text-muted">ID генерации: {{ gen.id }} | Создано: {{ gen.created_at }}</small></p>
@@ -145,4 +181,4 @@
         });
     });
 </script>
-{% endblock %} 
+{% endblock %}

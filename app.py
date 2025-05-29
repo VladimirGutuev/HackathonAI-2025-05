@@ -738,15 +738,15 @@ def generate_music():
         # Проверяем наличие эмоционального анализа
         emotion_analysis = data.get('emotion_analysis', None)
         
-        print(f"Получен текст длиной {len(text)} символов")
+        print(f"[generate_music] Получен текст длиной {len(text)} символов") # Лог
         analyzer = WarDiaryAnalyzer()
         
         # Генерация музыки (только отправка задачи, не ожидание результата)
         # Используем внешний URL, если он указан, или request.host_url в противном случае
         base_url = os.environ.get('EXTERNAL_URL', request.host_url.rstrip('/'))
-        print(f"Используется base_url для коллбэка: {base_url}")
+        print(f"[generate_music] Используется base_url для коллбэка: {base_url}") # Лог
         music_result = analyzer.generate_music(text, emotion_analysis, base_url=base_url, wait_for_result=False)
-        print(f"Генерация музыки: {music_result}")
+        print(f"[generate_music] Результат от analyzer.generate_music: {music_result}") # Лог
         
         if not music_result.get('success', False):
             return jsonify({
@@ -841,9 +841,28 @@ def check_music_status():
                         audio_url = data_field.get('audio_url') or callback_data.get('audio_url') or ''
                         stream_url = data_field.get('stream_url') or callback_data.get('stream_url') or ''
                         
+                        # НОВОЕ: Проверяем также массив треков в data.data
+                        if not audio_url and isinstance(data_field.get('data'), list):
+                            tracks = data_field['data']
+                            for track in tracks:
+                                if track.get('audio_url'):
+                                    audio_url = track['audio_url']
+                                    stream_url = track.get('stream_audio_url', track.get('stream_url', ''))
+                                    print(f"Найден audio_url в массиве треков: {audio_url[:50]}...")
+                                    break
+                        
                         if audio_url or stream_url:
                             print(f"Найдены URL'ы аудио в callback данных")
                             proxy_url = f"/proxy_audio?url={urllib.parse.quote(audio_url)}" if audio_url else ""
+                            
+                            # ВАЖНО: Обновляем статус в метаданных на completed
+                            metadata['status'] = 'completed'
+                            metadata['audio_url'] = audio_url
+                            metadata['last_status_fix'] = datetime.now().isoformat()
+                            
+                            # Сохраняем исправленные метаданные
+                            with open(metadata_path, 'w', encoding='utf-8') as f:
+                                json.dump(metadata, f, ensure_ascii=False, indent=2)
                             
                             return jsonify({
                                 'success': True,
@@ -887,29 +906,71 @@ def check_music_status():
 @app.route('/music_callback', methods=['POST'])
 def music_callback():
     data = request.json
-    print(f"Получены данные коллбэка от Suno: {json.dumps(data, indent=2)}")
+    print(f"[music_callback] ПОЛУЧЕН КОЛЛБЭК ОТ SUNO. Тип данных: {type(data)}. Данные: {json.dumps(data, indent=2, ensure_ascii=False)}") # Детальный лог
 
-    # Извлекаем task_id из данных коллбэка (может быть в data или data[0])
-    task_id = None
-    processed_data = None
+    task_id = None  # Инициализируем task_id
+    processed_data = None # Инициализируем processed_data
+    original_task_id_from_data = None
+
     if isinstance(data, list) and len(data) > 0:
-        task_id = data[0].get('id')
         processed_data = data[0]
+        # Сначала пытаемся найти task_id в самом элементе
+        task_id = processed_data.get('task_id') or processed_data.get('id')
+        original_task_id_from_data = task_id
+        print(f"[music_callback] Данные - это список. Task ID из data[0]: {task_id}")
     elif isinstance(data, dict):
-        task_id = data.get('id')
         processed_data = data
-
-    if not task_id:
-        print("Коллбэк от Suno не содержит task_id")
-        return jsonify({'status': 'error', 'message': 'task_id is missing'}), 400
-
-    print(f"Коллбэк для Task ID: {task_id}")
-
-    # Проверяем, есть ли уже обработанные метаданные для этого task_id
-    music_dir = os.path.join('static', 'generated_music')
-    metadata_filename_pattern = f"music_metadata_{task_id}_*.json"
+        # Проверяем разные возможные местоположения task_id
+        task_id = (
+            processed_data.get('task_id') or 
+            processed_data.get('id') or
+            (processed_data.get('data', {}).get('task_id') if processed_data.get('data') else None)
+        )
+        original_task_id_from_data = task_id
+        print(f"[music_callback] Данные - это словарь. Task ID найден: {task_id}")
+        
+        # Если task_id не найден на верхнем уровне, ищем глубже
+        if not task_id and 'data' in processed_data:
+            inner_data = processed_data['data']
+            if isinstance(inner_data, dict):
+                task_id = inner_data.get('task_id') or inner_data.get('id')
+                print(f"[music_callback] Task ID найден в data: {task_id}")
+    else:
+        print(f"[music_callback] Неожиданный формат данных в коллбэке: {type(data)}")
+        return jsonify({'status': 'error', 'message': 'Invalid callback data format'}), 400
     
-    # Ищем файл метаданных
+    # Теперь, после попыток извлечь task_id, проверяем его
+    if not task_id:
+        print(f"[music_callback] ОШИБКА: Коллбэк от Suno не содержит task_id. Исходные данные: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        # Попробуем извлечь task_id из альтернативных мест, если он не был найден сразу
+        if isinstance(data, dict): # Если исходные данные были словарем
+            alternative_task_id = data.get('taskId')
+            if alternative_task_id:
+                task_id = alternative_task_id
+                print(f"[music_callback] ВНИМАНИЕ: task_id был найден в ключе 'taskId' при повторной проверке: {task_id}")
+            # Можно добавить еще более глубокий поиск, если предполагается сложная структура
+            elif isinstance(data.get('data'), dict): # Если есть вложенный словарь 'data'
+                nested_task_id = data['data'].get('task_id') or data['data'].get('id') or data['data'].get('taskId')
+                if nested_task_id:
+                    task_id = nested_task_id
+                    # Если в data.data есть массив с музыкальными данными, используем первый элемент
+                    if 'data' in data['data'] and isinstance(data['data']['data'], list) and len(data['data']['data']) > 0:
+                        processed_data = data['data']['data'][0]  # Первый трек из массива
+                        print(f"[music_callback] Используем первый трек из массива data.data.data")
+                    else:
+                        processed_data = data['data'] # Обновляем processed_data, если task_id нашелся глубже
+                    print(f"[music_callback] ВНИМАНИЕ: task_id был найден во вложенной структуре 'data.task_id': {task_id}")
+
+        if not task_id: # Финальная проверка task_id
+             print(f"[music_callback] КРИТИЧЕСКАЯ ОШИБКА: task_id не найден даже после альтернативных проверок. Данные: {json.dumps(data, indent=2, ensure_ascii=False)}")
+             return jsonify({'status': 'error', 'message': 'task_id is definitively missing after all checks'}), 400
+
+    print(f"[music_callback] Обработка коллбэка для Task ID: {task_id} (извлечен из ключа 'id' или альтернативного)")
+    if original_task_id_from_data and original_task_id_from_data != task_id: # original_task_id_from_data может быть None
+        print(f"[music_callback] ВАЖНО: Изначально извлеченный task_id ('{original_task_id_from_data}') отличается от финального ('{task_id}')!")
+
+    music_dir = os.path.join('static', 'generated_music')
+    
     found_metadata_files = []
     if os.path.exists(music_dir):
         for filename in os.listdir(music_dir):
@@ -918,21 +979,8 @@ def music_callback():
     
     if found_metadata_files:
         print(f"Найдены существующие метаданные для task_id {task_id}: {found_metadata_files}. Коллбэк, вероятно, уже обработан.")
-        # Можно вернуть success, так как данные уже есть, или обработать как дубликат
-        # return jsonify({'status': 'success', 'message': 'Callback already processed or metadata exists'}), 200
 
     try:
-        analyzer = WarDiaryAnalyzer() # Создаем экземпляр, если методы _process_callback_data или другие нужны
-        # Сохранение трека и метаданных (эта функция должна быть в WarDiaryAnalyzer или здесь)
-        # Предположим, что _process_callback_data возвращает словарь с информацией о треке,
-        # включая 'local_path' для аудиофайла и 'title'.
-        # ИЛИ, если _process_callback_data делает всю работу по сохранению, то это не нужно тут.
-        
-        # Пример того, как можно было бы получить информацию (если _process_callback_data возвращает ее):
-        # track_info = analyzer._process_callback_data(processed_data) # Убедитесь, что метод доступен и правильно вызывается
-
-        # Просто сохраним сырые данные коллбэка как JSON для этого task_id, если еще нет метаданных
-        # Это позволит нам позже обработать их, если что-то пойдет не так с UserGeneration
         if not found_metadata_files and processed_data:
             raw_callback_dir = os.path.join(music_dir, 'raw_callbacks')
             os.makedirs(raw_callback_dir, exist_ok=True)
@@ -941,22 +989,15 @@ def music_callback():
                 json.dump(processed_data, f_raw, ensure_ascii=False, indent=4)
             print(f"Сырые данные коллбэка для task_id {task_id} сохранены в {raw_callback_path}")
 
-        # --- Обновление UserGeneration ---
-        # Ищем запись UserGeneration по task_id
         generation_entry = UserGeneration.query.filter_by(generation_type='music', file_path_or_id=task_id).first()
 
         if generation_entry:
             print(f"Найдена запись UserGeneration для task_id {task_id} (ID: {generation_entry.id})")
-            # Пытаемся извлечь полезную информацию из processed_data
-            # Путь к файлу и название нужно будет определить на основе того, как WarDiaryAnalyzer
-            # обрабатывает и сохраняет музыку после коллбэка.
-            # Сейчас мы этого точно не знаем, поэтому оставим file_path_or_id как task_id, 
-            # но попытаемся обновить title, если он есть в коллбэке.
-
-            new_title = generation_entry.title # Сохраняем старое название по умолчанию
+            
+            new_title = generation_entry.title 
             if processed_data and processed_data.get('title'):
                 new_title = processed_data.get('title')
-            elif processed_data and processed_data.get('audio_url'): # Пытаемся извлечь имя файла из URL
+            elif processed_data and processed_data.get('audio_url'):
                 try:
                     parsed_url = urllib.parse.urlparse(processed_data.get('audio_url'))
                     filename_from_url = os.path.basename(parsed_url.path)
@@ -965,15 +1006,11 @@ def music_callback():
                 except Exception as e_parse:
                     print(f"Не удалось извлечь имя файла из audio_url: {e_parse}")
             
-            # Предположим, что музыка уже сохранена где-то и `file_path_or_id` должен указывать на файл
-            # Это сложная часть, так как имя файла не всегда очевидно из коллбэка.
-            # Если WarDiaryAnalyzer._process_callback_data сохраняет файл и возвращает его путь, это было бы идеально.
-            # Пока что оставим file_path_or_id как task_id, так как это надежный идентификатор.
-            # В профиле пользователя мы сможем использовать этот task_id для поиска соответствующего трека.
-
             generation_entry.title = new_title
-            generation_entry.snippet_or_description = json.dumps(processed_data) # Сохраняем весь коллбэк в описание для отладки/информации
-            generation_entry.updated_at = datetime.utcnow() # Если есть поле updated_at в модели
+            generation_entry.snippet_or_description = json.dumps(processed_data) 
+            # Убедимся, что updated_at существует в модели UserGeneration перед его использованием
+            if hasattr(generation_entry, 'updated_at'):
+                 generation_entry.updated_at = datetime.utcnow()
             
             try:
                 db.session.commit()
@@ -984,40 +1021,142 @@ def music_callback():
         else:
             print(f"Запись UserGeneration для task_id {task_id} не найдена. Возможно, генерация была не от пользователя.")
         
-        # Здесь должен быть вызов функции, которая фактически скачивает аудио и сохраняет метаданные
-        # Например, WarDiaryAnalyzer()._process_callback_data(processed_data)
-        # Сейчас этот вызов закомментирован или отсутствует в предоставленном коде app.py, что может быть проблемой.
-        # Если метод analyzer._process_callback_data(processed_data) есть и он вызывается где-то еще 
-        # (например, в check_music_status после получения коллбэка), то логика здесь может быть избыточной.
-        # Важно, чтобы _process_callback_data был вызван ОДИН РАЗ для каждого успешного коллбэка.
+        if processed_data:
+            metadata_path = os.path.join(music_dir, f'music_metadata_{task_id}.json')
+            current_metadata = {}
+            if os.path.exists(metadata_path):
+                try:
+                    with open(metadata_path, 'r', encoding='utf-8') as f_meta_read:
+                        current_metadata = json.load(f_meta_read)
+                except Exception as e_read_meta:
+                    print(f"Ошибка чтения существующих метаданных {metadata_path}: {e_read_meta}")
 
-        # Если WarDiaryAnalyzer.process_track_data используется для обработки и сохранения:
-        if processed_data and processed_data.get('status') == 'complete':
-            print(f"Коллбэк для task_id {task_id} имеет статус 'complete'. Попытка обработки...")
+            # Если есть доступ к исходным данным с массивом треков, найдем завершенный трек
+            completed_track = None
+            if isinstance(data, dict) and 'data' in data and 'data' in data['data']:
+                tracks = data['data']['data']
+                if isinstance(tracks, list):
+                    # Ищем трек с audio_url (завершенный)
+                    for track in tracks:
+                        if track.get('audio_url'):
+                            completed_track = track
+                            print(f"[music_callback] Найден завершенный трек с audio_url: {track.get('id')}")
+                            break
+                    
+                    # Если не нашли завершенный, берем любой с максимальной длительностью
+                    if not completed_track and tracks:
+                        completed_track = max(tracks, key=lambda x: x.get('duration', 0))
+                        print(f"[music_callback] Используем трек с максимальной длительностью: {completed_track.get('id')}")
+
+            # Используем данные завершенного трека, если найден, иначе processed_data
+            track_data = completed_track if completed_track else processed_data
+            
+            current_metadata['task_id'] = task_id
+            current_metadata['last_callback_data'] = processed_data
+            current_metadata['callback_received_at'] = datetime.now().isoformat()
+            
+            # ИСПРАВЛЕНИЕ: Правильно устанавливаем статус на основе наличия аудио
+            audio_url_to_use = track_data.get('audio_url') if track_data else None
+            if audio_url_to_use:
+                current_metadata['status'] = 'completed'  # Если есть audio_url, ставим completed
+                print(f"[music_callback] ✅ Найден audio_url, устанавливаю статус completed")
+            else:
+                current_metadata['status'] = processed_data.get('status', 'processing')  # Иначе processing
+                print(f"[music_callback] ⚠️ Нет audio_url, статус: {current_metadata['status']}")
+            
+            # НОВОЕ: Скачиваем аудио локально, если есть ссылка
+            if audio_url_to_use:
+                current_metadata['external_audio_url'] = audio_url_to_use
+                
+                # Скачиваем файл локально
+                try:
+                    import requests
+                    
+                    # Создаем локальные папки если их нет
+                    audio_dir = os.path.join('static', 'generated_music', 'audio')
+                    os.makedirs(audio_dir, exist_ok=True)
+                    
+                    print(f"[music_callback] Скачиваю аудио из: {audio_url_to_use}")
+                    response = requests.get(audio_url_to_use, timeout=30)
+                    response.raise_for_status()
+                    
+                    # Создаем локальные пути
+                    local_audio_filename = f"music_{task_id}.mp3"
+                    local_audio_path = os.path.join(audio_dir, local_audio_filename)
+                    
+                    # Сохраняем файл
+                    with open(local_audio_path, 'wb') as audio_file:
+                        audio_file.write(response.content)
+                    
+                    # Проверяем, что файл создался и не пустой
+                    if os.path.exists(local_audio_path) and os.path.getsize(local_audio_path) > 0:
+                        # Обновляем метаданные
+                        current_metadata['local_audio_path'] = local_audio_path
+                        current_metadata['local_audio_url'] = url_for('static', filename=f'generated_music/audio/{local_audio_filename}')
+                        current_metadata['audio_downloaded_at'] = datetime.now().isoformat()
+                        
+                        print(f"[music_callback] ✅ Аудио успешно скачано: {local_audio_path} ({os.path.getsize(local_audio_path)} байт)")
+                    else:
+                        print(f"[music_callback] ❌ Файл не создался или пустой: {local_audio_path}")
+                        current_metadata['download_error'] = "Файл не создался или пустой"
+                    
+                except Exception as e:
+                    print(f"[music_callback] ❌ Ошибка скачивания аудио для {task_id}: {e}")
+                    current_metadata['download_error'] = str(e)
+                    # Оставляем внешнюю ссылку как запасной вариант
+            
+            # Также проверяем и сохраняем обложку, если есть
+            cover_url_to_use = track_data.get('image_url') if track_data else None
+            if cover_url_to_use:
+                current_metadata['external_cover_url'] = cover_url_to_use
+                
+                try:
+                    import requests
+                    
+                    # Создаем папку для обложек если её нет
+                    covers_dir = os.path.join('static', 'generated_music', 'covers')
+                    os.makedirs(covers_dir, exist_ok=True)
+                    
+                    print(f"[music_callback] Скачиваю обложку из: {cover_url_to_use}")
+                    response = requests.get(cover_url_to_use, timeout=30)
+                    response.raise_for_status()
+                    
+                    local_cover_filename = f"cover_{task_id}.jpg"
+                    local_cover_path = os.path.join(covers_dir, local_cover_filename)
+                    
+                    # Сохраняем обложку
+                    with open(local_cover_path, 'wb') as cover_file:
+                        cover_file.write(response.content)
+                    
+                    # Проверяем, что файл создался и не пустой
+                    if os.path.exists(local_cover_path) and os.path.getsize(local_cover_path) > 0:
+                        current_metadata['local_cover_path'] = local_cover_path
+                        current_metadata['local_cover_url'] = url_for('static', filename=f'generated_music/covers/{local_cover_filename}')
+                        current_metadata['cover_downloaded_at'] = datetime.now().isoformat()
+                        
+                        print(f"[music_callback] ✅ Обложка успешно скачана: {local_cover_path} ({os.path.getsize(local_cover_path)} байт)")
+                    else:
+                        print(f"[music_callback] ❌ Обложка не создалась или пустая: {local_cover_path}")
+                        current_metadata['cover_download_error'] = "Файл обложки не создался или пустой"
+                    
+                except Exception as e:
+                    print(f"[music_callback] ❌ Ошибка скачивания обложки для {task_id}: {e}")
+                    current_metadata['cover_download_error'] = str(e)
+                    # Оставляем внешнюю ссылку как запасной вариант
+
             try:
-                # process_track_data ожидает 'metadata' и 'track' как в API Suno
-                # В нашем случае processed_data это и есть 'track' или 'metadata'
-                # Мы передаем его как track, а metadata формируем минимально
-                mock_metadata_for_processing = {
-                    'id': task_id,
-                    'title': processed_data.get('title', 'Untitled Track'),
-                    'tags': processed_data.get('tags'),
-                    'prompt': processed_data.get('metadata', {}).get('prompt', '') 
-                    # ... другие поля, которые могут понадобиться process_track_data
-                }
-                # process_track_data(mock_metadata_for_processing, processed_data, task_id) # Вызов функции из app.py
-                # Эта функция сама сохранит метаданные и аудио.
-                # Важно: убедитесь, что process_track_data корректно обрабатывает данные и не конфликтует с UserGeneration.
-                # Сейчас я не буду ее вызывать, чтобы избежать двойной обработки или ошибок, если она не готова.
-                print(f"Предполагается, что process_track_data будет вызван для task_id {task_id} для сохранения аудио и метаданных.")
-            except Exception as e_process_track:
-                print(f"Ошибка при вызове process_track_data для task_id {task_id}: {e_process_track}")
+                os.makedirs(music_dir, exist_ok=True)
+                with open(metadata_path, 'w', encoding='utf-8') as f_meta_write:
+                    json.dump(current_metadata, f_meta_write, ensure_ascii=False, indent=4)
+                print(f"Файл метаданных {metadata_path} обновлен/создан на основе коллбэка.")
+            except Exception as e_write_meta:
+                print(f"Ошибка записи метаданных {metadata_path}: {e_write_meta}")
         else:
-            print(f"Коллбэк для task_id {task_id} не имеет статуса 'complete' (статус: {processed_data.get('status')}). Пропуск основной обработки.")
+            print(f"Коллбэк для task_id {task_id} не содержит 'processed_data'. Пропуск обновления метаданных.")
 
-        return jsonify({'status': 'success', 'message': 'Callback received'}), 200
+        return jsonify({'status': 'success', 'message': 'Callback received and processed'}), 200
 
-    except Exception as e:
+    except Exception as e: # Этот except соответствует try на строке 952
         print(f"Ошибка при обработке коллбэка Suno для task_id {task_id}: {e}")
         import traceback
         traceback.print_exc()
@@ -1661,12 +1800,22 @@ def user_profile():
             if gen.file_path_or_id and (gen.file_path_or_id.startswith('http') or gen.file_path_or_id.startswith('/')):
                 data['image_url'] = gen.file_path_or_id
             elif gen.file_path_or_id:
-                 # Проверяем, существует ли файл локально
-                image_full_path = os.path.join('static', gen.file_path_or_id)
-                if os.path.exists(image_full_path):
-                    data['image_url'] = url_for('static', filename=gen.file_path_or_id)
+                # ИСПРАВЛЕНИЕ: убираем двойной static/ 
+                # Если путь уже содержит static/, используем его как есть
+                if gen.file_path_or_id.startswith('static/'):
+                    relative_path = gen.file_path_or_id[7:]  # убираем 'static/' из начала
+                    image_full_path = os.path.join('static', relative_path)
+                    data['image_url'] = url_for('static', filename=relative_path) if os.path.exists(image_full_path) else None
                 else:
-                    data['image_url'] = None # или placeholder
+                    # Проверяем, существует ли файл локально
+                    image_full_path = os.path.join('static', gen.file_path_or_id)
+                    if os.path.exists(image_full_path):
+                        data['image_url'] = url_for('static', filename=gen.file_path_or_id)
+                    else:
+                        data['image_url'] = None # или placeholder
+                        data['error'] = "Файл изображения не найден"
+                
+                if not data.get('image_url'):
                     data['error'] = "Файл изображения не найден"
             else:
                 data['image_url'] = None # placeholder
@@ -1688,9 +1837,27 @@ def user_profile():
                     meta = json.load(f_meta)
                 data['music_status'] = meta.get('status', 'unknown')
                 data['music_title'] = meta.get('title', gen.title)
-                data['local_audio_url'] = meta.get('local_audio_url')
-                data['download_url'] = meta.get('local_audio_url') # Ссылка на скачивание
-                if meta.get('status') != 'complete' and not meta.get('local_audio_url'):
+                
+                # ПРИОРИТЕТ: локальные файлы, затем внешние ссылки
+                if meta.get('local_audio_url'):
+                    data['local_audio_url'] = meta['local_audio_url']
+                    data['download_url'] = meta['local_audio_url']
+                elif meta.get('external_audio_url'):
+                    data['local_audio_url'] = meta['external_audio_url']  # используем внешнюю как запасной вариант
+                    data['download_url'] = meta['external_audio_url']
+                elif meta.get('audio_url'):  # старый формат
+                    data['local_audio_url'] = meta['audio_url']
+                    data['download_url'] = meta['audio_url']
+                
+                # Добавляем информацию об обложке
+                if meta.get('local_cover_url'):
+                    data['cover_url'] = meta['local_cover_url']
+                elif meta.get('external_cover_url'):
+                    data['cover_url'] = meta['external_cover_url']
+                elif meta.get('image_url'):  # старый формат
+                    data['cover_url'] = meta['image_url']
+                
+                if meta.get('status') != 'completed' and not data.get('local_audio_url'):
                     data['check_status_url'] = url_for('check_music_status', task_id=task_id)
             else:
                 data['music_status'] = 'pending_or_error'
@@ -1731,18 +1898,256 @@ def download_literary_work(filename):
         flash("Произошла ошибка при скачивании файла.", "danger")
         return redirect(url_for('user_profile'))
 
-if __name__ == '__main__':
-    print("\n=== Запуск сервера ===")
-    print(f"API ключ OpenAI: {'настроен' if os.environ.get('OPENAI_API_KEY') else 'НЕ НАСТРОЕН'}")
-    print("=== Используйте http://localhost:5000 для доступа к приложению ===\n")
+@app.route('/delete_generation/<int:generation_id>', methods=['POST'])
+@login_required
+def delete_generation(generation_id):
+    """Удаляет генерацию пользователя"""
+    try:
+        # Находим генерацию и проверяем права доступа
+        generation = UserGeneration.query.filter_by(id=generation_id, user_id=current_user.id).first()
+        if not generation:
+            flash("Генерация не найдена или у вас нет к ней доступа.", "danger")
+            return redirect(url_for('user_profile'))
+        
+        # Удаляем связанные файлы
+        if generation.generation_type == 'text' and generation.file_path_or_id:
+            # Удаляем файлы литературного произведения
+            txt_path = os.path.join('instance', 'generated_literary_works', f"{generation.file_path_or_id}")
+            meta_path = os.path.join('instance', 'generated_literary_works', f"{generation.file_path_or_id}.meta.json")
+            
+            for file_path in [txt_path, meta_path]:
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                        print(f"Удален файл: {file_path}")
+                    except Exception as e:
+                        print(f"Ошибка удаления файла {file_path}: {e}")
+        
+        elif generation.generation_type == 'image' and generation.file_path_or_id:
+            # Удаляем файл изображения
+            if generation.file_path_or_id.startswith('static/'):
+                image_path = generation.file_path_or_id
+            else:
+                image_path = os.path.join('static', generation.file_path_or_id)
+            
+            if os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                    print(f"Удален файл изображения: {image_path}")
+                except Exception as e:
+                    print(f"Ошибка удаления изображения {image_path}: {e}")
+        
+        elif generation.generation_type == 'music' and generation.file_path_or_id:
+            # Удаляем музыкальные файлы
+            task_id = generation.file_path_or_id
+            music_dir = os.path.join('static', 'generated_music')
+            
+            # Удаляем файлы связанные с треком
+            files_to_delete = [
+                os.path.join(music_dir, f"music_metadata_{task_id}.json"),
+                os.path.join(music_dir, 'audio', f"music_{task_id}.mp3"),
+                os.path.join(music_dir, 'covers', f"cover_{task_id}.jpg")
+            ]
+            
+            for file_path in files_to_delete:
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                        print(f"Удален музыкальный файл: {file_path}")
+                    except Exception as e:
+                        print(f"Ошибка удаления музыкального файла {file_path}: {e}")
+        
+        # Удаляем запись из базы данных
+        db.session.delete(generation)
+        db.session.commit()
+        
+        flash(f"Генерация '{generation.title}' успешно удалена.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка при удалении генерации {generation_id}: {e}")
+        flash("Произошла ошибка при удалении генерации.", "danger")
     
-    # Увеличиваем таймаут для запросов
-    from werkzeug.serving import run_simple
-    # Используем расширенные настройки для поддержки длительных запросов
-    run_simple('localhost', 5000, app, 
-              use_reloader=True, 
-              use_debugger=True, 
-              threaded=True, 
-              use_evalex=True,
-              passthrough_errors=False,
-              ssl_context=None)
+    return redirect(url_for('user_profile'))
+
+@app.route('/clear_all_generations', methods=['POST'])
+@login_required
+def clear_all_generations():
+    """Удаляет все генерации пользователя"""
+    try:
+        # Находим все генерации пользователя
+        generations = UserGeneration.query.filter_by(user_id=current_user.id).all()
+        
+        if not generations:
+            flash("История генераций уже пуста.", "info")
+            return redirect(url_for('user_profile'))
+        
+        deleted_count = 0
+        
+        # Удаляем файлы и записи
+        for generation in generations:
+            # Удаляем связанные файлы (аналогично функции delete_generation)
+            if generation.generation_type == 'text' and generation.file_path_or_id:
+                txt_path = os.path.join('instance', 'generated_literary_works', f"{generation.file_path_or_id}")
+                meta_path = os.path.join('instance', 'generated_literary_works', f"{generation.file_path_or_id}.meta.json")
+                
+                for file_path in [txt_path, meta_path]:
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except Exception as e:
+                            print(f"Ошибка удаления файла {file_path}: {e}")
+            
+            elif generation.generation_type == 'image' and generation.file_path_or_id:
+                if generation.file_path_or_id.startswith('static/'):
+                    image_path = generation.file_path_or_id
+                else:
+                    image_path = os.path.join('static', generation.file_path_or_id)
+                
+                if os.path.exists(image_path):
+                    try:
+                        os.remove(image_path)
+                    except Exception as e:
+                        print(f"Ошибка удаления изображения {image_path}: {e}")
+            
+            elif generation.generation_type == 'music' and generation.file_path_or_id:
+                task_id = generation.file_path_or_id
+                music_dir = os.path.join('static', 'generated_music')
+                
+                files_to_delete = [
+                    os.path.join(music_dir, f"music_metadata_{task_id}.json"),
+                    os.path.join(music_dir, 'audio', f"music_{task_id}.mp3"),
+                    os.path.join(music_dir, 'covers', f"cover_{task_id}.jpg")
+                ]
+                
+                for file_path in files_to_delete:
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except Exception as e:
+                            print(f"Ошибка удаления музыкального файла {file_path}: {e}")
+            
+            deleted_count += 1
+        
+        # Удаляем все записи из базы данных
+        UserGeneration.query.filter_by(user_id=current_user.id).delete()
+        db.session.commit()
+        
+        flash(f"Успешно удалено {deleted_count} генераций из истории.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Ошибка при очистке истории генераций для пользователя {current_user.id}: {e}")
+        flash("Произошла ошибка при очистке истории.", "danger")
+    
+    return redirect(url_for('user_profile'))
+
+@app.route('/delete_all_images', methods=['POST'])
+@login_required
+def delete_all_images():
+    """Удаляет все сгенерированные изображения"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({
+                'success': False,
+                'error': 'Доступ запрещен'
+            }), 403
+        
+        images_dir = os.path.join('static', 'generated_images')
+        if not os.path.exists(images_dir):
+            return jsonify({
+                'success': True,
+                'message': 'Папка с изображениями не найдена',
+                'deleted_count': 0
+            })
+        
+        deleted_count = 0
+        
+        # Удаляем все файлы изображений
+        for filename in os.listdir(images_dir):
+            if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                file_path = os.path.join(images_dir, filename)
+                try:
+                    os.remove(file_path)
+                    deleted_count += 1
+                    print(f"Удалено изображение: {filename}")
+                except Exception as e:
+                    print(f"Ошибка удаления изображения {filename}: {e}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Успешно удалено {deleted_count} изображений',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        print(f"Ошибка при удалении всех изображений: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Ошибка при удалении: {str(e)}'
+        }), 500
+
+@app.route('/delete_all_literary_works', methods=['POST'])
+@login_required
+def delete_all_literary_works():
+    """Удаляет все литературные произведения"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({
+                'success': False,
+                'error': 'Доступ запрещен'
+            }), 403
+        
+        works_dir = os.path.join(app.root_path, 'instance', 'generated_literary_works')
+        if not os.path.exists(works_dir):
+            return jsonify({
+                'success': True,
+                'message': 'Папка с произведениями не найдена',
+                'deleted_count': 0
+            })
+        
+        deleted_count = 0
+        
+        # Удаляем все файлы произведений
+        for filename in os.listdir(works_dir):
+            if filename.endswith('.txt') or filename.endswith('.meta.json'):
+                file_path = os.path.join(works_dir, filename)
+                try:
+                    os.remove(file_path)
+                    if filename.endswith('.txt'):
+                        deleted_count += 1
+                    print(f"Удален файл произведения: {filename}")
+                except Exception as e:
+                    print(f"Ошибка удаления файла произведения {filename}: {e}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Успешно удалено {deleted_count} произведений',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        print(f"Ошибка при удалении всех литературных произведений: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Ошибка при удалении: {str(e)}'
+        }), 500
+
+if __name__ == '__main__':
+    try:
+        with app.app_context():
+            db.create_all()
+            
+            # Создаем пользователя-администратора, если его нет
+            admin_user = User.query.filter_by(username='admin').first()
+            if not admin_user:
+                admin_user = User(username='admin', is_admin=True)
+                admin_user.set_password('admin')  # Измените пароль в продакшен!
+                db.session.add(admin_user)
+                db.session.commit()
+                print("Создан администратор: username='admin', password='admin'")
+                
+    except Exception as e:
+        print(f"Ошибка при инициализации базы данных: {e}")
+    
+    app.run(debug=True, host='0.0.0.0', port=5000)

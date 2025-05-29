@@ -110,9 +110,9 @@
                             <div class="card-footer bg-light">
                                 <div class="feedback-section d-flex justify-content-between align-items-center" data-type="text">
                                     <div>
-                                        <span class="text-muted me-3">Оцените качество текста:</span>
-                                        <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="literary_work" data-bs-toggle="modal" data-bs-target="#feedbackModal">
-                                            <i class="bi bi-star"></i> Оценить произведение
+                                    <span class="text-muted me-3">Оцените качество текста:</span>
+                                    <button class="btn btn-primary btn-sm feedback-modal-btn" data-content-type="literary_work" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+                                        <i class="bi bi-star"></i> Оценить произведение
                                         </button>
                                     </div>
                                     <button class="btn btn-outline-secondary btn-sm" id="download-text-btn" style="display: none;">
@@ -163,9 +163,37 @@
                                     </div>
                                 </div>
                                 <div id="music-loading" style="display: none;">
-                                    <p class="text-muted">Генерация музыки...</p>
-                                    <div class="progress">
-                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                                    <div class="music-loading-container">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="spinner-border text-primary me-3" role="status">
+                                                <span class="visually-hidden">Загрузка...</span>
+                                            </div>
+                                            <div>
+                                                <h5 class="mb-1">🎵 Генерация музыки</h5>
+                                                <p class="text-muted mb-0" id="music-loading-status">Обработка запроса...</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="progress mb-3" style="height: 8px;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                                 role="progressbar" style="width: 10%" id="music-progress-bar">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex gap-2">
+                                                <span class="badge bg-info" id="music-task-badge">Подготовка...</span>
+                                                <span class="badge bg-secondary" id="music-attempt-badge">Попытка 1/30</span>
+                                            </div>
+                                            <small class="text-muted" id="music-timer">0:00</small>
+                                        </div>
+                                        
+                                        <div class="mt-3 text-center">
+                                            <small class="text-muted">
+                                                ⏱️ Генерация может занять до 6-7 минут<br>
+                                                🎼 Создается уникальная музыкальная композиция
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                                 <div id="music-error" class="alert alert-danger" style="display: none;">
@@ -613,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log(pair[0]+ ': ' + pair[1]); 
                 }
                 // --- DEBUGGING END ---
-
+                
                 // Передаем данные через URLSearchParams
                 const response = await fetch('/analyze', {
                     method: 'POST',
@@ -832,14 +860,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                         literarySectionElement.style.setProperty('overflow', 'visible', 'important');
 
 
-                                        // Показываем секцию обратной связи для текста
+                                    // Показываем секцию обратной связи для текста
                                         const literaryFeedbackSection = literarySectionElement.querySelector('.card-footer');
                                         if (literaryFeedbackSection) {
                                             literaryFeedbackSection.style.setProperty('display', 'block', 'important');
-                                        }
+                                    }
                                         
-                                        const generatedContentElement = document.getElementById('generated-content');
-                                        if (generatedContentElement) {
+                                    const generatedContentElement = document.getElementById('generated-content');
+                                    if (generatedContentElement) {
                                             generatedContentElement.style.setProperty('display', 'block', 'important');
                                         }
 
@@ -909,7 +937,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 if (generatedContentElement) {
                                     generatedContentElement.style.setProperty('display', 'block', 'important');
                                 }
-
+                                
                                 // Если изображение готово, показываем его
                                 if (data.generated_image && data.generated_image.success && data.generated_image.image_url) {
                                     console.log("[Изображение] Отображение изображения из результатов API...");
@@ -1186,7 +1214,7 @@ function displayGeneratedImage(imageUrl) {
     }
     downloadButtonContainer.innerHTML = ''; // Очищаем предыдущие кнопки
     // --- Конец добавления контейнера ---
-
+    
     if (!imageContainer || !imageElement) {
         console.error("Не найдены элементы для отображения изображения");
         return;
@@ -1322,12 +1350,20 @@ function checkMusicGenerationStatus(taskId) {
     
     // Счетчик попыток и максимальное количество повторений
     let attempts = 0;
-    const maxAttempts = 60; // 60 повторений с интервалом 5 секунд = 5 минут
+    const maxAttempts = 80; // 80 повторений с интервалом 5 секунд = ~6.7 минут
+    let startTime = new Date();
     
     // Устанавливаем индикатор загрузки
     const loadingElement = document.getElementById('music-loading');
     const errorElement = document.getElementById('music-error');
     const musicContainer = document.getElementById('generated-music-container');
+    
+    // Элементы нового интерфейса
+    const statusElement = document.getElementById('music-loading-status');
+    const progressBar = document.getElementById('music-progress-bar');
+    const taskBadge = document.getElementById('music-task-badge');
+    const attemptBadge = document.getElementById('music-attempt-badge');
+    const timerElement = document.getElementById('music-timer');
     
     // Убедимся, что секция музыки видима
     const musicSection = document.querySelector('.music-section');
@@ -1337,24 +1373,59 @@ function checkMusicGenerationStatus(taskId) {
     
     if (loadingElement) {
         loadingElement.style.display = 'block';
-        loadingElement.innerHTML = `
-            <p class="text-muted">Проверка статуса генерации музыки...</p>
-            <div class="progress mb-3">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
-            </div>
-            <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
-        `;
     }
     
     // Скрываем сообщение об ошибке
     if (errorElement) errorElement.style.display = 'none';
+    
+    // Обновляем задачу
+    if (taskBadge) {
+        taskBadge.textContent = `ID: ${taskId.substring(0, 8)}...`;
+        taskBadge.className = 'badge bg-info';
+    }
+    
+    // Таймер
+    function updateTimer() {
+        if (timerElement) {
+            const elapsed = Math.floor((new Date() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+    
+    const timerInterval = setInterval(updateTimer, 1000);
     
     // Функция для выполнения одной проверки статуса
     function checkStatus() {
         // Увеличиваем счетчик попыток
         attempts++;
         
-        fetch(`/check_music_status?task_id=${taskId}&t=${new Date().getTime()}`) // Добавляем timestamp для избежания кэширования
+        // Обновляем интерфейс
+        if (attemptBadge) {
+            attemptBadge.textContent = `Попытка ${attempts}/${maxAttempts}`;
+        }
+        
+        if (statusElement) {
+            const statuses = [
+                'Отправка запроса в Suno AI...',
+                'Анализ текста дневника...',
+                'Генерация музыкальной композиции...',
+                'Обработка аудио...',
+                'Финализация трека...'
+            ];
+            const statusIndex = Math.min(Math.floor(attempts / 16), statuses.length - 1);
+            statusElement.textContent = statuses[statusIndex];
+        }
+        
+        // Обновляем прогресс-бар
+        if (progressBar) {
+            const progress = Math.min(95, Math.round((attempts / maxAttempts) * 100));
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+        
+        fetch(`/check_music_status?task_id=${taskId}&t=${new Date().getTime()}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1364,21 +1435,30 @@ function checkMusicGenerationStatus(taskId) {
             .then(data => {
                 console.log(`Получен статус для задачи ${taskId} (попытка ${attempts}/${maxAttempts}):`, data);
                 
-                // Проверяем успешность запроса
-                if (!data.success) {
-                    // Если у нас более 3 попыток, продолжаем сделать еще несколько попыток
-                    if (attempts < 3) {
-                        throw new Error(data.message || "Ошибка при проверке статуса");
-                    } else {
-                        console.log("Ошибка при проверке статуса, но продолжаем попытки:", data.message);
-                    }
-                }
-                
                 // Если музыка готова, отображаем ее
                 if (data.status === 'complete' || data.is_music_ready === true || 
                     data.audio_url || data.stream_url || data.local_audio_url || 
                     data.proxy_url) {
+                    
                     console.log("Музыка готова! Отображаем плеер:", data);
+                    
+                    // Останавливаем таймер
+                    clearInterval(timerInterval);
+                    
+                    // Обновляем прогресс на 100%
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                        progressBar.className = 'progress-bar bg-success';
+                    }
+                    
+                    if (statusElement) {
+                        statusElement.textContent = '✅ Музыка готова!';
+                    }
+                    
+                    if (taskBadge) {
+                        taskBadge.textContent = 'Завершено';
+                        taskBadge.className = 'badge bg-success';
+                    }
                     
                     // Убедимся, что музыкальная секция видна
                     const musicSection = document.querySelector('.music-section');
@@ -1386,35 +1466,50 @@ function checkMusicGenerationStatus(taskId) {
                         musicSection.style.display = 'block';
                     }
                     
-                    // Отображаем готовую музыку
-                    displayGeneratedMusic(data);
+                    // Отображаем готовую музыку после небольшой задержки для эффекта
+                    setTimeout(() => {
+                        displayGeneratedMusic(data);
+                    }, 1000);
                     
-                    // Прекращаем дальнейшие проверки
                     return;
                 }
                 
                 // Если статус "timeout" или ошибка, показываем сообщение об ошибке
-                if (data.status === 'timeout' || data.status === 'error') {
-                    console.log("Ошибка при генерации музыки:", data.message);
+                if (data.status === 'timeout' || data.status === 'error' || 
+                    (data.success === false && attempts > 5)) {
+                    
+                    clearInterval(timerInterval);
+                    
+                    if (taskBadge) {
+                        taskBadge.textContent = 'Ошибка';
+                        taskBadge.className = 'badge bg-danger';
+                    }
+                    
+                    if (progressBar) {
+                        progressBar.className = 'progress-bar bg-danger';
+                    }
+                    
+                    if (statusElement) {
+                        statusElement.textContent = '❌ Ошибка генерации';
+                    }
                     
                     if (errorElement) {
-                        let errorMessage = data.message || "Превышено время ожидания или произошла ошибка";
+                        let errorMessage = data.message || "API вернул ошибку при генерации музыки";
                         
-                        // Создаем блок с ошибкой и рекомендациями
                         errorElement.innerHTML = `
                             <div class="alert alert-danger">
-                                <h5>Ошибка при проверке статуса</h5>
+                                <h5>Ошибка при генерации музыки</h5>
                                 <p>${errorMessage}</p>
                                 <div class="mt-3">
                                     <p><strong>Что делать дальше?</strong></p>
                                     <ul>
                                         <li>Проверьте ваше подключение к интернету</li>
-                                        <li>Обновите страницу и попробуйте сгенерировать музыку снова</li>
-                                        <li>Если проблема повторяется, возможно, у Suno API возникли технические проблемы</li>
+                                        <li>Обновите страницу и попробуйте снова</li>
+                                        <li>Если проблема повторяется, обратитесь к разработчикам</li>
                                     </ul>
                                 </div>
                                 <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
-                                    Обновить страницу и попробовать снова
+                                    Обновить страницу
                                 </button>
                             </div>
                         `;
@@ -1422,113 +1517,40 @@ function checkMusicGenerationStatus(taskId) {
                     }
                     
                     if (loadingElement) loadingElement.style.display = 'none';
-                    
-                    // Прекращаем дальнейшие проверки
                     return;
                 }
                 
-                // Если API статус показывает ошибку, но задача все еще в процессе, показываем специальное сообщение
-                if (data.api_status === 'error') {
-                    console.log("API вернул ошибку, но задача всё еще в обработке:", data);
-                    
-                    // Если это первые 5 попыток, продолжаем пробовать, возможно временная ошибка
-                    if (attempts <= 5) {
-                        console.log("Продолжаем попытки, несмотря на ошибку API...");
-                    } else {
-                        if (errorElement) {
-                            let errorMessage = data.message || "API вернул ошибку при генерации музыки";
-                            
-                            // Создаем блок с ошибкой и рекомендациями
-                            errorElement.innerHTML = `
-                                <div class="alert alert-danger">
-                                    <h5>Ошибка при генерации музыки</h5>
-                                    <p>API вернул ошибку. Генерация музыки не может быть завершена.</p>
-                                    <div class="mt-3">
-                                        <p><strong>Что делать дальше?</strong></p>
-                                        <ul>
-                                            <li>Проверьте ваше подключение к интернету</li>
-                                            <li>Обновите страницу и попробуйте снова</li>
-                                            <li>Если проблема повторяется, обратитесь к разработчикам</li>
-                                        </ul>
-                                    </div>
-                                    <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
-                                        Обновить страницу
-                                    </button>
-                                </div>
-                            `;
-                            errorElement.style.display = 'block';
-                        }
-                        
-                        if (loadingElement) loadingElement.style.display = 'none';
-                        
-                        // Прекращаем дальнейшие проверки
-                        return;
-                    }
-                }
-                
-                // Если музыка все еще генерируется, обновляем прогресс и продолжаем проверки
-                if (loadingElement) {
-                    // Рассчитываем процент выполнения
-                    let progressPercent = 0;
-                    if (data.progress) {
-                        progressPercent = data.progress;
-                    } else if (data.elapsed_seconds) {
-                        // Максимальное время ожидания - 15 минут (900 секунд)
-                        progressPercent = Math.min(95, Math.round(data.elapsed_seconds / 900 * 100));
-                    } else {
-                        // Если нет данных о прогрессе, используем прогресс на основе попыток
-                        progressPercent = Math.min(90, Math.round(attempts / maxAttempts * 100));
-                    }
-                    
-                    loadingElement.innerHTML = `
-                        <p class="text-muted">Генерация музыки продолжается...</p>
-                        <div class="progress mb-3">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
-                                 style="width: ${progressPercent}%" aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
-                                 ${progressPercent}%
-                            </div>
-                        </div>
-                        <span class="badge bg-info">Идентификатор задачи: ${taskId}</span>
-                        ${data.api_status ? `<span class="badge bg-secondary ms-2">API статус: ${data.api_status}</span>` : ''}
-                        <span class="badge bg-light text-dark ms-2">Попытка: ${attempts}/${maxAttempts}</span>
-                    `;
-                }
-                
-                // Если описание музыки доступно, отображаем его
-                const musicDescription = document.getElementById('music-description');
-                if (musicDescription && data.music_description) {
-                    musicDescription.textContent = data.music_description;
-                }
-                
-                // Если достигнуто максимальное количество попыток, показываем сообщение
+                // Если достигнуто максимальное количество попыток
                 if (attempts >= maxAttempts) {
-                    console.log("Достигнуто максимальное количество попыток проверки статуса");
+                    clearInterval(timerInterval);
+                    
+                    if (taskBadge) {
+                        taskBadge.textContent = 'Таймаут';
+                        taskBadge.className = 'badge bg-warning';
+                    }
+                    
+                    if (progressBar) {
+                        progressBar.className = 'progress-bar bg-warning';
+                    }
+                    
+                    if (statusElement) {
+                        statusElement.textContent = '⏰ Превышено время ожидания';
+                    }
                     
                     if (errorElement) {
                         errorElement.innerHTML = `
                             <div class="alert alert-warning">
                                 <h5>Превышено время ожидания</h5>
-                                <p>Проверка статуса генерации музыки заняла слишком много времени (${maxAttempts} попыток).</p>
+                                <p>Генерация музыки заняла больше времени, чем ожидалось (более 6-7 минут).</p>
+                                <p>Возможно, музыка все еще генерируется. Вы можете:</p>
                                 <div class="mt-3">
-                                    <p><strong>Что это означает?</strong></p>
-                                    <ul>
-                                        <li>Возможно, запрос всё ещё обрабатывается на серверах Suno</li>
-                                        <li>Возможно, возникла проблема при передаче результата</li>
-                                        <li>Возможно, запрос был отменен на стороне сервера</li>
-                                    </ul>
-                                    <p><strong>Что делать дальше?</strong></p>
-                                    <ul>
-                                        <li>Вы можете подождать ещё некоторое время и проверить позже</li>
-                                        <li>Вы можете попробовать сгенерировать музыку снова</li>
-                                        <li>Проверьте ваш API ключ и количество доступных кредитов</li>
-                                    </ul>
+                                    <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
+                                        Проверить статус еще раз
+                                    </button>
+                                    <button class="btn btn-outline-secondary mt-2 ms-2" onclick="location.reload()">
+                                        Обновить страницу
+                                    </button>
                                 </div>
-                                <button class="btn btn-outline-primary mt-2" onclick="checkMusicGenerationStatus('${taskId}')">
-                                    Проверить статус еще раз
-                                </button>
-                                <button class="btn btn-outline-secondary mt-2 ms-2" onclick="location.reload()">
-                                    Обновить страницу
-                                </button>
                             </div>
                         `;
                         errorElement.style.display = 'block';
@@ -1542,6 +1564,21 @@ function checkMusicGenerationStatus(taskId) {
             })
             .catch(error => {
                 console.error("Ошибка при проверке статуса:", error);
+                
+                clearInterval(timerInterval);
+                
+                if (taskBadge) {
+                    taskBadge.textContent = 'Ошибка связи';
+                    taskBadge.className = 'badge bg-danger';
+                }
+                
+                if (progressBar) {
+                    progressBar.className = 'progress-bar bg-danger';
+                }
+                
+                if (statusElement) {
+                    statusElement.textContent = '🔌 Ошибка соединения';
+                }
                 
                 if (errorElement) {
                     errorElement.innerHTML = `
@@ -3384,7 +3421,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("Страница загружена, проверяем готовую музыку...");
     
     // Проверяем доступную готовую музыку при загрузке страницы
-    checkAvailableMusic();
+    // checkAvailableMusic(); // Закомментировано, чтобы не загружать музыку сразу
 });
 
 </script>
